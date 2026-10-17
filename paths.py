@@ -6,6 +6,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 RESOURCES_DIR = ROOT / "resources" / "json"
+# Letras (IBM Plex, OFL) e iconos (Phosphor, MIT) de la interfaz, con sus licencias.
+FONTS_DIR = ROOT / "resources" / "fonts"
+ICONS_DIR = ROOT / "resources" / "icons"
+ICON_FONT = ICONS_DIR / "phosphor-regular.woff2"
+ICON_MAP = ICONS_DIR / "phosphor-regular.json"
 APP_SETTINGS_JSON = RESOURCES_DIR / "app_settings.json"
 # Datos propios de esta máquina (nunca se versionan).
 LOCAL_SETTINGS_JSON = ROOT / "local_settings.json"

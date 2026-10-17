@@ -34,6 +34,15 @@ class CaptureSources:
     microphone: AudioSource | None
 
 
+@dataclass(frozen=True, slots=True)
+class SourceChoices:
+    """Todas las fuentes, separadas por tipo, y las que se eligen por defecto."""
+
+    monitors: list[AudioSource]
+    inputs: list[AudioSource]
+    selected: CaptureSources
+
+
 def parse_short_sources(text: str) -> list[AudioSource]:
     """Convierte la salida de `pactl list short sources` en fuentes. Ignora líneas mal formadas."""
     sources: list[AudioSource] = []
@@ -111,14 +120,24 @@ def _run_pactl(*args: str) -> str:
 
 def read_capture_sources() -> CaptureSources:
     """Consulta PipeWire y devuelve las fuentes de captura (ambas pueden ser None)."""
+    return read_source_choices().selected
+
+
+def read_source_choices() -> SourceChoices:
+    """Consulta PipeWire una vez: las fuentes por tipo y las elegidas por defecto."""
     try:
         sources = parse_short_sources(_run_pactl("list", "short", "sources"))
         info = _run_pactl("info")
     except (OSError, subprocess.SubprocessError) as exc:
         logger.error("No se pudo consultar PipeWire con pactl: %s", exc)
-        return CaptureSources(monitor=None, microphone=None)
-    return find_capture_sources(
+        return SourceChoices([], [], CaptureSources(monitor=None, microphone=None))
+    selected = find_capture_sources(
         sources,
         default_sink=parse_info_field(info, "Default Sink"),
         default_source=parse_info_field(info, "Default Source"),
+    )
+    return SourceChoices(
+        monitors=[source for source in sources if source.is_monitor],
+        inputs=[source for source in sources if not source.is_monitor],
+        selected=selected,
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from services import service_pipewire
 from services.service_pipewire import (
     CaptureSources,
     find_capture_sources,
@@ -74,3 +75,33 @@ def test_missing_monitor_or_microphone_gives_none():
     assert capture.monitor is None
     assert capture.microphone is not None and capture.microphone.name == "alsa_input.x"
     assert find_capture_sources([]) == CaptureSources(monitor=None, microphone=None)
+
+
+def _fake_pactl(sources_file: str, info_file: str):
+    texts = {
+        ("list", "short", "sources"): (FIXTURES / sources_file).read_text(),
+        ("info",): (FIXTURES / info_file).read_text(),
+    }
+    return lambda *args: texts[args]
+
+
+def test_read_source_choices_lists_both_kinds(monkeypatch):
+    monkeypatch.setattr(
+        service_pipewire,
+        "_run_pactl",
+        _fake_pactl("pactl_list_short_sources_headset_usb.txt", "pactl_info_headset_usb.txt"),
+    )
+    choices = service_pipewire.read_source_choices()
+    assert [source.name for source in choices.monitors] == [ANALOG_MONITOR, HEADSET_MONITOR]
+    assert [source.name for source in choices.inputs] == [ANALOG_MIC, HEADSET_MIC]
+    assert choices.selected == service_pipewire.read_capture_sources()
+
+
+def test_read_source_choices_without_pactl(monkeypatch):
+    def broken(*_args):
+        raise OSError("pactl no existe")
+
+    monkeypatch.setattr(service_pipewire, "_run_pactl", broken)
+    choices = service_pipewire.read_source_choices()
+    assert choices.monitors == [] and choices.inputs == []
+    assert choices.selected == CaptureSources(monitor=None, microphone=None)

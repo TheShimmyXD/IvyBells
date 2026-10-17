@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--compute-type", default="int8", help="int8, int8_float16 o float16")
     args = parser.parse_args()
 
-    if args.cli:
+    if not args.fuentes:
         # La GPU necesita LD_LIBRARY_PATH desde el arranque: relanza el proceso si falta.
         from services.service_whisper import reexec_with_cuda_libraries
 
