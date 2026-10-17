@@ -17,3 +17,6 @@ Agente_IvyBells/Observador/trazas/
 # Audio y transcripciones reales (no se versionan)
 grabaciones/
 transcripciones/
+
+# Logs de corridas largas del banco (los .json y .md sí se versionan)
+bench/resultados/*.log

@@ -12,3 +12,8 @@ LOCAL_SETTINGS_JSON = ROOT / "local_settings.json"
 
 LOG_DIR = ROOT / "logs"
 LOG_FILE = LOG_DIR / "ivybells.log"
+
+# Audio y transcripciones reales: nunca se versionan.
+RECORDINGS_DIR = ROOT / "grabaciones"
+TRANSCRIPTS_DIR = ROOT / "transcripciones"
+BENCH_RESULTS_DIR = ROOT / "bench" / "resultados"
