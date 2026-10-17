@@ -1,19 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ivybells"
 version = "0.1.0"
 description = "Transcripción en tiempo real local (GPU) de audio del sistema y del micrófono."
 requires-python = ">=3.13"
 dependencies = [
-    "PySide6",
+    "PySide6>=6.12",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=9", "ruff>=0.17"]
+
+[tool.setuptools]
+# Solo se instalan las dependencias; el código se ejecuta desde la carpeta.
+packages = []
+py-modules = []
+
+[tool.python-programmer]
+# Tipo de proyecto para check_structure.py: "app" (PySide6) o "cli".
+type = "app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+# .claude/ guarda skills del agente: no son código del proyecto.
+extend-exclude = ["resources", ".claude"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+# E/F: errores básicos, I: orden de imports, UP: sintaxis moderna,
+# B: errores frecuentes, SIM: simplificaciones, T20: prohíbe print.
+select = ["E", "F", "I", "UP", "B", "SIM", "T20"]
+# La longitud de línea la resuelve `ruff format`; no se duplica el aviso.
+ignore = ["E501"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["T20"]

@@ -1,0 +1,4 @@
+48	alsa_output.pci-0000_0d_00.4.analog-stereo.monitor	PipeWire	s32le 2ch 48000Hz	SUSPENDED
+49	alsa_input.pci-0000_0d_00.4.analog-stereo	PipeWire	s32le 2ch 48000Hz	SUSPENDED
+108	alsa_output.usb-DODO_Electronics_Inc._Redragon_Gaming_Headset-00.iec958-stereo.monitor	PipeWire	s16le 2ch 48000Hz	RUNNING
+109	alsa_input.usb-DODO_Electronics_Inc._Redragon_Gaming_Headset-00.mono-fallback	PipeWire	s16le 1ch 48000Hz	RUNNING

@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 def list_sources() -> None:
-    """Imprime las dos fuentes de captura que encuentra PipeWire."""
+    """Muestra en el log las dos fuentes de captura que encuentra PipeWire."""
     from services.service_pipewire import read_capture_sources
 
     capture = read_capture_sources()
-    logger.info(f"Lo que suena: {capture.monitor.name if capture.monitor else 'no encontrada'}")
+    logger.info("Lo que suena: %s", capture.monitor.name if capture.monitor else "no encontrada")
     logger.info(
-        f"Micrófono:    {capture.microphone.name if capture.microphone else 'no encontrado'}"
+        "Micrófono:    %s", capture.microphone.name if capture.microphone else "no encontrado"
     )
 
 

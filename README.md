@@ -12,7 +12,7 @@ Transcripción en tiempo real, local y en GPU, de lo que suena por los parlantes
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e .
+.venv/bin/pip install -e '.[dev]'
 .venv/bin/python main.py
 ```
 

@@ -57,28 +57,41 @@ def parse_short_sources(text: str) -> list[AudioSource]:
     return sources
 
 
-def parse_default_source(info_text: str) -> str | None:
-    """Devuelve el nombre de la fuente por defecto que informa `pactl info`."""
+def parse_info_field(info_text: str, field: str) -> str | None:
+    """Devuelve el valor de un campo de `pactl info` (por ejemplo "Default Sink")."""
     for line in info_text.splitlines():
         key, _, value = line.partition(":")
-        if key.strip() == "Default Source" and value.strip():
+        if key.strip() == field and value.strip():
             return value.strip()
     return None
 
 
 def find_capture_sources(
-    sources: list[AudioSource], default_source: str | None = None
+    sources: list[AudioSource],
+    default_sink: str | None = None,
+    default_source: str | None = None,
 ) -> CaptureSources:
     """
     Elige la fuente de lo que suena y la del micrófono.
 
-    Para lo que suena se prefiere la `.monitor` que `pactl` marca como por defecto; si no
-    hay, la primera `.monitor`. El micrófono es la primera fuente que no es `.monitor`.
+    Lo que suena es la `.monitor` de la salida predeterminada (`<default_sink>.monitor`):
+    ahí sale el audio de Meet o del navegador. El micrófono es la entrada predeterminada,
+    salvo que sea una `.monitor`. Si alguna no aparece, se usa la primera de su tipo y se
+    deja un aviso en el log.
     """
     monitors = [source for source in sources if source.is_monitor]
-    monitor = next((source for source in monitors if source.name == default_source), None)
-    monitor = monitor or (monitors[0] if monitors else None)
-    microphone = next((source for source in sources if not source.is_monitor), None)
+    inputs = [source for source in sources if not source.is_monitor]
+
+    monitor_name = f"{default_sink}.monitor" if default_sink else None
+    monitor = next((source for source in monitors if source.name == monitor_name), None)
+    if monitor is None and monitors:
+        monitor = monitors[0]
+        logger.warning("No hay monitor de la salida predeterminada; se usa %s", monitor.name)
+
+    microphone = next((source for source in inputs if source.name == default_source), None)
+    if microphone is None and inputs:
+        microphone = inputs[0]
+        logger.warning("La entrada predeterminada no es un micrófono; se usa %s", microphone.name)
     return CaptureSources(monitor=monitor, microphone=microphone)
 
 
@@ -100,8 +113,12 @@ def read_capture_sources() -> CaptureSources:
     """Consulta PipeWire y devuelve las fuentes de captura (ambas pueden ser None)."""
     try:
         sources = parse_short_sources(_run_pactl("list", "short", "sources"))
-        default_source = parse_default_source(_run_pactl("info"))
+        info = _run_pactl("info")
     except (OSError, subprocess.SubprocessError) as exc:
         logger.error("No se pudo consultar PipeWire con pactl: %s", exc)
         return CaptureSources(monitor=None, microphone=None)
-    return find_capture_sources(sources, default_source)
+    return find_capture_sources(
+        sources,
+        default_sink=parse_info_field(info, "Default Sink"),
+        default_source=parse_info_field(info, "Default Source"),
+    )
