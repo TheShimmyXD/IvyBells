@@ -1,0 +1,2 @@
+48	alsa_output.pci-0000_0d_00.4.analog-stereo.monitor	PipeWire	s32le 2ch 48000Hz	RUNNING
+49	alsa_input.pci-0000_0d_00.4.analog-stereo	PipeWire	s32le 2ch 48000Hz	SUSPENDED
