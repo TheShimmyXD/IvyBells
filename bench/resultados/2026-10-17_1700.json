@@ -1,0 +1,102 @@
+{
+  "fecha": "2026-10-17_1700",
+  "equipo": {
+    "gpu": "NVIDIA GeForce GTX 1660 SUPER",
+    "driver": "580.173.02"
+  },
+  "versiones": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.8.3",
+    "nvidia-cublas-cu12": "12.9.2.10",
+    "nvidia-cudnn-cu12": "9.27.0.42"
+  },
+  "audio": {
+    "sonido": "f11b_sonido.wav",
+    "microfono": "f11b_microfono.wav"
+  },
+  "opciones": {
+    "language": "es",
+    "beam_size": 5,
+    "vad_filter": true,
+    "ventana_s": 5.0,
+    "repeticiones_ventana": 3
+  },
+  "filas": [
+    {
+      "model": "small",
+      "compute_type": "float16",
+      "vram_baseline_mib": 362,
+      "load_s": 1.9002698919994145,
+      "warmup_s": 0.17203246500048408,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 8.382,
+          "rtf": 0.0466,
+          "segments": 14,
+          "words": 132,
+          "letter_ratio": 0.923,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 25.496,
+          "rtf": 0.1416,
+          "segments": 19,
+          "words": 300,
+          "letter_ratio": 0.97,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.072,
+          1.073,
+          1.065
+        ],
+        "median_s": 1.072,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1108
+    },
+    {
+      "model": "small",
+      "compute_type": "int8",
+      "vram_baseline_mib": 361,
+      "load_s": 1.1377356060002057,
+      "warmup_s": 0.06703484899935575,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 3.221,
+          "rtf": 0.0179,
+          "segments": 17,
+          "words": 123,
+          "letter_ratio": 0.917,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 9.541,
+          "rtf": 0.053,
+          "segments": 23,
+          "words": 292,
+          "letter_ratio": 0.984,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          0.353,
+          0.351,
+          0.353
+        ],
+        "median_s": 0.353,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 789
+    }
+  ]
+}

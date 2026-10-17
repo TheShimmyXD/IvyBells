@@ -1,0 +1,471 @@
+{
+  "fecha": "2026-10-17_1701",
+  "equipo": {
+    "gpu": "NVIDIA GeForce GTX 1660 SUPER",
+    "driver": "580.173.02"
+  },
+  "versiones": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.8.3",
+    "nvidia-cublas-cu12": "12.9.2.10",
+    "nvidia-cudnn-cu12": "9.27.0.42"
+  },
+  "audio": {
+    "sonido": "f11b_sonido.wav",
+    "microfono": "f11b_microfono.wav"
+  },
+  "opciones": {
+    "language": "es",
+    "beam_size": 5,
+    "vad_filter": true,
+    "ventana_s": 5.0,
+    "repeticiones_ventana": 5
+  },
+  "filas": [
+    {
+      "model": "small",
+      "compute_type": "float16",
+      "vram_baseline_mib": 361,
+      "load_s": 0.8187337640001715,
+      "warmup_s": 0.03167950399983965,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 7.556,
+          "rtf": 0.042,
+          "segments": 14,
+          "words": 132,
+          "letter_ratio": 0.923,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 28.642,
+          "rtf": 0.1591,
+          "segments": 22,
+          "words": 304,
+          "letter_ratio": 0.994,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.07,
+          1.075,
+          1.069,
+          1.079,
+          1.071
+        ],
+        "median_s": 1.071,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1142
+    },
+    {
+      "model": "small",
+      "compute_type": "int8_float16",
+      "vram_baseline_mib": 339,
+      "load_s": 1.0927763229992706,
+      "warmup_s": 0.03102863799995248,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 3.149,
+          "rtf": 0.0175,
+          "segments": 17,
+          "words": 123,
+          "letter_ratio": 0.917,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 9.908,
+          "rtf": 0.055,
+          "segments": 31,
+          "words": 270,
+          "letter_ratio": 0.957,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          0.349,
+          0.349,
+          0.35,
+          0.35,
+          0.349
+        ],
+        "median_s": 0.349,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 821
+    },
+    {
+      "model": "small",
+      "compute_type": "int8",
+      "vram_baseline_mib": 339,
+      "load_s": 1.1181222189998152,
+      "warmup_s": 0.03275811200001044,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 3.142,
+          "rtf": 0.0175,
+          "segments": 17,
+          "words": 123,
+          "letter_ratio": 0.917,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 10.467,
+          "rtf": 0.0582,
+          "segments": 19,
+          "words": 286,
+          "letter_ratio": 0.99,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          0.348,
+          0.349,
+          0.35,
+          0.352,
+          0.349
+        ],
+        "median_s": 0.349,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 821
+    },
+    {
+      "model": "medium",
+      "compute_type": "float16",
+      "vram_baseline_mib": 339,
+      "load_s": 21.58844376399975,
+      "warmup_s": 0.1389753989997189,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 19.367,
+          "rtf": 0.1076,
+          "segments": 19,
+          "words": 121,
+          "letter_ratio": 0.903,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 70.27,
+          "rtf": 0.3904,
+          "segments": 21,
+          "words": 307,
+          "letter_ratio": 0.992,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          3.243,
+          3.244,
+          3.245,
+          3.245,
+          3.244
+        ],
+        "median_s": 3.244,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 2855
+    },
+    {
+      "model": "medium",
+      "compute_type": "int8_float16",
+      "vram_baseline_mib": 340,
+      "load_s": 2.3463426700000127,
+      "warmup_s": 0.03168055700007244,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 5.974,
+          "rtf": 0.0332,
+          "segments": 21,
+          "words": 121,
+          "letter_ratio": 0.912,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 10.423,
+          "rtf": 0.0579,
+          "segments": 24,
+          "words": 312,
+          "letter_ratio": 0.993,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          0.855,
+          0.852,
+          0.852,
+          0.866,
+          0.861
+        ],
+        "median_s": 0.855,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1493
+    },
+    {
+      "model": "medium",
+      "compute_type": "int8",
+      "vram_baseline_mib": 337,
+      "load_s": 2.4304339569998774,
+      "warmup_s": 0.02990908199990372,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 5.978,
+          "rtf": 0.0332,
+          "segments": 21,
+          "words": 121,
+          "letter_ratio": 0.912,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 10.624,
+          "rtf": 0.059,
+          "segments": 24,
+          "words": 312,
+          "letter_ratio": 0.993,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          0.876,
+          0.872,
+          0.871,
+          0.864,
+          0.871
+        ],
+        "median_s": 0.871,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1489
+    },
+    {
+      "model": "large-v3-turbo",
+      "compute_type": "float16",
+      "vram_baseline_mib": 333,
+      "load_s": 24.770869949999906,
+      "warmup_s": 0.04768110999975761,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 28.897,
+          "rtf": 0.1605,
+          "segments": 14,
+          "words": 136,
+          "letter_ratio": 0.911,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 59.232,
+          "rtf": 0.3291,
+          "segments": 46,
+          "words": 445,
+          "letter_ratio": 0.95,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          4.577,
+          4.576,
+          4.575,
+          4.578,
+          4.58
+        ],
+        "median_s": 4.577,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 2326
+    },
+    {
+      "model": "large-v3-turbo",
+      "compute_type": "int8_float16",
+      "vram_baseline_mib": 334,
+      "load_s": 2.839105844000187,
+      "warmup_s": 0.03241231700030767,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 10.862,
+          "rtf": 0.0603,
+          "segments": 16,
+          "words": 140,
+          "letter_ratio": 0.917,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 14.459,
+          "rtf": 0.0803,
+          "segments": 15,
+          "words": 303,
+          "letter_ratio": 0.934,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.12,
+          1.123,
+          1.121,
+          1.122,
+          1.12
+        ],
+        "median_s": 1.121,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1332
+    },
+    {
+      "model": "large-v3-turbo",
+      "compute_type": "int8",
+      "vram_baseline_mib": 333,
+      "load_s": 2.8922983419997763,
+      "warmup_s": 0.056124117999388545,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 7.96,
+          "rtf": 0.0442,
+          "segments": 16,
+          "words": 123,
+          "letter_ratio": 0.929,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 15.04,
+          "rtf": 0.0836,
+          "segments": 15,
+          "words": 303,
+          "letter_ratio": 0.934,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.124,
+          1.126,
+          1.122,
+          1.123,
+          1.12
+        ],
+        "median_s": 1.123,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 1340
+    },
+    {
+      "model": "large-v3",
+      "compute_type": "float16",
+      "error": "CUDA failed with error out of memory"
+    },
+    {
+      "model": "large-v3",
+      "compute_type": "int8_float16",
+      "vram_baseline_mib": 422,
+      "load_s": 10.780039303999729,
+      "warmup_s": 0.053893552000772615,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 9.822,
+          "rtf": 0.0546,
+          "segments": 15,
+          "words": 134,
+          "letter_ratio": 0.927,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 43.383,
+          "rtf": 0.241,
+          "segments": 7,
+          "words": 333,
+          "letter_ratio": 0.919,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.415,
+          1.415,
+          1.414,
+          1.415,
+          1.415
+        ],
+        "median_s": 1.415,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 3760
+    },
+    {
+      "model": "large-v3",
+      "compute_type": "int8",
+      "vram_baseline_mib": 353,
+      "load_s": 9.31722616299976,
+      "warmup_s": 0.030041795000215643,
+      "tracks": {
+        "sonido": {
+          "audio_s": 180.0,
+          "compute_s": 9.562,
+          "rtf": 0.0531,
+          "segments": 15,
+          "words": 134,
+          "letter_ratio": 0.927,
+          "looks_broken": false
+        },
+        "microfono": {
+          "audio_s": 180.0,
+          "compute_s": 43.373,
+          "rtf": 0.241,
+          "segments": 7,
+          "words": 301,
+          "letter_ratio": 0.922,
+          "looks_broken": false
+        }
+      },
+      "window": {
+        "start_s": 10.83,
+        "times_s": [
+          1.415,
+          1.419,
+          1.414,
+          1.414,
+          1.417
+        ],
+        "median_s": 1.415,
+        "looks_broken": false
+      },
+      "vram_peak_mib": 3797
+    }
+  ]
+}
