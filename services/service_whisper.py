@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import os
+import sys
 import time
 import wave
 from dataclasses import dataclass
@@ -41,6 +43,21 @@ def cuda_library_dirs() -> list[str]:
         if lib_dir.is_dir():
             dirs.append(str(lib_dir))
     return dirs
+
+
+def reexec_with_cuda_libraries(module: str) -> None:
+    """
+    Relanza `python -m <module>` con LD_LIBRARY_PATH hacia cuBLAS y cuDNN si aún no está.
+
+    El cargador del sistema lee esa variable solo al arrancar el proceso, por eso no basta
+    con ponerla en `os.environ`. Si ya está puesta, no hace nada y el proceso sigue.
+    """
+    dirs = cuda_library_dirs()
+    current = os.environ.get("LD_LIBRARY_PATH", "")
+    if not dirs or all(lib_dir in current.split(os.pathsep) for lib_dir in dirs):
+        return
+    env = {**os.environ, "LD_LIBRARY_PATH": os.pathsep.join([*dirs, current]).rstrip(os.pathsep)}
+    os.execve(sys.executable, [sys.executable, "-m", module, *sys.argv[1:]], env)
 
 
 def engine_versions() -> dict[str, str]:

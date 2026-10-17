@@ -6,6 +6,7 @@ from core.bench_metrics import (
     format_table,
     median_s,
     peak_over_baseline,
+    percentile,
     pick_window_start,
     real_time_factor,
     text_health,
@@ -68,3 +69,11 @@ def test_format_table_shows_measured_and_failed_rows():
     table = format_table(rows)
     assert "| small | int8 | 1.2 | 0.050 | 0.040 | 0.41 s | 812 | ok |" in table
     assert "falla: CUDA out of memory" in table
+
+
+def test_percentile_uses_nearest_rank():
+    values = [float(value) for value in range(1, 11)]
+    assert percentile(values, 0.9) == 9.0
+    assert percentile(values, 0.5) == 5.0
+    assert percentile([0.7], 0.9) == 0.7
+    assert percentile([], 0.9) == 0.0

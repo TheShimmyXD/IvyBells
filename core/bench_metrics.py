@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import statistics
 from dataclasses import dataclass
 
@@ -39,6 +40,15 @@ def peak_over_baseline(samples_mib: list[int], baseline_mib: int) -> int:
 def median_s(values: list[float]) -> float:
     """Mediana de una lista de tiempos (0.0 si está vacía)."""
     return statistics.median(values) if values else 0.0
+
+
+def percentile(values: list[float], fraction: float) -> float:
+    """Percentil por rango más cercano (fraction=0.9 da el p90). 0.0 si la lista está vacía."""
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    rank = max(1, math.ceil(fraction * len(ordered)))
+    return ordered[rank - 1]
 
 
 def text_health(text: str) -> TextHealth:
