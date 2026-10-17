@@ -29,3 +29,11 @@ def test_round_trip(tmp_path):
     assert save_app_config(original, path)
     assert load_app_config(path) == original
     assert json.loads(path.read_text(encoding="utf-8"))["debug"] is True
+
+
+def test_theme_round_trip_and_unknown_falls_back(tmp_path):
+    path = tmp_path / "settings.json"
+    assert save_app_config(AppConfig(theme="dark"), path)
+    assert load_app_config(path).theme == "dark"
+    path.write_text(json.dumps({"theme": "neon"}), encoding="utf-8")
+    assert load_app_config(path).theme == "light"

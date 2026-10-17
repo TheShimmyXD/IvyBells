@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -65,12 +66,18 @@ VOICES = (("ellos", "Ellos", "speaker-high"), ("tu", "Tú", "microphone"))
 
 class MainWindow(QWidget):
     def __init__(
-        self, coordinator: LiveCoordinator, fonts: ThemeFonts, theme: str = "light"
+        self,
+        coordinator: LiveCoordinator,
+        fonts: ThemeFonts,
+        theme: str = "light",
+        save_theme: Callable[[str], object] | None = None,
     ) -> None:
         super().__init__()
         self.coordinator = coordinator
         self._fonts = fonts
         self._theme = theme
+        # Las capturas y las pruebas no pasan ninguno: no escriben la configuración.
+        self._save_theme = save_theme
         self._apply_theme()
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(app_icon())
@@ -91,7 +98,7 @@ class MainWindow(QWidget):
         root.setSpacing(0)
         # La barra no va en el layout: desplegada pasa por encima del área de trabajo.
         self.sidebar = NavSidebar(self)
-        self.sidebar.add_action(
+        self.theme_button = self.sidebar.add_action(
             "theme", THEME_TIPS[self._theme], THEME_GLYPHS[self._theme], self._cycle_theme
         )
         slot = QWidget()
@@ -177,6 +184,8 @@ class MainWindow(QWidget):
 
     def _cycle_theme(self) -> None:
         self.set_theme(next_theme(self._theme))
+        if self._save_theme is not None:
+            self._save_theme(self._theme)
 
     def set_theme(self, theme: str) -> None:
         self._theme = theme
@@ -253,8 +262,16 @@ def load_fonts() -> ThemeFonts:
 
 
 def run_app() -> None:
+    from config import load_app_config, save_app_config
+
     app = QApplication.instance() or QApplication(sys.argv)
-    window = MainWindow(LiveCoordinator(), load_fonts())
+    config = load_app_config()
+
+    def save_theme(theme: str) -> None:
+        config.theme = theme
+        save_app_config(config)
+
+    window = MainWindow(LiveCoordinator(), load_fonts(), config.theme, save_theme)
     window.show()
     logger.info("Ventana principal lista")
     sys.exit(app.exec())

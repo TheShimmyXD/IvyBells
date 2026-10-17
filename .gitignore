@@ -6,6 +6,8 @@ __pycache__/
 
 # Datos sensibles o propios de esta máquina
 local_settings.json
+# Preferencias de la ventana en esta máquina (tema)
+resources/json/app_settings.json
 secure_credentials.json
 logs/
 

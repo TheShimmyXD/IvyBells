@@ -30,6 +30,8 @@ def as_str(value: object, default: str) -> str:
 
 # -- Configuración global --------------------------------------
 
+THEME_NAMES = ("light", "dark")
+
 
 @dataclass(slots=True)
 class AppConfig:
@@ -39,17 +41,24 @@ class AppConfig:
     Campos
     ------
     debug : eleva el nivel de log a DEBUG.
+    theme : último tema elegido en la ventana (light o dark).
 
     Las claves faltantes en el JSON toman sus valores por defecto.
     """
 
     debug: bool = False
+    theme: str = "light"
 
     @classmethod
     def from_dict(cls, data: object) -> AppConfig:
         if not isinstance(data, dict):
             return cls()
-        return cls(debug=bool(data.get("debug", False)))
+        base = cls()
+        theme = as_str(data.get("theme"), base.theme)
+        return cls(
+            debug=bool(data.get("debug", False)),
+            theme=theme if theme in THEME_NAMES else base.theme,
+        )
 
     def to_dict(self) -> dict:
         return asdict(self)
