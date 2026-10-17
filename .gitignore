@@ -1,0 +1,19 @@
+# Entorno y cachés
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Datos sensibles o propios de esta máquina
+local_settings.json
+secure_credentials.json
+logs/
+
+# Diario de trabajo del agente (no se versiona)
+Agente_IvyBells/ESTADO*.md
+Agente_IvyBells/SESIONES.md
+Agente_IvyBells/Observador/trazas/
+
+# Audio y transcripciones reales (no se versionan)
+grabaciones/
+transcripciones/
