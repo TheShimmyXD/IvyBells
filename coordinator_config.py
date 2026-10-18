@@ -141,6 +141,7 @@ class ClaudeSettings(QObject):
 
     def close(self) -> None:
         stop_thread(self._thread, CLOSE_TIMEOUT_MS)
+        self.context.close()
 
     # -- Señales del worker ------------------------------------
 

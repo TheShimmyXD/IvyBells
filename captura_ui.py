@@ -188,6 +188,8 @@ def capture_config(out_dir: Path) -> list[Path]:
                 settings.show_status(status)
                 page.profile_editor.select(opened)
                 context.reload()
+                while context.is_busy():
+                    app.processEvents()
                 page.resize(900, 1060)
                 page.show()
                 app.processEvents()

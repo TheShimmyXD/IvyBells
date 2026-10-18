@@ -26,7 +26,13 @@ from ui.blocks.panel import titled_panel
 from ui.blocks.status_line import StatusLine
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
-LEVEL_TONES = {"ok": Tone.OK, "warning": Tone.WARNING, "info": Tone.INFO, "error": Tone.ERROR}
+LEVEL_TONES = {
+    "ok": Tone.OK,
+    "warning": Tone.WARNING,
+    "info": Tone.INFO,
+    "error": Tone.ERROR,
+    "busy": Tone.INFO,
+}
 PATHS_HINT = "Una ruta por línea: archivos o carpetas con información de la empresa"
 HELP_TEXT = (
     "IvyBells lee texto (md, txt, csv, json, código), PDF y Word (.docx); audio, video y el "
@@ -128,6 +134,7 @@ class ContextEditor(QWidget):
 
     def _on_reloaded(self, payload: dict) -> None:
         self.status.set_status(payload["text"], LEVEL_TONES.get(payload["level"]))
+        self.reload_button.setEnabled(payload["level"] != "busy")
         self._refresh_open()
 
     # -- Internos ----------------------------------------------

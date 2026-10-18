@@ -9,6 +9,7 @@ que hace la ventana al arrancar.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 from core.agent_profile import EXAMPLE_NAME, ProfileError, clean_name, is_editable
@@ -118,5 +119,8 @@ def write_if_changed(path: Path, text: str) -> bool:
     if path.is_file() and path.read_text(encoding="utf-8") == text:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    # Temporal y reemplazo: quien lee desde otro hilo nunca ve el archivo a medias.
+    partial = path.with_name(path.name + ".tmp")
+    partial.write_text(text, encoding="utf-8")
+    os.replace(partial, path)
     return True
