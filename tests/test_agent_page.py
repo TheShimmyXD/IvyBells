@@ -36,7 +36,7 @@ def _point_of(browser, phrase: int, word: str) -> QPoint:
     return browser.cursorRect(cursor).center()
 
 
-def test_left_click_marks_the_clicked_word_and_right_click_sends(qapp):
+def test_left_click_marks_the_clicked_word_and_right_click_sends_whole_phrases(qapp):
     window, agent = _window(qapp)
     view = window.agent_page.transcript
     QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=_point_of(view, 1, "plan"))
@@ -44,7 +44,9 @@ def test_left_click_marks_the_clicked_word_and_right_click_sends(qapp):
     assert agent.start_mark == WordPos(1, 4)
     QTest.mouseClick(view.viewport(), Qt.MouseButton.RightButton, pos=_point_of(view, 2, "factura"))
     assert agent.logic.state is AgentState.SENDING
-    assert agent.turns[0].selection.text().endswith("y todavía no me llega la factura")
+    sent = agent.turns[0].selection.text().splitlines()
+    assert sent[0].endswith("] Sí, mire, contraté el plan empresarial la semana pasada")
+    assert sent[1].endswith("] y todavía no me llega la factura al correo.")
     agent.answer("Con gusto.")
     assert agent.logic.state is AgentState.ANSWERED
     assert "Con gusto." in window.agent_page.turns_view.toPlainText()

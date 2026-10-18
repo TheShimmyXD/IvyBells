@@ -4,6 +4,9 @@ Rango que el autor marca sobre las frases finales de un interlocutor.
 El clic izquierdo fija el inicio y el derecho el final, cada uno en una palabra; entra todo
 lo de en medio, aunque cruce varias frases. Si el final queda antes que el inicio, se
 invierten. Solo se marcan frases finales: el provisional todavía cambia.
+
+El Agente envía mensajes completos (`select_phrases`): desde el inicio de la frase del
+primer clic hasta el final de la del segundo. `select_range` recorta por palabra.
 """
 
 from __future__ import annotations
@@ -70,3 +73,17 @@ def select_range(lines: list[Line], a: WordPos, b: WordPos) -> Selection | None:
     if not picked:
         return None
     return Selection(start, end, tuple(picked))
+
+
+def select_phrases(lines: list[Line], a: WordPos, b: WordPos) -> Selection | None:
+    """
+    Las frases completas entre dos posiciones, con las intermedias.
+
+    La palabra de cada posición no importa: el rango va desde la primera palabra de la
+    frase más temprana hasta la última de la más tardía. Devuelve None como `select_range`.
+    """
+    if not lines or not all(0 <= pos.phrase < len(lines) for pos in (a, b)):
+        return None
+    first, last = sorted((a.phrase, b.phrase))
+    last_word = max(len(lines[last].text.split()) - 1, 0)
+    return select_range(lines, WordPos(first, 0), WordPos(last, last_word))

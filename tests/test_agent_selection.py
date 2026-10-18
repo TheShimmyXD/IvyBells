@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.agent_selection import WordPos, select_range, word_at
+from core.agent_selection import WordPos, select_phrases, select_range, word_at
 from core.live_view import Line
 
 LINES = [
@@ -68,3 +68,27 @@ def test_word_at_offsets():
 def test_line_without_clock_has_no_brackets():
     selection = select_range([Line("", "hola")], WordPos(0, 0), WordPos(0, 0))
     assert selection.text() == "hola"
+
+
+def test_whole_phrase_from_two_clicks_on_it():
+    selection = select_phrases(LINES, WordPos(1, 2), WordPos(1, 3))
+    assert selection.text() == "[10:00:05] quería saber el precio del plan"
+    assert (selection.start, selection.end) == (WordPos(1, 0), WordPos(1, 5))
+
+
+def test_whole_phrases_across_several():
+    selection = select_phrases(LINES, WordPos(0, 3), WordPos(2, 1))
+    assert [line.text for line in selection.lines] == [line.text for line in LINES]
+
+
+def test_whole_phrases_reversed_clicks():
+    forward = select_phrases(LINES, WordPos(1, 4), WordPos(2, 0))
+    backward = select_phrases(LINES, WordPos(2, 0), WordPos(1, 4))
+    assert forward == backward
+    assert backward.lines[0].text == "quería saber el precio del plan"
+    assert backward.end == WordPos(2, 4)
+
+
+def test_whole_phrases_out_of_range_gives_none():
+    assert select_phrases(LINES, WordPos(0, 0), WordPos(3, 0)) is None
+    assert select_phrases([], WordPos(0, 0), WordPos(0, 0)) is None

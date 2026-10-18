@@ -26,11 +26,14 @@ QUOTE_CHARS = 90
 def word_marks(
     phrase: int, words: list[str], ranges: list[tuple[WordPos, WordPos]], start: WordPos | None
 ) -> list[str]:
-    """Por palabra: "start" (inicio marcado), "sent" (ya enviada) o ""."""
+    """Por palabra: "start" (frase del inicio marcado), "sent" (ya enviada) o "".
+
+    El Agente envía frases completas, así que el inicio resalta toda su frase.
+    """
     marks = []
     for number in range(len(words)):
         pos = WordPos(phrase, number)
-        if start == pos:
+        if start is not None and start.phrase == phrase:
             marks.append("start")
         elif any(a <= pos <= b for a, b in ranges):
             marks.append("sent")

@@ -70,10 +70,12 @@ def test_range_is_sent_and_answer_streams_in(qapp, make):
     states = []
     coordinator.state_changed.connect(lambda payload: states.append(payload["state"]))
     coordinator.mark_start(1, 7)  # "saber"
-    coordinator.mark_end(0, 0)  # "buenas": queda antes y se invierte
+    coordinator.mark_end(0, 0)  # "buenas": queda antes y se invierte; van frases completas
     _wait(qapp, lambda: coordinator.logic.state is AgentState.ANSWERED)
     turn = coordinator.turns[0]
-    assert turn.selection.text() == ("[10:00:00] buenas tardes\n[10:00:04] quería saber")
+    assert turn.selection.text().startswith("[10:00:00] buenas tardes")
+    assert turn.selection.text().splitlines()[1].startswith("[10:00:04] quería saber")
+    assert len(turn.selection.text().splitlines()[1].split()) > 3
     assert turn.answer == "Con gusto, el plan cuesta..."
     assert "<cliente>\n[10:00:00] buenas tardes" in service.prompts[0]
     assert states[:2] == [AgentState.START_MARKED, AgentState.SENDING]

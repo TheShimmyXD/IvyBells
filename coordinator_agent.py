@@ -21,7 +21,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from coordinator_config import ClaudeSettings
 from coordinator_live import LiveCoordinator
 from core.agent_prompt import Exchange, build_prompt
-from core.agent_selection import Selection, WordPos, select_range, word_at
+from core.agent_selection import Selection, WordPos, select_phrases, word_at
 from core.agent_state import AgentLogic, AgentState
 from core.claude_model import ClaudeModelConfig
 from core.claude_stream import Usage
@@ -155,7 +155,7 @@ class AgentCoordinator(QObject):
         bounds = self.logic.mark_end(pos, self.settings.config.model)
         if bounds is None:
             return
-        selection = select_range(self.live.transcript.finals(self.speaker), *bounds)
+        selection = select_phrases(self.live.transcript.finals(self.speaker), *bounds)
         if selection is None:
             self.logic.cancel()
             self._emit_state()
