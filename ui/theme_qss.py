@@ -54,6 +54,9 @@ QPushButton[role="danger"]:hover {{ background: {c.surface_alt}; }}
 QPushButton[role="danger"]:disabled {{ color: {c.text_muted}; border-color: {c.border_soft}; }}
 QPushButton[role="quiet"] {{ color: {c.text_muted}; border-color: transparent; background: transparent; }}
 QPushButton[role="quiet"]:hover {{ color: {c.text}; background: {c.surface_alt}; }}
+QToolButton[role="quiet"] {{ border-color: transparent; background: transparent; padding: 2px; }}
+QToolButton[role="quiet"]:hover {{ background: {c.surface_alt}; }}
+QToolButton[role="quiet"]:focus {{ border-color: {c.brand}; }}
 QLineEdit {{
     background: {c.surface};
     border: 1px solid {c.border};

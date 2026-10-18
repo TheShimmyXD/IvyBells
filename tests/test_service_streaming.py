@@ -131,3 +131,33 @@ def test_shorter_partial_interval_gives_more_partials():
             engine.feed("ellos", audio[start : start + step])
         counts.append(sum(1 for event in received if not event.is_final))
     assert counts[1] > counts[0] >= 1
+
+
+def test_end_source_closes_only_that_phrase(engine, events):
+    _feed(engine, "ellos", _signal(("voz", 2.0)))
+    _feed(engine, "tu", _signal(("voz", 2.0)))
+    events.clear()
+    engine.end_source("ellos")
+    engine.end_source("ellos")
+    assert [(event.source, event.is_final) for event in events] == [("ellos", True)]
+
+
+def test_skip_keeps_phrase_times_on_the_real_clock(engine, events):
+    _feed(engine, "ellos", _signal(("voz", 1.0)))
+    engine.skip("ellos", 3 * SAMPLE_RATE)
+    assert events[-1].is_final
+    _feed(engine, "ellos", _signal(("silencio", 1.0), ("voz", 1.0), ("silencio", 1.0)))
+    assert events[-1].is_final
+    # 1 s de voz + 3 s cerrado + 1 s de silencio, menos el audio previo al disparo.
+    assert events[-1].start_s == pytest.approx(4.8, abs=0.1)
+
+
+def test_skip_counts_the_closed_audio_for_the_lag(events):
+    now = [100.0]
+    engine = StreamingEngine(
+        events.append, recognizer=fake_recognizer, vad=fake_vad, clock=lambda: now[0]
+    )
+    engine.feed("ellos", np.zeros(SAMPLE_RATE, np.float32))
+    now[0] = 103.0
+    engine.skip("ellos", 3 * SAMPLE_RATE)
+    assert engine.lag_s("ellos") == pytest.approx(0.0)

@@ -36,7 +36,7 @@ SAMPLE_EVENTS = (
 )
 SAMPLE_LATENCY = (1.62, 1.78)
 SAMPLE_ERROR = "No se pudo abrir la fuente analog-stereo.monitor"
-STATES = ("detenido", "escuchando", "error")
+STATES = ("detenido", "escuchando", "canal_cerrado", "error")
 THEMES = ("light", "dark")
 # Módulo Agente: lo que dice un cliente de ejemplo ("ellos") y las respuestas de ejemplo.
 AGENT_EVENTS = (
@@ -122,8 +122,15 @@ def capture_states(out_dir: Path) -> list[Path]:
         for state in STATES:
             coordinator = PreviewCoordinator()
             window = MainWindow(coordinator, fonts, theme)
-            if state in ("escuchando", "error"):
+            if state in ("escuchando", "canal_cerrado", "error"):
                 _play_listening(coordinator, window.selected_devices())
+            if state == "canal_cerrado":
+                coordinator.set_source_open("tu", False)
+                # Como el motor: al cerrar el canal, su frase abierta se cierra con su final.
+                source, start_s, text, _ = next(
+                    event for event in reversed(SAMPLE_EVENTS) if event[0] == "tu"
+                )
+                coordinator.on_event(TranscriptEvent(source, True, text, start_s, start_s + 3.0))
             if state == "error":
                 coordinator.on_failed(SAMPLE_ERROR)
             window.show()

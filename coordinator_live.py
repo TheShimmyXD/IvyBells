@@ -16,7 +16,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from core.engine import TranscriptEvent
 from core.live_state import LiveLogic
-from core.live_view import LiveTranscript
+from core.live_view import SOURCES, LiveTranscript
 from paths import TRANSCRIPTS_DIR
 from workers.worker_live import EngineFactory, LiveWorker
 from workers.worker_runner import RequestSequence, start_worker, stop_thread
@@ -50,17 +50,20 @@ class LiveCoordinator(QObject):
     transcript_changed(str)      -> la fuente cuyo texto cambió.
     latency_changed(float, float) -> última latencia final y mediana.
     session_started()            -> empezó una escucha nueva (el texto anterior se borró).
+    sources_changed()            -> se abrió o cerró un canal (`closed_sources`).
     """
 
     state_changed = Signal(dict)
     transcript_changed = Signal(str)
     latency_changed = Signal(float, float)
     session_started = Signal()
+    sources_changed = Signal()
 
     def __init__(
         self,
         engine_factory: EngineFactory = _default_engine_factory,
         transcripts_dir: Path = TRANSCRIPTS_DIR,
+        closed_sources: list[str] | None = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
@@ -73,8 +76,33 @@ class LiveCoordinator(QObject):
         self._stop_event = threading.Event()
         self._worker: LiveWorker | None = None
         self._thread: QThread | None = None
+        # Canales cerrados: se capturan pero no llegan al motor. Siempre queda uno abierto.
+        self.closed_sources: set[str] = set()
+        for source in closed_sources or ():
+            self.set_source_open(source, False)
 
     # -- Pedidos de la ventana ---------------------------------
+
+    def is_open(self, source: str) -> bool:
+        return source not in self.closed_sources
+
+    def set_source_open(self, source: str, is_open: bool) -> bool:
+        """
+        Abre o cierra un canal, también con la escucha en marcha. Devuelve False si no
+        cambia nada o si se pide cerrar el único canal abierto.
+        """
+        if source not in SOURCES or self.is_open(source) == is_open:
+            return False
+        if not is_open and len(self.closed_sources) + 1 >= len(SOURCES):
+            return False
+        if is_open:
+            self.closed_sources.discard(source)
+        else:
+            self.closed_sources.add(source)
+        if self._worker is not None:
+            self._worker.set_source_open(source, is_open)
+        self.sources_changed.emit()
+        return True
 
     def read_sources(self):
         """Fuentes de PipeWire por tipo y las elegidas por defecto (`SourceChoices`)."""
@@ -161,6 +189,7 @@ class LiveCoordinator(QObject):
             transcripts_dir=self._transcripts_dir,
             stop_event=self._stop_event,
             request_id=self._requests.next(),
+            closed=self.closed_sources,
         )
         worker.loaded.connect(self.on_loaded)
         worker.event.connect(self.on_event)

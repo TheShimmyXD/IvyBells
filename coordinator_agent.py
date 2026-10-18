@@ -77,7 +77,7 @@ class AgentCoordinator(QObject):
         self.settings = settings or ClaudeSettings(parent=self)
         self._service_factory = service_factory
         self.logic = AgentLogic()
-        self.speaker = SOURCES[0]
+        self.speaker = self._open_sources()[0]
         self.turns: list[AgentTurn] = []
         self._history: list[Exchange] = []
         self._requests = RequestSequence()
@@ -85,6 +85,7 @@ class AgentCoordinator(QObject):
         self._worker: AgentWorker | None = None
         self._thread: QThread | None = None
         live.session_started.connect(self.reset)
+        live.sources_changed.connect(self._on_sources_changed)
 
     # -- Pedidos de la vista -----------------------------------
 
@@ -109,7 +110,8 @@ class AgentCoordinator(QObject):
         ]
 
     def set_speaker(self, source: str) -> None:
-        if source == self.speaker or source not in SOURCES:
+        """Solo un canal abierto puede ser el interlocutor."""
+        if source == self.speaker or source not in self._open_sources():
             return
         if self.logic.state is AgentState.START_MARKED:
             self.logic.cancel()
@@ -214,6 +216,14 @@ class AgentCoordinator(QObject):
         self._emit_state()
 
     # -- Internos ----------------------------------------------
+
+    def _open_sources(self) -> list[str]:
+        return [source for source in SOURCES if source not in self.live.closed_sources]
+
+    def _on_sources_changed(self) -> None:
+        """Si se cerró el canal del interlocutor, pasa al que quedó abierto."""
+        if self.speaker not in self._open_sources():
+            self.set_speaker(self._open_sources()[0])
 
     def _position(self, phrase: int, offset: int) -> WordPos | None:
         finals = self.live.transcript.finals(self.speaker)

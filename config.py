@@ -51,6 +51,7 @@ class AppConfig:
     devices : fuente elegida por voz ("ellos", "tu"), por nombre de PipeWire; sin clave
               o vacía = seguir la predeterminada del sistema.
     speaker : interlocutor del módulo Agente ("ellos" o "tu").
+    closed_sources : canales cerrados en Transcripción; nunca los dos.
     agent_profile : perfil del agente en uso (si ya no existe, se usa el de ejemplo).
     agent_context_paths : archivos y carpetas de contexto del agente, en su orden.
     module : último módulo abierto.
@@ -64,6 +65,7 @@ class AppConfig:
     live_model: str = "large-v3-turbo"
     devices: dict[str, str] = field(default_factory=dict)
     speaker: str = "ellos"
+    closed_sources: list[str] = field(default_factory=list)
     agent_profile: str = "ejemplo"
     agent_context_paths: list[str] = field(default_factory=list)
     module: str = "live"
@@ -78,6 +80,10 @@ class AppConfig:
         module = as_str(data.get("module"), base.module)
         devices = data.get("devices")
         context = data.get("agent_context_paths")
+        closed = data.get("closed_sources")
+        closed = sorted(
+            {source for source in (closed if isinstance(closed, list) else ()) if source in SOURCES}
+        )
         return cls(
             debug=bool(data.get("debug", False)),
             theme=theme if theme in THEME_NAMES else base.theme,
@@ -89,6 +95,7 @@ class AppConfig:
                 if source in SOURCES and isinstance(name, str) and name.strip()
             },
             speaker=speaker if speaker in SOURCES else base.speaker,
+            closed_sources=closed if len(closed) < len(SOURCES) else [],
             agent_profile=as_str(data.get("agent_profile"), base.agent_profile),
             agent_context_paths=[
                 path.strip()

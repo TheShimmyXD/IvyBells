@@ -43,3 +43,11 @@ def test_long_phrase_is_forced_to_end_and_continues():
         PhraseEvent(END, 4, forced=True),
         PhraseEvent(START, 4),
     ]
+
+
+def test_skip_ends_speech_and_keeps_window_numbers():
+    segmenter = PhraseSegmenter(min_silence_windows=2, max_phrase_windows=100)
+    assert _run(segmenter, [0.9]) == [PhraseEvent(START, 0)]
+    segmenter.skip(10)
+    assert not segmenter.in_speech
+    assert _run(segmenter, [0.9]) == [PhraseEvent(START, 11)]

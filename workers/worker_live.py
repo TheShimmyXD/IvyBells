@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from datetime import datetime
 from pathlib import Path
 
@@ -55,6 +55,7 @@ class LiveWorker(QObject):
         stop_event: threading.Event,
         request_id: int,
         capture_factory: CaptureFactory = AudioCapture,
+        closed: Iterable[str] = (),
     ) -> None:
         super().__init__()
         self._engine_factory = engine_factory
@@ -66,6 +67,21 @@ class LiveWorker(QObject):
         self._request_id = request_id
         self._capture_factory = capture_factory
         self._tracker = LatencyTracker()
+        # Los canales cerrados se piden desde el hilo de la UI: antes de que exista la
+        # sesión se guardan aquí, y después se le pasan a ella.
+        self._lock = threading.Lock()
+        self._closed = set(closed)
+        self._session: LiveSession | None = None
+
+    def set_source_open(self, source: str, is_open: bool) -> None:
+        """Abre o cierra un canal; se puede llamar desde cualquier hilo."""
+        with self._lock:
+            if is_open:
+                self._closed.discard(source)
+            else:
+                self._closed.add(source)
+            if self._session is not None:
+                self._session.set_source_open(source, is_open)
 
     def run(self) -> None:
         writer: TranscriptWriter | None = None
@@ -87,7 +103,11 @@ class LiveWorker(QObject):
             )
             handlers += [writer.add, self._emit_event]
             self.loaded.emit(started)
-            LiveSession(engine, self._devices, self._timed_capture).run(self._stop_event)
+            with self._lock:
+                session = self._session = LiveSession(
+                    engine, self._devices, self._timed_capture, closed=self._closed
+                )
+            session.run(self._stop_event)
         except Exception as exc:
             # Frontera del hilo: sin esto la UI se queda esperando para siempre.
             logger.exception("La escucha en vivo falló")

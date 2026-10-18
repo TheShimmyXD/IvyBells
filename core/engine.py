@@ -39,5 +39,11 @@ class TranscriptionEngine(Protocol):
     def feed(self, source: str, samples: np.ndarray) -> None:
         """Entrega audio float32 mono de 16 kHz de una fuente, en el orden en que llegó."""
 
+    def end_source(self, source: str) -> None:
+        """Cierra la frase abierta de una fuente (emite su final); las demás siguen igual."""
+
+    def skip(self, source: str, num_samples: int) -> None:
+        """Avanza el reloj de una fuente por audio que no se entregó (su canal estuvo cerrado)."""
+
     def stop(self) -> None:
         """Cierra las frases abiertas (emite sus finales) y libera el motor."""

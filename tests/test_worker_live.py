@@ -96,3 +96,17 @@ def test_worker_reports_failure_and_still_finishes(qapp, tmp_path):
 
     assert failed == ["CUDA no disponible"]
     assert finished[0]["path"] is None
+
+
+def test_channel_closed_before_the_session_never_reaches_the_engine(qapp, tmp_path):
+    engines = []
+
+    def factory(on_event, *_):
+        engines.append(_FakeEngine(on_event))
+        return engines[0]
+
+    worker = _worker(tmp_path, factory)
+    worker.set_source_open("tu", False)
+    worker.run()
+    assert engines[0].fed == 0
+    assert engines[0].stopped

@@ -64,6 +64,15 @@ class PhraseSegmenter:
             self._start(index + 1, events)
         return events
 
+    def skip(self, windows: int) -> None:
+        """
+        Salta ventanas que no se procesan (canal cerrado): queda en silencio y las
+        siguientes conservan su número, así los tiempos siguen al audio real.
+        """
+        self.in_speech = False
+        self._silent_windows = 0
+        self._window += windows
+
     def _start(self, window: int, events: list[PhraseEvent]) -> None:
         self.in_speech = True
         self._phrase_start = window

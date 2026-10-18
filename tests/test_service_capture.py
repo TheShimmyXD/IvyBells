@@ -34,18 +34,27 @@ def test_capture_reads_blocks_from_subprocess():
 
 
 class _FakeCapture:
-    """Entrega de una vez los bloques preparados para su fuente."""
+    """
+    Entrega de una vez los bloques preparados para su fuente; un bool en la lista abre
+    (True) o cierra (False) ese canal en la sesión, en ese punto del flujo.
+    """
 
-    planned: dict[str, list[np.ndarray]] = {}
+    planned: dict[str, list[np.ndarray | bool]] = {}
+    session: LiveSession | None = None
+    created = 0
 
     def __init__(self, source, device, on_block):
         self.source, self._on_block = source, on_block
         self.is_alive = False
         self.stopped = False
+        _FakeCapture.created += 1
 
     def start(self):
         for block in self.planned[self.source]:
-            self._on_block(self.source, block)
+            if isinstance(block, bool):
+                self.session.set_source_open(self.source, block)
+            else:
+                self._on_block(self.source, block)
 
     def stop(self):
         self.stopped = True
@@ -54,11 +63,19 @@ class _FakeCapture:
 class _FakeEngine:
     def __init__(self):
         self.fed: list[tuple[str, float]] = []
+        self.calls: list[tuple] = []
         self.stopped = False
 
     def feed(self, source, samples):
         assert not self.stopped
         self.fed.append((source, float(samples[0])))
+        self.calls.append(("feed", source, float(samples[0])))
+
+    def end_source(self, source):
+        self.calls.append(("end", source))
+
+    def skip(self, source, num_samples):
+        self.calls.append(("skip", source, num_samples))
 
     def stop(self):
         self.stopped = True
@@ -84,3 +101,32 @@ def test_session_drains_queue_after_stop_event():
     LiveSession(engine, {"ellos": "m"}, _FakeCapture).run(stop)
     assert engine.fed == [("ellos", 1.0), ("ellos", 2.0)]
     assert engine.stopped
+
+
+def test_closed_source_never_reaches_the_engine():
+    _FakeCapture.planned = {
+        "ellos": [np.full(4, value, np.float32) for value in (1, 2)],
+        "tu": [np.full(4, value, np.float32) for value in (7, 8)],
+    }
+    engine = _FakeEngine()
+    LiveSession(engine, {"ellos": "m", "tu": "mic"}, _FakeCapture, closed={"tu"}).run(
+        threading.Event()
+    )
+    assert engine.fed == [("ellos", 1.0), ("ellos", 2.0)]
+    assert engine.stopped
+
+
+def test_closing_ends_the_phrase_and_reopening_keeps_the_capture():
+    block = [np.full(4, value, np.float32) for value in (1, 2, 3, 4)]
+    _FakeCapture.planned = {"tu": [block[0], False, block[1], block[2], True, block[3]]}
+    _FakeCapture.created = 0
+    engine = _FakeEngine()
+    session = _FakeCapture.session = LiveSession(engine, {"tu": "mic"}, _FakeCapture)
+    session.run(threading.Event())
+    assert engine.calls == [
+        ("feed", "tu", 1.0),
+        ("end", "tu"),
+        ("skip", "tu", 8),
+        ("feed", "tu", 4.0),
+    ]
+    assert _FakeCapture.created == 1

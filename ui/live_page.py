@@ -1,6 +1,8 @@
 """
 Página Transcripción: "Ellos" y "Tú" en dos columnas.
 
+El icono de cada columna abre o cierra su canal, también con la escucha en marcha.
+
 Arriba el estado, el modelo y Iniciar/Detener; abajo las fuentes, la latencia y Guardar .md.
 Solo habla con `LiveCoordinator`.
 
@@ -46,8 +48,11 @@ STATE_TONES = {
 SOURCES_REFRESH_MS = 3_000
 # Dato del primer elemento del combo: seguir la fuente predeterminada del sistema.
 FOLLOW_DEFAULT = ""
-# (fuente, título, icono de la columna)
-VOICES = (("ellos", "Ellos", "speaker-high"), ("tu", "Tú", "microphone"))
+# (fuente, título, icono de la columna, icono con el canal cerrado)
+VOICES = (
+    ("ellos", "Ellos", "speaker-high", "speaker-slash"),
+    ("tu", "Tú", "microphone", "microphone-slash"),
+)
 
 
 class LivePage(QWidget):
@@ -80,9 +85,10 @@ class LivePage(QWidget):
         columns = QHBoxLayout()
         columns.setSpacing(10)
         self.columns: dict[str, TranscriptColumn] = {}
-        for source, title, glyph in VOICES:
-            self.columns[source] = TranscriptColumn(title, glyph)
-            columns.addWidget(self.columns[source], 1)
+        for source, title, glyph, closed_glyph in VOICES:
+            column = self.columns[source] = TranscriptColumn(title, glyph, closed_glyph)
+            column.channel_clicked.connect(lambda s=source: self._on_channel_clicked(s))
+            columns.addWidget(column, 1)
         layout.addLayout(columns, 1)
         layout.addLayout(self._build_footer())
         self.refresh_sources()
@@ -93,7 +99,9 @@ class LivePage(QWidget):
         coordinator.state_changed.connect(self._on_state)
         coordinator.transcript_changed.connect(self.refresh_transcript)
         coordinator.latency_changed.connect(self._on_latency)
+        coordinator.sources_changed.connect(self.refresh_channels)
         self._on_state({})
+        self.refresh_channels()
 
     # -- Construcción ------------------------------------------
 
@@ -117,7 +125,7 @@ class LivePage(QWidget):
         row = QHBoxLayout()
         row.setSpacing(6)
         self.source_boxes: dict[str, QComboBox] = {}
-        for source, title, glyph in VOICES:
+        for source, title, glyph, _closed_glyph in VOICES:
             row.addWidget(GlyphLabel(glyph, FOOTER_ICON_SIZE, Tone.MUTED))
             box = QComboBox()
             box.setAccessibleName(f"Fuente de {title}")
@@ -217,6 +225,11 @@ class LivePage(QWidget):
             self.refresh_sources()
             self.coordinator.start(self.model_selector.current, self.selected_devices())
 
+    def _on_channel_clicked(self, source: str) -> None:
+        coordinator = self.coordinator
+        if not coordinator.set_source_open(source, not coordinator.is_open(source)):
+            self.status.set_status("Queda al menos un canal abierto", Tone.WARNING)
+
     def _on_save_clicked(self) -> None:
         last = self.coordinator.last_path
         suggested = str(Path.home() / last.name) if last else ""
@@ -243,6 +256,11 @@ class LivePage(QWidget):
     def refresh_transcript(self, source: str) -> None:
         transcript = self.coordinator.transcript
         self.columns[source].show_lines(transcript.finals(source), transcript.partial(source))
+
+    def refresh_channels(self) -> None:
+        for source, column in self.columns.items():
+            column.set_open(self.coordinator.is_open(source))
+            self.refresh_transcript(source)
 
     def refresh_theme(self) -> None:
         for source in SOURCES:

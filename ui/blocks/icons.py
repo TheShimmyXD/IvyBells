@@ -69,18 +69,27 @@ def glyph_icon(name: str, palette: QPalette, size: int) -> QIcon:
 class GlyphButton(QToolButton):
     """Boton de solo icono; la explicacion va en la ayuda (tooltip)."""
 
-    def __init__(self, glyph: str, tip: str, size: int = 18, parent: QWidget | None = None):
+    def __init__(
+        self,
+        glyph: str,
+        tip: str,
+        size: int = 18,
+        parent: QWidget | None = None,
+        tone: Tone | None = None,
+    ):
         super().__init__(parent)
         self._glyph = glyph
         self._size = size
+        self._tone = tone
         self.setToolTip(tip)
         self.setAccessibleName(tip)
         self.setIconSize(QSize(size, size))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._repaint()
 
-    def set_glyph(self, glyph: str) -> None:
+    def set_glyph(self, glyph: str, tone: Tone | None = None) -> None:
         self._glyph = glyph
+        self._tone = tone
         self._repaint()
 
     def changeEvent(self, event: QEvent) -> None:  # noqa: N802 (nombre impuesto por Qt)
@@ -89,7 +98,10 @@ class GlyphButton(QToolButton):
             self._repaint()
 
     def _repaint(self) -> None:
-        self.setIcon(glyph_icon(self._glyph, self.palette(), self._size))
+        if self._tone is None:
+            self.setIcon(glyph_icon(self._glyph, self.palette(), self._size))
+        else:
+            self.setIcon(QIcon(glyph_pixmap(self._glyph, tone_color(self._tone), self._size)))
 
 
 class GlyphLabel(QLabel):

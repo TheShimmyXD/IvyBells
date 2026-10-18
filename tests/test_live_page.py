@@ -136,3 +136,28 @@ def test_new_preferences_round_trip_and_bad_values_fall_back(tmp_path):
     assert config.speaker == "ellos"
     assert config.module == "live"
     assert config.live_model == "large-v3-turbo"
+
+
+def test_icon_closes_and_opens_a_channel_but_never_both(make_page):
+    coordinator, page, _chosen = make_page()
+    saved = []
+    coordinator.sources_changed.connect(lambda: saved.append(set(coordinator.closed_sources)))
+    page.columns["tu"].channel_button.click()
+    assert coordinator.closed_sources == {"tu"}
+    assert not page.columns["tu"].is_open
+    assert page.columns["tu"].closed_label.isVisibleTo(page)
+    page.columns["ellos"].channel_button.click()
+    assert coordinator.closed_sources == {"tu"}
+    assert "al menos un canal" in page.status.text()
+    page.columns["tu"].channel_button.click()
+    assert coordinator.closed_sources == set()
+    assert page.columns["tu"].is_open
+    assert saved == [{"tu"}, set()]
+
+
+def test_closed_channels_round_trip_and_never_both(tmp_path):
+    path = tmp_path / "settings.json"
+    assert save_app_config(AppConfig(closed_sources=["tu"]), path)
+    assert load_app_config(path).closed_sources == ["tu"]
+    path.write_text(json.dumps({"closed_sources": ["tu", "ellos", "x"]}), encoding="utf-8")
+    assert load_app_config(path).closed_sources == []

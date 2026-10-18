@@ -134,14 +134,37 @@ class StreamingEngine:
             return 0.0
         return self._clock() - self._first_feed_at - stream.received_samples / SAMPLE_RATE
 
+    def end_source(self, source: str) -> None:
+        stream = self._streams.get(source)
+        if stream is None or not stream.segmenter.in_speech:
+            return
+        end_window = stream.phrase_start_window + len(stream.phrase)
+        # El resto que no completa una ventana del VAD también es parte de la frase.
+        stream.phrase.append(stream.remainder)
+        self._finish_phrase(source, stream, end_window)
+        stream.segmenter.in_speech = False
+
+    def skip(self, source: str, num_samples: int) -> None:
+        """
+        Cuenta como recibido el audio de un canal cerrado sin pasarlo por el VAD ni el modelo:
+        los tiempos de las frases siguientes y el atraso siguen al reloj de pared.
+        """
+        if num_samples <= 0:
+            return
+        if self._first_feed_at is None:
+            self._first_feed_at = self._clock() - num_samples / SAMPLE_RATE
+        self.end_source(source)
+        stream = self._streams.setdefault(source, _SourceStream())
+        stream.received_samples += num_samples
+        pending = len(stream.remainder) + num_samples
+        stream.segmenter.skip(pending // VAD_WINDOW_SAMPLES)
+        # Lo que no completa una ventana se rellena con silencio para no correr los tiempos.
+        stream.remainder = np.zeros(pending % VAD_WINDOW_SAMPLES, dtype=np.float32)
+        stream.recent.clear()
+
     def stop(self) -> None:
-        for source, stream in self._streams.items():
-            if stream.segmenter.in_speech:
-                end_window = stream.phrase_start_window + len(stream.phrase)
-                # El resto que no completa una ventana del VAD también es parte de la frase.
-                stream.phrase.append(stream.remainder)
-                self._finish_phrase(source, stream, end_window)
-                stream.segmenter.in_speech = False
+        for source in self._streams:
+            self.end_source(source)
 
     def _emit_partial(self, source: str, stream: _SourceStream) -> None:
         stream.windows_since_partial = 0

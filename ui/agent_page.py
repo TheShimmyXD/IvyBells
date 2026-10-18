@@ -88,7 +88,9 @@ class AgentPage(QWidget):
         )
         agent.live.transcript_changed.connect(self._on_live_transcript)
         agent.live.state_changed.connect(self._on_live_state)
+        agent.live.sources_changed.connect(self._on_sources)
         self._on_config(agent.settings.config)
+        self._on_sources()
         self._on_state({})
         self._on_live_state({})
         self.refresh_theme()
@@ -174,6 +176,16 @@ class AgentPage(QWidget):
         self.run_button.setText("Detener" if live.can_stop else "Iniciar")
         set_role(self.run_button, ButtonRole.DANGER if live.can_stop else ButtonRole.PRIMARY)
         self.run_button.setEnabled(live.can_stop or live.can_start)
+
+    def _on_sources(self) -> None:
+        """Solo un canal abierto se ofrece como interlocutor (el coordinador ya cambió el suyo)."""
+        for segment in SPEAKERS:
+            is_open = segment.key not in self.agent.live.closed_sources
+            button = self.speaker_selector.buttons[segment.key]
+            button.setEnabled(is_open)
+            button.setToolTip(segment.tip if is_open else "Canal cerrado en Transcripción")
+        self.speaker_selector.select(self.agent.speaker)
+        self.refresh_transcript()
 
     def _on_config(self, config: ClaudeModelConfig) -> None:
         self.config_label.setText(config_text(config, self.agent.settings.profiles.active))

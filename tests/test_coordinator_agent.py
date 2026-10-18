@@ -18,9 +18,11 @@ class _FakeLive(QObject):
     """Lo que el coordinador del Agente usa de la escucha en vivo."""
 
     session_started = Signal()
+    sources_changed = Signal()
 
     def __init__(self, phrases: dict[str, list[str]]) -> None:
         super().__init__()
+        self.closed_sources: set[str] = set()
         self.transcript = LiveTranscript()
         self.transcript.reset(datetime(2026, 10, 17, 10, 0, 0))
         for source, texts in phrases.items():
@@ -99,6 +101,21 @@ def test_speaker_change_reads_the_other_source(qapp, make):
     coordinator.mark_end(0, 99)
     _wait(qapp, lambda: coordinator._thread is None)
     assert coordinator.turns[0].selection.text() == "[10:00:00] hola con gusto"
+
+
+def test_closed_channel_is_not_offered_as_speaker(qapp, make):
+    live, coordinator = make(ScriptedClaude(["ok"]))
+    coordinator.mark_start(0, 0)
+    live.closed_sources.add("ellos")
+    live.sources_changed.emit()
+    assert coordinator.speaker == "tu"
+    assert coordinator.logic.state is AgentState.IDLE
+    coordinator.set_speaker("ellos")
+    assert coordinator.speaker == "tu"
+    live.closed_sources.clear()
+    live.sources_changed.emit()
+    coordinator.set_speaker("ellos")
+    assert coordinator.speaker == "ellos"
 
 
 def test_failure_marks_the_turn_and_the_state(qapp, make):

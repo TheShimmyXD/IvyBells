@@ -104,6 +104,9 @@ class MainWindow(QWidget):
         self.sidebar.module_chosen.connect(lambda module: self._save("module", module))
         self.live_page.model_selector.changed.connect(lambda model: self._save("live_model", model))
         self.live_page.devices_chosen.connect(lambda devices: self._save("devices", devices))
+        self.coordinator.sources_changed.connect(
+            lambda: self._save("closed_sources", sorted(self.coordinator.closed_sources))
+        )
         self.agent_page.speaker_selector.changed.connect(
             lambda speaker: self._save("speaker", speaker)
         )
@@ -193,7 +196,7 @@ def run_app() -> None:
     context = AgentContext(
         config.agent_context_paths, lambda paths: remember("agent_context_paths", paths)
     )
-    live = LiveCoordinator()
+    live = LiveCoordinator(closed_sources=config.closed_sources)
     agent = AgentCoordinator(
         live,
         ClaudeSettings(

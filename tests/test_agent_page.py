@@ -69,3 +69,15 @@ def test_modules_share_the_live_session(qapp):
     assert window.coordinator.logic.can_stop
     assert window.agent_page.run_button.text() == "Detener"
     window.close()
+
+
+def test_closed_channel_is_not_offered_in_the_agent(qapp):
+    window, agent = _window(qapp)
+    assert agent.speaker == "ellos"
+    window.live_page.columns["ellos"].channel_button.click()
+    assert agent.speaker == "tu"
+    assert window.agent_page.speaker_selector.current == "tu"
+    assert not window.agent_page.speaker_selector.buttons["ellos"].isEnabled()
+    window.live_page.columns["ellos"].channel_button.click()
+    assert window.agent_page.speaker_selector.buttons["ellos"].isEnabled()
+    window.close()
