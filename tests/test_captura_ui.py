@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from PySide6.QtGui import QImage
 
-from captura_ui import CONFIG_STATES, STATES, THEMES, capture_config, capture_states
+from captura_ui import (
+    AGENT_STATES,
+    CONFIG_STATES,
+    STATES,
+    THEMES,
+    capture_agent,
+    capture_config,
+    capture_states,
+)
 
 
 def test_captures_every_state_and_theme(qapp, tmp_path):
@@ -18,3 +26,9 @@ def test_captures_config_page(qapp, tmp_path):
     paths = capture_config(tmp_path)
     assert len(paths) == len(CONFIG_STATES) * len(THEMES)
     assert all(not QImage(str(path)).isNull() for path in paths)
+
+
+def test_captures_agent_module(qapp, tmp_path):
+    paths = capture_agent(tmp_path)
+    assert len(paths) == len(AGENT_STATES) * len(THEMES)
+    assert all(QImage(str(path)).width() >= 760 for path in paths)

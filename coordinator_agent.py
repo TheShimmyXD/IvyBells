@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
@@ -40,6 +42,9 @@ class AgentTurn:
     source: str
     selection: Selection
     model: str
+    clock: str = ""
+    sent_at: float = 0.0
+    first_text_s: float | None = None
     answer: str = ""
     error: str = ""
     cancelled: bool = False
@@ -86,6 +91,14 @@ class AgentCoordinator(QObject):
     def start_mark(self) -> WordPos | None:
         return self.logic.start
 
+    @property
+    def last_first_text_s(self) -> float | None:
+        """Segundos al primer texto del último turno que ya recibió algo."""
+        for turn in reversed(self.turns):
+            if turn.first_text_s is not None:
+                return turn.first_text_s
+        return None
+
     def sent_ranges(self, source: str) -> list[tuple[WordPos, WordPos]]:
         """Rangos ya enviados del interlocutor, para resaltarlos."""
         return [
@@ -125,7 +138,15 @@ class AgentCoordinator(QObject):
             self.logic.cancel()
             self._emit_state()
             return
-        self.turns.append(AgentTurn(self.speaker, selection, self.settings.config.model))
+        self.turns.append(
+            AgentTurn(
+                self.speaker,
+                selection,
+                self.settings.config.model,
+                clock=f"{datetime.now():%H:%M:%S}",
+                sent_at=time.monotonic(),
+            )
+        )
         self._launch(build_prompt(self._history, selection.text()))
         self.marks_changed.emit()
         self.turns_changed.emit()
@@ -163,7 +184,10 @@ class AgentCoordinator(QObject):
     @Slot(str)
     def on_text(self, chunk: str) -> None:
         if self.turns and not self.turns[-1].done:
-            self.turns[-1].answer += chunk
+            turn = self.turns[-1]
+            if turn.first_text_s is None:
+                turn.first_text_s = time.monotonic() - turn.sent_at
+            turn.answer += chunk
             self.turns_changed.emit()
 
     @Slot(str)
@@ -194,7 +218,8 @@ class AgentCoordinator(QObject):
         finals = self.live.transcript.finals(self.speaker)
         if not 0 <= phrase < len(finals):
             return None
-        return WordPos(phrase, word_at(finals[phrase].text, offset))
+        # La vista muestra las palabras separadas por un espacio: la posición es sobre eso.
+        return WordPos(phrase, word_at(" ".join(finals[phrase].text.split()), offset))
 
     def _launch(self, prompt: str) -> None:
         self._cancel = threading.Event()

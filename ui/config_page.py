@@ -22,37 +22,17 @@ from PySide6.QtWidgets import (
 )
 
 from coordinator_config import CLAUDE_MODELS, EFFORTS, FALLBACKS, TIMEOUTS_S, ClaudeSettings
-from ui.blocks.icons import GlyphLabel
+from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
-from ui.theme import ButtonRole, Kind, Tone, mono_font, set_kind, set_role, set_tone
+from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
-TITLE_ICON_SIZE = 16
 LEVEL_TONES = {"ok": Tone.OK, "warning": Tone.WARNING, "error": Tone.ERROR, "busy": Tone.INFO}
 ACCOUNT_HINT = "Correo de la cuenta de Claude; vacío = la sesión de siempre"
 LOGIN_HINT = (
     "Pega esta orden en una terminal: abre el navegador y luego pide pegar un código. "
     "Después vuelve y pulsa Comprobar."
 )
-
-
-def _panel(glyph: str, title: str) -> tuple[QFrame, QVBoxLayout]:
-    frame = QFrame()
-    set_kind(frame, Kind.PANEL)
-    layout = QVBoxLayout(frame)
-    layout.setContentsMargins(14, 10, 14, 12)
-    layout.setSpacing(8)
-    head = QHBoxLayout()
-    head.addWidget(GlyphLabel(glyph, TITLE_ICON_SIZE, Tone.INFO))
-    label = QLabel(title)
-    set_kind(label, Kind.TITLE)
-    head.addWidget(label)
-    head.addStretch(1)
-    layout.addLayout(head)
-    rule = QFrame()
-    set_kind(rule, Kind.RULE)
-    layout.addWidget(rule)
-    return frame, layout
 
 
 def _muted(text: str = "") -> QLabel:
@@ -80,7 +60,7 @@ class ClaudeConfigPage(QWidget):
     # -- Construcción ------------------------------------------
 
     def _build_account(self) -> QFrame:
-        frame, layout = _panel("user-circle", "Cuenta")
+        frame, layout = titled_panel("user-circle", "Cuenta")
         row = QHBoxLayout()
         self.account_edit = QLineEdit()
         self.account_edit.setPlaceholderText(ACCOUNT_HINT)
@@ -115,7 +95,7 @@ class ClaudeConfigPage(QWidget):
         return frame
 
     def _build_answer(self) -> QFrame:
-        frame, layout = _panel("sliders-horizontal", "Respuesta")
+        frame, layout = titled_panel("sliders-horizontal", "Respuesta")
         form = QFormLayout()
         form.setHorizontalSpacing(14)
         form.setVerticalSpacing(10)

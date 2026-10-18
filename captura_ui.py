@@ -15,6 +15,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from coordinator_agent import AgentCoordinator
 from coordinator_live import DEFAULT_MODEL, LiveCoordinator
 from core.claude_account import AccountStatus
 from core.claude_model import ClaudeModelConfig
@@ -37,6 +38,21 @@ SAMPLE_LATENCY = (1.62, 1.78)
 SAMPLE_ERROR = "No se pudo abrir la fuente analog-stereo.monitor"
 STATES = ("detenido", "escuchando", "error")
 THEMES = ("light", "dark")
+# Módulo Agente: lo que dice un cliente de ejemplo ("ellos") y las respuestas de ejemplo.
+AGENT_EVENTS = (
+    (2.0, "Buenas tardes, ¿hablo con soporte?"),
+    (6.0, "Sí, mire, contraté el plan empresarial la semana pasada"),
+    (11.0, "y todavía no me llega la factura al correo."),
+    (17.0, "¿Me pueden decir cuándo la envían y si puedo pagar con transferencia?"),
+)
+AGENT_PARTIAL = (25.0, "Ah, y otra cosa")
+AGENT_ANSWERS = (
+    "Buenas tardes, sí, habla con el asistente de soporte. ¿En qué le puedo ayudar?",
+    "Entiendo, gracias por avisarnos. La factura del plan empresarial se envía en los "
+    "primeros cinco días hábiles después de la contratación, y sí puede pagar",
+)
+AGENT_ERROR = "Claude no respondió en 120 s"
+AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error")
 # Página Configuración: (estado, cuenta escrita, lo que diría `claude auth status`).
 CONFIG_STATES = (
     ("con_sesion", "persona@example.com", AccountStatus(True, "persona@example.com", "pro")),
@@ -52,6 +68,21 @@ class PreviewCoordinator(LiveCoordinator):
 
     def _launch(self, model: str, devices: dict[str, str]) -> None:
         pass
+
+
+class PreviewAgent(AgentCoordinator):
+    """El coordinador real del Agente sin lanzar la CLI: las respuestas se dan a mano."""
+
+    def _launch(self, prompt: str) -> None:
+        self._requests.next()
+
+    def answer(self, text: str, done: bool = True, error: str = "") -> None:
+        for chunk in text.split(" "):
+            self.on_text(chunk + " ")
+        if error:
+            self.on_failed(error)
+        if done or error:
+            self.on_finished({"_request_id": self._requests._current, "answer": text})
 
 
 def _play_listening(coordinator: PreviewCoordinator, devices: dict[str, str]) -> None:
@@ -122,8 +153,57 @@ def capture_config(out_dir: Path) -> list[Path]:
     return paths
 
 
+def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str) -> None:
+    coordinator.start(DEFAULT_MODEL, {"ellos": MONITOR.name})
+    coordinator.on_loaded(STARTED)
+    for start_s, text in AGENT_EVENTS:
+        coordinator.on_event(TranscriptEvent("ellos", True, text, start_s, start_s + 3.0))
+    start_s, text = AGENT_PARTIAL
+    coordinator.on_event(TranscriptEvent("ellos", False, text, start_s, start_s + 1.0))
+    if state == "sin_seleccion":
+        return
+    agent.mark_start(0, 0)
+    agent.mark_end(0, 99)
+    agent.answer(AGENT_ANSWERS[0])
+    agent.mark_start(1, 4)  # "mire,"
+    if state == "inicio":
+        return
+    agent.mark_end(3, 80)
+    agent.answer(AGENT_ANSWERS[1], done=False, error=AGENT_ERROR if state == "error" else "")
+
+
+def capture_agent(out_dir: Path) -> list[Path]:
+    """Guarda `agente_<estado>_<tema>.png` (ventana real en el módulo Agente)."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+
+    from coordinator_config import ClaudeSettings
+    from ui._00_ui_main import MainWindow, load_fonts
+
+    app = QApplication.instance() or QApplication([])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fonts = load_fonts()
+    paths = []
+    for theme in THEMES:
+        for state in AGENT_STATES:
+            coordinator = PreviewCoordinator()
+            settings = ClaudeSettings(ClaudeModelConfig(model="sonnet", effort="high"))
+            agent = PreviewAgent(coordinator, settings)
+            window = MainWindow(coordinator, fonts, theme, agent=agent)
+            window.show_module("agent")
+            _play_agent(coordinator, agent, state)
+            window.show()
+            app.processEvents()
+            path = out_dir / f"agente_{state}_{theme}.png"
+            window.grab().save(str(path))
+            paths.append(path)
+            window.close()
+    return paths
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("Uso: captura_ui.py <carpeta>")
-    for saved in [*capture_states(Path(sys.argv[1])), *capture_config(Path(sys.argv[1]))]:
+    out = Path(sys.argv[1])
+    for saved in [*capture_states(out), *capture_agent(out), *capture_config(out)]:
         sys.stdout.write(f"{saved}\n")
