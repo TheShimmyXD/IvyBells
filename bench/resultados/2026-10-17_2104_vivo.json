@@ -1,0 +1,105 @@
+{
+  "fecha": "2026-10-17_2104",
+  "equipo": {
+    "gpu": "NVIDIA GeForce GTX 1660 SUPER",
+    "driver": "580.173.02"
+  },
+  "versiones": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.8.3",
+    "nvidia-cublas-cu12": "12.9.2.10",
+    "nvidia-cudnn-cu12": "9.27.0.42"
+  },
+  "audio": {
+    "ellos": "f11b_sonido.wav",
+    "tu": "f11b_microfono.wav"
+  },
+  "segundos": 180.0,
+  "opciones": {
+    "modelo": "large-v3-turbo",
+    "compute_type": "int8",
+    "bloque_s": 0.1,
+    "silencio_cierre_s": 0.5,
+    "intervalo_provisional_s": 1.0,
+    "frase_max_s": 20.0
+  },
+  "atraso_max_s": 3.839,
+  "frases_finales": 51,
+  "provisionales": 40,
+  "latencia_final_s": {
+    "mediana": 1.725,
+    "p90": 2.678,
+    "max": 3.983,
+    "valores": [
+      1.291,
+      1.206,
+      1.526,
+      1.157,
+      1.986,
+      1.841,
+      2.76,
+      1.725,
+      2.501,
+      1.409,
+      2.259,
+      1.098,
+      1.932,
+      1.169,
+      1.975,
+      1.164,
+      1.954,
+      2.232,
+      3.11,
+      1.264,
+      1.129,
+      3.983,
+      2.252,
+      1.112,
+      1.467,
+      1.169,
+      2.029,
+      2.889,
+      2.552,
+      2.08,
+      2.867,
+      1.908,
+      2.678,
+      1.176,
+      1.968,
+      1.145,
+      1.89,
+      1.108,
+      1.991,
+      1.167,
+      2.015,
+      1.681,
+      1.237,
+      1.692,
+      1.198,
+      1.165,
+      1.4,
+      1.169,
+      1.968,
+      1.307,
+      2.261
+    ]
+  },
+  "por_fuente": {
+    "ellos": {
+      "frases_finales": 19,
+      "mediana": 2.015,
+      "p90": 2.889,
+      "max": 3.11
+    },
+    "tu": {
+      "frases_finales": 32,
+      "mediana": 1.277,
+      "p90": 2.08,
+      "max": 3.983
+    }
+  },
+  "primer_provisional_s": {
+    "mediana": 2.952,
+    "p90": 4.684
+  }
+}
