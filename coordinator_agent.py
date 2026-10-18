@@ -226,7 +226,8 @@ class AgentCoordinator(QObject):
         self._cancel = threading.Event()
         worker = self._worker = AgentWorker(
             service=self._service_factory(
-                self.settings.config, self.settings.profiles.system_prompt()
+                self.settings.config,
+                self.settings.profiles.system_prompt(self.settings.context.text()),
             ),
             prompt=prompt,
             cancel_event=self._cancel,

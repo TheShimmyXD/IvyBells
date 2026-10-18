@@ -154,13 +154,19 @@ def test_worker_reports_cancel_and_answer(qapp):
 def test_active_profile_reaches_the_service(qapp, tmp_path):
     from coordinator_agent import AgentCoordinator
     from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
     from coordinator_profiles import AgentProfiles
     from services.service_profiles import ProfileStore
 
     folder = tmp_path / "perfiles"
     folder.mkdir()
     (folder / "acme.md").write_text("Somos Acme.", encoding="utf-8")
-    settings = ClaudeSettings(profiles=AgentProfiles(ProfileStore(folder), "acme"))
+    photo = tmp_path / "contexto.md"
+    photo.write_text("Horario de 8 a 18.", encoding="utf-8")
+    settings = ClaudeSettings(
+        profiles=AgentProfiles(ProfileStore(folder), "acme"),
+        context=AgentContext(target=photo),
+    )
     system_prompts = []
     service = ScriptedClaude(["listo"])
 
@@ -176,3 +182,4 @@ def test_active_profile_reaches_the_service(qapp, tmp_path):
     _wait(qapp, lambda: coordinator._thread is None)
     assert "Somos Acme." in system_prompts[0]
     assert system_prompts[0].startswith("Reglas de IvyBells")
+    assert system_prompts[0].index("Somos Acme.") < system_prompts[0].index("Horario de 8 a 18.")

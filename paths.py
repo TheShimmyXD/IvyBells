@@ -21,6 +21,8 @@ AGENT_DIR = ROOT / "resources" / "agent"
 AGENT_PROFILES_DIR = AGENT_DIR / "perfiles"
 # El perfil de la empresa de antes de los perfiles; al arrancar pasa a la carpeta.
 AGENT_PROFILE_LOCAL = AGENT_DIR / "perfil_local.md"
+# Foto de los archivos de contexto que eligió el autor (nunca se versiona).
+AGENT_CONTEXT_FILE = AGENT_DIR / "contexto" / "contexto.md"
 # Carpeta vacía fuera del proyecto donde corre la CLI de Claude, para que no descubra
 # el CLAUDE.md ni las skills de ninguna carpeta padre.
 AGENT_WORKDIR = Path(tempfile.gettempdir()) / "ivybells_agent"

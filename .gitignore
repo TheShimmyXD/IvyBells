@@ -13,6 +13,7 @@ secure_credentials.json
 resources/agent/perfil_local.md
 resources/agent/perfiles/*
 !resources/agent/perfiles/ejemplo.md
+resources/agent/contexto/
 logs/
 
 # Diario de trabajo del agente (no se versiona)

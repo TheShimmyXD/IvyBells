@@ -167,6 +167,7 @@ def load_fonts() -> ThemeFonts:
 
 def run_app() -> None:
     from config import load_app_config, save_app_config
+    from coordinator_context import AgentContext
     from coordinator_profiles import AgentProfiles
     from paths import AGENT_PROFILE_LOCAL
     from services.service_profiles import ProfileStore
@@ -189,10 +190,18 @@ def run_app() -> None:
     profiles = AgentProfiles(
         store, config.agent_profile, lambda name: remember("agent_profile", name)
     )
+    context = AgentContext(
+        config.agent_context_paths, lambda paths: remember("agent_context_paths", paths)
+    )
     live = LiveCoordinator()
     agent = AgentCoordinator(
         live,
-        ClaudeSettings(config.claude, lambda claude: remember("claude", claude), profiles=profiles),
+        ClaudeSettings(
+            config.claude,
+            lambda claude: remember("claude", claude),
+            profiles=profiles,
+            context=context,
+        ),
     )
     window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs)
     window.show()

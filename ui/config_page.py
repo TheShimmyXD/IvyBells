@@ -3,7 +3,7 @@ Página Configuración: con qué cuenta y qué modelo responde Claude en el mód
 
 Arriba la cuenta (correo, Comprobar y, si hace falta, la orden para iniciar sesión);
 después el modelo, el esfuerzo, el respaldo y el tiempo máximo; abajo los perfiles del
-agente (`ProfileEditor`). Solo habla con `ClaudeSettings`.
+agente (`ProfileEditor`) y su contexto (`ContextEditor`). Solo habla con `ClaudeSettings`.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from coordinator_config import CLAUDE_MODELS, EFFORTS, FALLBACKS, TIMEOUTS_S, Cl
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
+from ui.context_editor import ContextEditor
 from ui.profile_editor import ProfileEditor
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
@@ -64,6 +65,8 @@ class ClaudeConfigPage(QWidget):
         layout.addWidget(self._build_answer())
         self.profile_editor = ProfileEditor(settings.profiles)
         layout.addWidget(self.profile_editor, 1)
+        self.context_editor = ContextEditor(settings.context)
+        layout.addWidget(self.context_editor)
         settings.account_checked.connect(self._on_account_checked)
         settings.config_changed.connect(lambda _config: self._refresh())
         self._refresh()

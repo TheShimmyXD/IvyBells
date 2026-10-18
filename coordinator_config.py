@@ -2,7 +2,8 @@
 Coordinador de la configuración de Claude: cuenta, modelo, esfuerzo, respaldo y tiempo máximo.
 
 Es la fuente única del `ClaudeModelConfig` que usa el Agente: cada cambio se guarda en
-`app_settings.json` y se avisa. Lleva también los perfiles del agente (`profiles`). Comprobar la cuenta corre en su propio hilo.
+`app_settings.json` y se avisa. Lleva también los perfiles (`profiles`) y el contexto
+(`context`) del agente. Comprobar la cuenta corre en su propio hilo.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
+from coordinator_context import AgentContext
 from coordinator_profiles import AgentProfiles
 from core.claude_account import AccountStatus, describe
 from core.claude_model import ClaudeModelConfig, clean_account
@@ -66,11 +68,13 @@ class ClaudeSettings(QObject):
         status_reader: StatusReader = read_status,
         accounts_dir: Path = CLAUDE_ACCOUNTS_DIR,
         profiles: AgentProfiles | None = None,
+        context: AgentContext | None = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.config = config or ClaudeModelConfig()
         self.profiles = profiles or AgentProfiles(parent=self)
+        self.context = context or AgentContext(parent=self)
         self._save_config = save_config
         self._reader = status_reader
         self._accounts_dir = accounts_dir

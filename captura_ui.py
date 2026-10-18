@@ -135,6 +135,15 @@ def capture_states(out_dir: Path) -> list[Path]:
     return paths
 
 
+def _sample_context(folder: Path) -> list[str]:
+    """Archivos de ejemplo para el panel de contexto (nunca los del autor)."""
+    folder.mkdir()
+    (folder / "servicios.md").write_text("# Servicios\n\n- Plan básico\n", encoding="utf-8")
+    (folder / "precios.csv").write_text("plan,precio\nbásico,10\n", encoding="utf-8")
+    (folder / "catalogo.pdf").write_bytes(b"%PDF-1.4")
+    return [str(folder), str(folder.parent / "manual_no_existe.txt")]
+
+
 def capture_config(out_dir: Path) -> list[Path]:
     """
     Guarda `config_<estado>_<tema>.png`; las carpetas de cuentas y los perfiles van a un
@@ -144,6 +153,7 @@ def capture_config(out_dir: Path) -> list[Path]:
     from PySide6.QtWidgets import QApplication
 
     from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
     from coordinator_profiles import AgentProfiles
     from paths import AGENT_PROFILES_DIR
     from services.service_profiles import ProfileStore
@@ -162,16 +172,23 @@ def capture_config(out_dir: Path) -> list[Path]:
         store = ProfileStore(Path(folder))
         store.create("ejemplo", (AGENT_PROFILES_DIR / "ejemplo.md").read_text(encoding="utf-8"))
         store.create("demo soporte", SAMPLE_PROFILE)
+        sample_paths = _sample_context(Path(folder) / "empresa")
         for theme in THEMES:
             apply_theme(app, fonts, resolve_theme(theme))
             for state, account, status, opened in CONFIG_STATES:
                 config = ClaudeModelConfig(model="sonnet", effort="high", account=account)
                 profiles = AgentProfiles(store, "demo soporte")
-                settings = ClaudeSettings(config, accounts_dir=Path(accounts), profiles=profiles)
+                context = AgentContext(
+                    sample_paths, target=Path(folder) / "contexto" / "contexto.md"
+                )
+                settings = ClaudeSettings(
+                    config, accounts_dir=Path(accounts), profiles=profiles, context=context
+                )
                 page = ClaudeConfigPage(settings)
                 settings.show_status(status)
                 page.profile_editor.select(opened)
-                page.resize(900, 820)
+                context.reload()
+                page.resize(900, 1060)
                 page.show()
                 app.processEvents()
                 path = out_dir / f"config_{state}_{theme}.png"

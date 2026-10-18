@@ -52,6 +52,7 @@ class AppConfig:
               o vacía = seguir la predeterminada del sistema.
     speaker : interlocutor del módulo Agente ("ellos" o "tu").
     agent_profile : perfil del agente en uso (si ya no existe, se usa el de ejemplo).
+    agent_context_paths : archivos y carpetas de contexto del agente, en su orden.
     module : último módulo abierto.
 
     Las claves faltantes en el JSON toman sus valores por defecto.
@@ -64,6 +65,7 @@ class AppConfig:
     devices: dict[str, str] = field(default_factory=dict)
     speaker: str = "ellos"
     agent_profile: str = "ejemplo"
+    agent_context_paths: list[str] = field(default_factory=list)
     module: str = "live"
 
     @classmethod
@@ -75,6 +77,7 @@ class AppConfig:
         speaker = as_str(data.get("speaker"), base.speaker)
         module = as_str(data.get("module"), base.module)
         devices = data.get("devices")
+        context = data.get("agent_context_paths")
         return cls(
             debug=bool(data.get("debug", False)),
             theme=theme if theme in THEME_NAMES else base.theme,
@@ -87,6 +90,11 @@ class AppConfig:
             },
             speaker=speaker if speaker in SOURCES else base.speaker,
             agent_profile=as_str(data.get("agent_profile"), base.agent_profile),
+            agent_context_paths=[
+                path.strip()
+                for path in (context if isinstance(context, list) else ())
+                if isinstance(path, str) and path.strip()
+            ],
             module=module if module in MODULE_NAMES else base.module,
         )
 
