@@ -10,6 +10,7 @@ curso, o deja como superada la respuesta mostrada hace menos de `SUPERSEDE_S`.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -21,6 +22,9 @@ TURN_SILENCE_S = 1.5
 SUPERSEDE_S = 3.0
 # Lo que contesta Claude cuando no hay nada que responder; no se muestra.
 NO_ANSWER = "-"
+# Marca de las respuestas ya mostradas dentro de la conversación que se envía.
+SUGGESTION_LABEL = "(sugerencia)"
+_LEADING_CLOCK = re.compile(r"^\[\d{1,2}:\d{2}(:\d{2})?\]\s*")
 
 
 class TurnEvent(StrEnum):
@@ -72,8 +76,16 @@ class TurnWatcher:
 
 
 def shown_answer(text: str) -> str:
-    """La respuesta tal como se muestra; vacía si es "-" (o todavía solo eso)."""
+    """
+    La respuesta tal como se muestra; vacía si es "-" (o todavía solo eso).
+
+    Si el modelo imita el formato de la conversación ("[hora] (sugerencia) ..."), se
+    queda lo que sigue a la última marca, sin la hora ni lo que comentó antes.
+    """
     stripped = text.strip()
+    if SUGGESTION_LABEL in stripped:
+        stripped = stripped.rsplit(SUGGESTION_LABEL, 1)[1].strip()
+    stripped = _LEADING_CLOCK.sub("", stripped)
     return "" if not stripped.strip(NO_ANSWER + "–— .") else stripped
 
 
