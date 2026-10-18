@@ -1,0 +1,141 @@
+{
+  "fecha": "2026-10-17_1905",
+  "cli": "2.1.302 (Claude Code)",
+  "effort": "por defecto",
+  "command": [
+    "claude",
+    "-p",
+    "--model",
+    "sonnet",
+    "--system-prompt-file",
+    "<perfil>",
+    "--tools",
+    "",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "",
+    "--no-session-persistence",
+    "--output-format",
+    "stream-json",
+    "--include-partial-messages",
+    "--verbose"
+  ],
+  "summary": {
+    "haiku": {
+      "ok": 3,
+      "first_text_median_s": 2.22,
+      "total_median_s": 3.55
+    },
+    "sonnet": {
+      "ok": 3,
+      "first_text_median_s": 2.02,
+      "total_median_s": 4.18
+    },
+    "opus": {
+      "ok": 3,
+      "first_text_median_s": 3.06,
+      "total_median_s": 5.49
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "model": "haiku",
+      "ok": true,
+      "first_text_s": 1.758,
+      "total_s": 3.16,
+      "cli_ttft_ms": 1519,
+      "cli_duration_ms": 1700,
+      "output_chars": 244,
+      "stderr": ""
+    },
+    {
+      "run": 2,
+      "model": "haiku",
+      "ok": true,
+      "first_text_s": 2.219,
+      "total_s": 3.553,
+      "cli_ttft_ms": 1509,
+      "cli_duration_ms": 2107,
+      "output_chars": 287,
+      "stderr": ""
+    },
+    {
+      "run": 3,
+      "model": "haiku",
+      "ok": true,
+      "first_text_s": 10.41,
+      "total_s": 11.983,
+      "cli_ttft_ms": 8139,
+      "cli_duration_ms": 8150,
+      "output_chars": 285,
+      "stderr": ""
+    },
+    {
+      "run": 1,
+      "model": "sonnet",
+      "ok": true,
+      "first_text_s": 2.02,
+      "total_s": 4.181,
+      "cli_ttft_ms": 2156,
+      "cli_duration_ms": 2167,
+      "output_chars": 380,
+      "stderr": ""
+    },
+    {
+      "run": 2,
+      "model": "sonnet",
+      "ok": true,
+      "first_text_s": 2.954,
+      "total_s": 5.114,
+      "cli_ttft_ms": 2341,
+      "cli_duration_ms": 2352,
+      "output_chars": 362,
+      "stderr": ""
+    },
+    {
+      "run": 3,
+      "model": "sonnet",
+      "ok": true,
+      "first_text_s": 1.451,
+      "total_s": 3.603,
+      "cli_ttft_ms": 2065,
+      "cli_duration_ms": 2129,
+      "output_chars": 351,
+      "stderr": ""
+    },
+    {
+      "run": 1,
+      "model": "opus",
+      "ok": true,
+      "first_text_s": 2.372,
+      "total_s": 4.891,
+      "cli_ttft_ms": 1652,
+      "cli_duration_ms": 3457,
+      "output_chars": 356,
+      "stderr": ""
+    },
+    {
+      "run": 2,
+      "model": "opus",
+      "ok": true,
+      "first_text_s": 3.623,
+      "total_s": 6.076,
+      "cli_ttft_ms": 2728,
+      "cli_duration_ms": 4444,
+      "output_chars": 349,
+      "stderr": ""
+    },
+    {
+      "run": 3,
+      "model": "opus",
+      "ok": true,
+      "first_text_s": 3.056,
+      "total_s": 5.485,
+      "cli_ttft_ms": 2194,
+      "cli_duration_ms": 3869,
+      "output_chars": 344,
+      "stderr": ""
+    }
+  ]
+}

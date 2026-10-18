@@ -10,6 +10,21 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
+from pathlib import Path
+
+# Sin herramientas, sin skills, plugins ni MCP del autor y sin guardar la sesión: el
+# texto que se envía lo dijo un tercero y puede traer instrucciones.
+ISOLATION_ARGS = (
+    "--tools",
+    "",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "",
+    "--no-session-persistence",
+)
+# Con -p, stream-json exige --verbose.
+STREAM_ARGS = ("--output-format", "stream-json", "--include-partial-messages", "--verbose")
+JSON_ARGS = ("--output-format", "json")
 
 # Alias que la CLI resuelve al modelo más reciente de cada familia.
 MODEL_ALIASES = ("fable", "opus", "sonnet", "haiku")
@@ -81,3 +96,21 @@ class ClaudeModelConfig:
         if self.fallback_model and self.fallback_model != self.model:
             args += ["--fallback-model", self.fallback_model]
         return args
+
+    def command(self, system_prompt_file: Path, stream: bool = True) -> list[str]:
+        """
+        Orden completa de `claude -p` aislada, con el perfil como system prompt.
+
+        El prompt va por stdin y el proceso se lanza en una carpeta vacía, para que la
+        CLI no descubra el CLAUDE.md ni las skills del proyecto.
+        """
+        output = STREAM_ARGS if stream else JSON_ARGS
+        return [
+            self.executable,
+            "-p",
+            *self.cli_args(),
+            "--system-prompt-file",
+            str(system_prompt_file),
+            *ISOLATION_ARGS,
+            *output,
+        ]

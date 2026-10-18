@@ -53,6 +53,25 @@ def test_fallback_equal_to_model_is_skipped():
     assert "--fallback-model" not in config.cli_args()
 
 
+def test_command_is_isolated_and_streams(tmp_path):
+    profile = tmp_path / "perfil.md"
+    command = ClaudeModelConfig(model="haiku").command(profile)
+    assert command[:4] == ["claude", "-p", "--model", "haiku"]
+    assert command[command.index("--system-prompt-file") + 1] == str(profile)
+    assert command[command.index("--tools") + 1] == ""
+    assert command[command.index("--setting-sources") + 1] == ""
+    assert "--strict-mcp-config" in command
+    assert "--no-session-persistence" in command
+    assert command[command.index("--output-format") + 1] == "stream-json"
+    assert "--verbose" in command
+
+
+def test_command_without_stream_asks_for_json(tmp_path):
+    command = ClaudeModelConfig().command(tmp_path / "perfil.md", stream=False)
+    assert command[command.index("--output-format") + 1] == "json"
+    assert "--include-partial-messages" not in command
+
+
 def test_round_trip_inside_app_config(tmp_path):
     path = tmp_path / "settings.json"
     claude = ClaudeModelConfig(model="haiku", effort="low", timeout_s=60)
