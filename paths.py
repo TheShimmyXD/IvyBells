@@ -24,6 +24,8 @@ AGENT_PROFILE_LOCAL = AGENT_DIR / "perfil_local.md"
 # Carpeta vacía fuera del proyecto donde corre la CLI de Claude, para que no descubra
 # el CLAUDE.md ni las skills de ninguna carpeta padre.
 AGENT_WORKDIR = Path(tempfile.gettempdir()) / "ivybells_agent"
+# Una carpeta de sesión de Claude Code por cuenta (CLAUDE_CONFIG_DIR), fuera del proyecto.
+CLAUDE_ACCOUNTS_DIR = Path.home() / ".local" / "share" / "ivybells" / "claude"
 
 LOG_DIR = ROOT / "logs"
 LOG_FILE = LOG_DIR / "ivybells.log"

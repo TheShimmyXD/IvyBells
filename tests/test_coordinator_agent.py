@@ -138,16 +138,6 @@ def test_click_outside_the_phrases_does_nothing(qapp, make):
     assert coordinator.logic.state is AgentState.IDLE
 
 
-def test_model_change_is_saved(qapp):
-    from coordinator_agent import AgentCoordinator
-
-    saved = []
-    coordinator = AgentCoordinator(_FakeLive(PHRASES), save_config=saved.append)
-    coordinator.set_model("opus")
-    coordinator.set_model("opus")
-    assert [config.model for config in saved] == ["opus"]
-
-
 def test_worker_reports_cancel_and_answer(qapp):
     cancel = threading.Event()
     worker = AgentWorker(

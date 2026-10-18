@@ -32,6 +32,7 @@ MODEL_ALIASES = ("fable", "opus", "sonnet", "haiku")
 EFFORT_LEVELS = ("", "low", "medium", "high", "xhigh", "max")
 # Nombre completo de un modelo, por ejemplo claude-sonnet-5-5.
 _FULL_NAME = re.compile(r"^claude-[a-z0-9]+(-[a-z0-9]+)*$")
+_EMAIL = re.compile(r"^[^@\s/\\]+@[^@\s/\\]+\.[^@\s/\\]+$")
 
 DEFAULT_TIMEOUT_S = 120
 
@@ -39,6 +40,17 @@ DEFAULT_TIMEOUT_S = 120
 def is_valid_model(name: str) -> bool:
     """True si `name` es un alias conocido o un nombre completo con forma claude-..."""
     return name in MODEL_ALIASES or bool(_FULL_NAME.match(name))
+
+
+def is_valid_account(email: str) -> bool:
+    """True si parece un correo (la cuenta de Claude con la que se inició sesión)."""
+    return bool(_EMAIL.match(email))
+
+
+def clean_account(value: object) -> str:
+    """El correo en minúsculas, o "" (la sesión de siempre) si no parece un correo."""
+    text = str(value).strip().lower() if value is not None else ""
+    return text if is_valid_account(text) else ""
 
 
 def _clean_model(value: object, default: str) -> str:
@@ -58,6 +70,7 @@ class ClaudeModelConfig:
     fallback_model : modelo de respaldo si el principal está saturado; "" no pasa ninguno.
     timeout_s      : segundos máximos que se espera la respuesta de la CLI.
     executable     : comando de la CLI (por si no está en el PATH).
+    account        : correo de la cuenta de Claude; "" usa la sesión de siempre.
 
     Los valores inválidos leídos del JSON toman su valor por defecto.
     """
@@ -67,6 +80,7 @@ class ClaudeModelConfig:
     fallback_model: str = ""
     timeout_s: int = DEFAULT_TIMEOUT_S
     executable: str = "claude"
+    account: str = ""
 
     @classmethod
     def from_dict(cls, data: object) -> ClaudeModelConfig:
@@ -83,6 +97,7 @@ class ClaudeModelConfig:
             fallback_model=fallback,
             timeout_s=timeout if isinstance(timeout, int) and timeout > 0 else base.timeout_s,
             executable=executable or base.executable,
+            account=clean_account(data.get("account")),
         )
 
     def to_dict(self) -> dict:

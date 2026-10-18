@@ -22,6 +22,7 @@ from typing import Protocol
 from core.claude_model import ClaudeModelConfig
 from core.claude_stream import Finished, TextDelta, parse_line
 from paths import AGENT_PROFILE, AGENT_PROFILE_LOCAL, AGENT_WORKDIR
+from services.service_claude_account import claude_env, config_dir_for
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,8 @@ class ClaudeCli:
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
+                # La sesión de la cuenta elegida (None: la de siempre).
+                env=claude_env(config_dir_for(self.config.account)),
                 # Grupo propio: al cancelar se terminan también los hijos de la CLI.
                 start_new_session=True,
             )

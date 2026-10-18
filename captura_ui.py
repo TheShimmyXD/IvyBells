@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
 from coordinator_live import DEFAULT_MODEL, LiveCoordinator
+from core.claude_account import AccountStatus
+from core.claude_model import ClaudeModelConfig
 from core.engine import TranscriptEvent
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
@@ -34,6 +37,11 @@ SAMPLE_LATENCY = (1.62, 1.78)
 SAMPLE_ERROR = "No se pudo abrir la fuente analog-stereo.monitor"
 STATES = ("detenido", "escuchando", "error")
 THEMES = ("light", "dark")
+# Página Configuración: (estado, cuenta escrita, lo que diría `claude auth status`).
+CONFIG_STATES = (
+    ("con_sesion", "persona@example.com", AccountStatus(True, "persona@example.com", "pro")),
+    ("sin_sesion", "otra@example.com", AccountStatus(False)),
+)
 
 
 class PreviewCoordinator(LiveCoordinator):
@@ -82,8 +90,40 @@ def capture_states(out_dir: Path) -> list[Path]:
     return paths
 
 
+def capture_config(out_dir: Path) -> list[Path]:
+    """Guarda `config_<estado>_<tema>.png`; las carpetas de cuentas van a un temporal."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+
+    from coordinator_config import ClaudeSettings
+    from ui._00_ui_main import load_fonts
+    from ui.config_page import ClaudeConfigPage
+    from ui.theme import apply_theme, resolve_theme
+
+    app = QApplication.instance() or QApplication([])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fonts = load_fonts()
+    paths = []
+    with tempfile.TemporaryDirectory(prefix="ivybells_cuentas_") as accounts:
+        for theme in THEMES:
+            apply_theme(app, fonts, resolve_theme(theme))
+            for state, account, status in CONFIG_STATES:
+                config = ClaudeModelConfig(model="sonnet", effort="high", account=account)
+                settings = ClaudeSettings(config, accounts_dir=Path(accounts))
+                page = ClaudeConfigPage(settings)
+                settings.show_status(status)
+                page.resize(900, 560)
+                page.show()
+                app.processEvents()
+                path = out_dir / f"config_{state}_{theme}.png"
+                page.grab().save(str(path))
+                paths.append(path)
+                page.close()
+    return paths
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("Uso: captura_ui.py <carpeta>")
-    for saved in capture_states(Path(sys.argv[1])):
+    for saved in [*capture_states(Path(sys.argv[1])), *capture_config(Path(sys.argv[1]))]:
         sys.stdout.write(f"{saved}\n")
