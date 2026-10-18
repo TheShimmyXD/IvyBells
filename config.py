@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from core.claude_model import ClaudeModelConfig
 from paths import APP_SETTINGS_JSON, LOCAL_SETTINGS_JSON
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,14 @@ class AppConfig:
     ------
     debug : eleva el nivel de log a DEBUG.
     theme : último tema elegido en la ventana (light o dark).
+    claude : modelo y opciones de Claude Code (ver core/claude_model.py).
 
     Las claves faltantes en el JSON toman sus valores por defecto.
     """
 
     debug: bool = False
     theme: str = "light"
+    claude: ClaudeModelConfig = field(default_factory=ClaudeModelConfig)
 
     @classmethod
     def from_dict(cls, data: object) -> AppConfig:
@@ -58,6 +61,7 @@ class AppConfig:
         return cls(
             debug=bool(data.get("debug", False)),
             theme=theme if theme in THEME_NAMES else base.theme,
+            claude=ClaudeModelConfig.from_dict(data.get("claude")),
         )
 
     def to_dict(self) -> dict:
