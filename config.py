@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from core.claude_model import ClaudeModelConfig
+from core.live_view import SOURCES
 from paths import APP_SETTINGS_JSON, LOCAL_SETTINGS_JSON
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,8 @@ def as_str(value: object, default: str) -> str:
 # -- Configuración global --------------------------------------
 
 THEME_NAMES = ("light", "dark")
+# Módulos de la barra, en su orden.
+MODULE_NAMES = ("live", "agent", "config")
 
 
 @dataclass(slots=True)
@@ -44,6 +47,11 @@ class AppConfig:
     debug : eleva el nivel de log a DEBUG.
     theme : último tema elegido en la ventana (light o dark).
     claude : modelo y opciones de Claude Code (ver core/claude_model.py).
+    live_model : modelo de transcripción elegido (la ventana descarta uno desconocido).
+    devices : fuente elegida por voz ("ellos", "tu"), por nombre de PipeWire; sin clave
+              o vacía = seguir la predeterminada del sistema.
+    speaker : interlocutor del módulo Agente ("ellos" o "tu").
+    module : último módulo abierto.
 
     Las claves faltantes en el JSON toman sus valores por defecto.
     """
@@ -51,6 +59,10 @@ class AppConfig:
     debug: bool = False
     theme: str = "light"
     claude: ClaudeModelConfig = field(default_factory=ClaudeModelConfig)
+    live_model: str = "large-v3-turbo"
+    devices: dict[str, str] = field(default_factory=dict)
+    speaker: str = "ellos"
+    module: str = "live"
 
     @classmethod
     def from_dict(cls, data: object) -> AppConfig:
@@ -58,10 +70,21 @@ class AppConfig:
             return cls()
         base = cls()
         theme = as_str(data.get("theme"), base.theme)
+        speaker = as_str(data.get("speaker"), base.speaker)
+        module = as_str(data.get("module"), base.module)
+        devices = data.get("devices")
         return cls(
             debug=bool(data.get("debug", False)),
             theme=theme if theme in THEME_NAMES else base.theme,
             claude=ClaudeModelConfig.from_dict(data.get("claude")),
+            live_model=as_str(data.get("live_model"), base.live_model),
+            devices={
+                source: name.strip()
+                for source, name in (devices.items() if isinstance(devices, dict) else ())
+                if source in SOURCES and isinstance(name, str) and name.strip()
+            },
+            speaker=speaker if speaker in SOURCES else base.speaker,
+            module=module if module in MODULE_NAMES else base.module,
         )
 
     def to_dict(self) -> dict:

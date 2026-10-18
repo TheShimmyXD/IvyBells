@@ -3,13 +3,18 @@ Página Transcripción: "Ellos" y "Tú" en dos columnas.
 
 Arriba el estado, el modelo y Iniciar/Detener; abajo las fuentes, la latencia y Guardar .md.
 Solo habla con `LiveCoordinator`.
+
+Cada combo de fuente empieza con "Predeterminada", que sigue a la del sistema aunque se
+conecten o desconecten equipos; elegir un equipo concreto lo recuerda. Si el elegido no está
+conectado se usa la predeterminada sin olvidarlo, y vuelve solo cuando reaparece. La lista
+se refresca cada pocos segundos mientras no se escucha, y justo antes de Iniciar.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -22,7 +27,7 @@ from PySide6.QtWidgets import (
 
 from coordinator_live import DEFAULT_MODEL, MODELS, LiveCoordinator
 from core.live_state import LiveState
-from core.live_view import SOURCES, format_latency, short_device_name
+from core.live_view import SOURCES, format_latency, resolve_device, short_device_name
 from ui.blocks.icons import GlyphLabel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
@@ -37,14 +42,37 @@ STATE_TONES = {
     LiveState.STOPPING: Tone.WARNING,
     LiveState.ERROR: Tone.ERROR,
 }
+# Cada cuánto se vuelve a mirar qué fuentes hay (equipos conectados o desconectados).
+SOURCES_REFRESH_MS = 3_000
+# Dato del primer elemento del combo: seguir la fuente predeterminada del sistema.
+FOLLOW_DEFAULT = ""
 # (fuente, título, icono de la columna)
 VOICES = (("ellos", "Ellos", "speaker-high"), ("tu", "Tú", "microphone"))
 
 
 class LivePage(QWidget):
-    def __init__(self, coordinator: LiveCoordinator, parent: QWidget | None = None) -> None:
+    """
+    Signals
+    -------
+    devices_chosen(dict) -> la elección del autor por voz (nombre o "" = predeterminada).
+    """
+
+    devices_chosen = Signal(dict)
+
+    def __init__(
+        self,
+        coordinator: LiveCoordinator,
+        preferred: dict[str, str] | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.coordinator = coordinator
+        self._preferred = {
+            source: (preferred or {}).get(source, FOLLOW_DEFAULT) for source in SOURCES
+        }
+        self._lists: dict[str, list[str]] = {source: [] for source in SOURCES}
+        self._defaults: dict[str, str | None] = dict.fromkeys(SOURCES)
+        self._seen: tuple | None = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 12)
         layout.setSpacing(10)
@@ -57,7 +85,11 @@ class LivePage(QWidget):
             columns.addWidget(self.columns[source], 1)
         layout.addLayout(columns, 1)
         layout.addLayout(self._build_footer())
-        self._fill_sources()
+        self.refresh_sources()
+        self._timer = QTimer(self)
+        self._timer.setInterval(SOURCES_REFRESH_MS)
+        self._timer.timeout.connect(self._on_timer)
+        self._timer.start()
         coordinator.state_changed.connect(self._on_state)
         coordinator.transcript_changed.connect(self.refresh_transcript)
         coordinator.latency_changed.connect(self._on_latency)
@@ -93,6 +125,7 @@ class LivePage(QWidget):
             box.setSizeAdjustPolicy(
                 QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
             )
+            box.activated.connect(lambda index, s=source: self._on_device_chosen(s, index))
             self.source_boxes[source] = box
             row.addWidget(box)
             row.addSpacing(8)
@@ -108,27 +141,72 @@ class LivePage(QWidget):
         row.addWidget(self.save_button)
         return row
 
-    def _fill_sources(self) -> None:
+    # -- Fuentes ----------------------------------------------
+
+    def refresh_sources(self) -> None:
+        """Vuelve a leer las fuentes; solo rehace los combos si algo cambió."""
         choices = self.coordinator.read_sources()
-        lists = {"ellos": choices.monitors, "tu": choices.inputs}
-        chosen = {"ellos": choices.selected.monitor, "tu": choices.selected.microphone}
+        self._lists = {
+            "ellos": [item.name for item in choices.monitors],
+            "tu": [item.name for item in choices.inputs],
+        }
+        selected = {"ellos": choices.selected.monitor, "tu": choices.selected.microphone}
+        self._defaults = {source: item.name if item else None for source, item in selected.items()}
+        seen = (tuple(map(tuple, self._lists.values())), tuple(self._defaults.values()))
+        if seen == self._seen:
+            return
+        self._seen = seen
         for source, box in self.source_boxes.items():
-            box.clear()
-            for item in lists[source]:
-                box.addItem(short_device_name(item.name), item.name)
-                box.setItemData(box.count() - 1, item.name, Qt.ItemDataRole.ToolTipRole)
-            if chosen[source] is not None:
-                box.setCurrentIndex(box.findData(chosen[source].name))
-            if box.count() == 0:
-                box.addItem("sin fuente", None)
+            self._fill_box(source, box)
+
+    def _fill_box(self, source: str, box: QComboBox) -> None:
+        names, default = self._lists[source], self._defaults[source]
+        preferred = self._preferred[source]
+        box.blockSignals(True)
+        box.clear()
+        if names:
+            label = short_device_name(default) if default else "sin fuente"
+            box.addItem(f"Predeterminada ({label})", FOLLOW_DEFAULT)
+            box.setItemData(0, "Sigue a la del sistema", Qt.ItemDataRole.ToolTipRole)
+            for name in names:
+                box.addItem(short_device_name(name), name)
+                box.setItemData(box.count() - 1, name, Qt.ItemDataRole.ToolTipRole)
+            index = box.findData(preferred) if preferred in names else 0
+            box.setCurrentIndex(max(index, 0))
+        else:
+            box.addItem("sin fuente", None)
+        if preferred and preferred not in names:
+            box.setToolTip(
+                f"{short_device_name(preferred)} no está conectada: se usa la predeterminada"
+            )
+        else:
+            box.setToolTip("")
+        box.blockSignals(False)
+
+    def _on_device_chosen(self, source: str, index: int) -> None:
+        """Solo cuando el autor elige en el combo (no al rehacerlo)."""
+        choice = self.source_boxes[source].itemData(index)
+        if choice is None or choice == self._preferred[source]:
+            return
+        self._preferred[source] = choice
+        self.source_boxes[source].setToolTip("")
+        self.devices_chosen.emit({s: name for s, name in self._preferred.items() if name})
+
+    def _on_timer(self) -> None:
+        if not self.coordinator.logic.is_busy:
+            self.refresh_sources()
 
     # -- Pedidos al coordinador --------------------------------
 
     def selected_devices(self) -> dict[str, str]:
+        """Las fuentes que se capturarían ahora, por nombre."""
         devices = {}
-        for source, box in self.source_boxes.items():
-            if box.currentData():
-                devices[source] = box.currentData()
+        for source in SOURCES:
+            name = resolve_device(
+                self._lists[source], self._preferred[source], self._defaults[source]
+            )
+            if name:
+                devices[source] = name
         return devices
 
     def toggle_run(self) -> None:
@@ -136,6 +214,7 @@ class LivePage(QWidget):
         if self.coordinator.logic.can_stop:
             self.coordinator.stop()
         else:
+            self.refresh_sources()
             self.coordinator.start(self.model_selector.current, self.selected_devices())
 
     def _on_save_clicked(self) -> None:

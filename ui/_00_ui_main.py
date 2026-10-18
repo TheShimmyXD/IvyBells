@@ -3,7 +3,9 @@ Ventana principal: la barra con tres módulos (Transcripción, Agente y Configur
 
 Es la raíz de composición: recibe la escucha en vivo y crea (si no se los pasan) la
 configuración de Claude y el coordinador del Agente; cada página solo habla con el suyo.
-Los tres comparten la misma escucha: cambiar de módulo no la detiene.
+Los tres comparten la misma escucha: cambiar de módulo no la detiene. Lo que el autor
+elige (tema, modelo de transcripción, fuentes, interlocutor y módulo) llega en `prefs` y
+cada cambio sale por `remember(clave, valor)`; la ventana no escribe la configuración.
 """
 
 from __future__ import annotations
@@ -46,8 +48,9 @@ class MainWindow(QWidget):
         coordinator: LiveCoordinator,
         fonts: ThemeFonts,
         theme: str = "light",
-        save_theme: Callable[[str], object] | None = None,
+        remember: Callable[[str, object], object] | None = None,
         agent: AgentCoordinator | None = None,
+        prefs: dict | None = None,
     ) -> None:
         super().__init__()
         self.coordinator = coordinator
@@ -55,18 +58,21 @@ class MainWindow(QWidget):
         self._fonts = fonts
         self._theme = theme
         # Las capturas y las pruebas no pasan ninguno: no escriben la configuración.
-        self._save_theme = save_theme
+        self._remember = remember
+        prefs = prefs or {}
+        self.agent.set_speaker(prefs.get("speaker", self.agent.speaker))
         self._apply_theme()
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(app_icon())
-        self._build_ui()
-        self.show_module("live")
+        self._build_ui(prefs)
+        self.show_module(prefs.get("module", "live"))
+        self._connect_prefs()
         self.setMinimumSize(*MIN_SIZE)
         self.resize(*WINDOW_SIZE)
 
     # -- Construcción ------------------------------------------
 
-    def _build_ui(self) -> None:
+    def _build_ui(self, prefs: dict) -> None:
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -82,7 +88,9 @@ class MainWindow(QWidget):
         slot.setFixedWidth(COLLAPSED_WIDTH)
         root.addWidget(slot)
 
-        self.live_page = LivePage(self.coordinator)
+        self.live_page = LivePage(self.coordinator, prefs.get("devices"))
+        if prefs.get("live_model"):
+            self.live_page.model_selector.select(prefs["live_model"])
         self.agent_page = AgentPage(self.agent, self.live_page.toggle_run)
         self.config_page = ClaudeConfigPage(self.agent.settings)
         self.pages = {"live": self.live_page, "agent": self.agent_page, "config": self.config_page}
@@ -90,6 +98,19 @@ class MainWindow(QWidget):
         for page in self.pages.values():
             self.stack.addWidget(page)
         root.addWidget(self.stack, 1)
+
+    def _connect_prefs(self) -> None:
+        # Después de aplicar las guardadas: solo cuenta lo que el autor cambia.
+        self.sidebar.module_chosen.connect(lambda module: self._save("module", module))
+        self.live_page.model_selector.changed.connect(lambda model: self._save("live_model", model))
+        self.live_page.devices_chosen.connect(lambda devices: self._save("devices", devices))
+        self.agent_page.speaker_selector.changed.connect(
+            lambda speaker: self._save("speaker", speaker)
+        )
+
+    def _save(self, key: str, value: object) -> None:
+        if self._remember is not None:
+            self._remember(key, value)
 
     def show_module(self, module_id: str) -> None:
         if module_id not in self.pages:
@@ -111,8 +132,7 @@ class MainWindow(QWidget):
 
     def _cycle_theme(self) -> None:
         self.set_theme(next_theme(self._theme))
-        if self._save_theme is not None:
-            self._save_theme(self._theme)
+        self._save("theme", self._theme)
 
     def set_theme(self, theme: str) -> None:
         self._theme = theme
@@ -151,17 +171,21 @@ def run_app() -> None:
     app = QApplication.instance() or QApplication(sys.argv)
     config = load_app_config()
 
-    def save_theme(theme: str) -> None:
-        config.theme = theme
+    def remember(key: str, value: object) -> None:
+        setattr(config, key, value)
         save_app_config(config)
 
-    def save_claude(claude) -> None:
-        config.claude = claude
-        save_app_config(config)
-
+    prefs = {
+        "live_model": config.live_model,
+        "devices": config.devices,
+        "speaker": config.speaker,
+        "module": config.module,
+    }
     live = LiveCoordinator()
-    agent = AgentCoordinator(live, ClaudeSettings(config.claude, save_claude))
-    window = MainWindow(live, load_fonts(), config.theme, save_theme, agent)
+    agent = AgentCoordinator(
+        live, ClaudeSettings(config.claude, lambda claude: remember("claude", claude))
+    )
+    window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs)
     window.show()
     logger.info("Ventana principal lista")
     sys.exit(app.exec())

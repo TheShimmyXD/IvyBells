@@ -98,6 +98,18 @@ def short_device_name(name: str) -> str:
     return _ALSA_PREFIX.sub("", name) or name
 
 
+def resolve_device(names: list[str], preferred: str, default: str | None) -> str | None:
+    """
+    La fuente que se captura: la elegida si está conectada; si no (o si se eligió seguir
+    la predeterminada, ""), la predeterminada; si tampoco está, la primera de la lista.
+    """
+    if preferred and preferred in names:
+        return preferred
+    if default and default in names:
+        return default
+    return names[0] if names else None
+
+
 def format_latency(last: float | None, median: float | None) -> str:
     """Cifras con coma decimal; sin frases todavía, un guion."""
     if last is None or median is None:
