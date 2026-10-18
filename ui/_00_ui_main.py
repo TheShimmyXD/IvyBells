@@ -92,7 +92,7 @@ class MainWindow(QWidget):
         if prefs.get("live_model"):
             self.live_page.model_selector.select(prefs["live_model"])
         self.agent_page = AgentPage(self.agent, self.live_page.toggle_run)
-        self.config_page = ClaudeConfigPage(self.agent.settings)
+        self.config_page = ClaudeConfigPage(self.agent.settings, self.agent)
         self.pages = {"live": self.live_page, "agent": self.agent_page, "config": self.config_page}
         self.stack = QStackedWidget()
         for page in self.pages.values():
@@ -144,6 +144,7 @@ class MainWindow(QWidget):
         self.sidebar.set_item("theme", THEME_TIPS[theme], THEME_GLYPHS[theme])
         self.live_page.refresh_theme()
         self.agent_page.refresh_theme()
+        self.config_page.refresh_theme()
 
     # -- Eventos de Qt -----------------------------------------
 

@@ -17,8 +17,10 @@ from pathlib import Path
 
 from coordinator_agent import AgentCoordinator
 from coordinator_live import DEFAULT_MODEL, LiveCoordinator
+from core.agent_context import MAX_FILE_CHARS, ContextFile, build_context
 from core.claude_account import AccountStatus
 from core.claude_model import ClaudeModelConfig
+from core.claude_stream import Usage
 from core.engine import TranscriptEvent
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
@@ -53,6 +55,9 @@ AGENT_ANSWERS = (
 )
 AGENT_ERROR = "Claude no respondió en 120 s"
 AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error")
+# Barra de contexto con haiku (ventana medida de 1 M): archivos sintéticos de 20 000
+# caracteres en `contexto.md` para llenarla vacía, a medias y casi llena.
+BUDGET_STATES = (("vacia", 0), ("media", 58), ("llena", 101))
 # Página Configuración: (estado, cuenta escrita, lo que diría `claude auth status`).
 # (estado, cuenta, estado de la cuenta, perfil abierto en el editor)
 CONFIG_STATES = (
@@ -90,13 +95,16 @@ class PreviewAgent(AgentCoordinator):
     def _launch(self, prompt: str) -> None:
         self._requests.next()
 
-    def answer(self, text: str, done: bool = True, error: str = "") -> None:
+    def answer(
+        self, text: str, done: bool = True, error: str = "", usage: Usage | None = None
+    ) -> None:
         for chunk in text.split(" "):
             self.on_text(chunk + " ")
         if error:
             self.on_failed(error)
         if done or error:
-            self.on_finished({"_request_id": self._requests._current, "answer": text})
+            payload = {"_request_id": self._requests._current, "answer": text, "usage": usage}
+            self.on_finished(payload)
 
 
 def _play_listening(coordinator: PreviewCoordinator, devices: dict[str, str]) -> None:
@@ -232,26 +240,105 @@ def capture_agent(out_dir: Path) -> list[Path]:
     from PySide6.QtWidgets import QApplication
 
     from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
     from ui._00_ui_main import MainWindow, load_fonts
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)
     fonts = load_fonts()
     paths = []
+    with tempfile.TemporaryDirectory(prefix="ivybells_agente_") as empty:
+        for theme in THEMES:
+            for state in AGENT_STATES:
+                coordinator = PreviewCoordinator()
+                # Contexto vacío en un temporal: nunca la foto real de la empresa.
+                context = AgentContext(target=Path(empty) / "contexto.md")
+                settings = ClaudeSettings(
+                    ClaudeModelConfig(model="sonnet", effort="high"), context=context
+                )
+                agent = PreviewAgent(coordinator, settings)
+                window = MainWindow(coordinator, fonts, theme, agent=agent)
+                window.show_module("agent")
+                _play_agent(coordinator, agent, state)
+                window.show()
+                app.processEvents()
+                path = out_dir / f"agente_{state}_{theme}.png"
+                window.grab().save(str(path))
+                paths.append(path)
+                window.close()
+    return paths
+
+
+def _sample_photo(folder: Path, files: int) -> tuple[list[str], Path]:
+    """Una foto `contexto.md` sintética con `files` archivos de la carpeta `empresa`."""
+    company = folder / "empresa"
+    line = "El plan empresarial incluye soporte de lunes a sábado. "
+    text = (line * (MAX_FILE_CHARS // len(line) + 1))[:MAX_FILE_CHARS]
+    sample = [ContextFile(str(company / f"manual_{index:03d}.md"), text) for index in range(files)]
+    target = folder / "contexto" / "contexto.md"
+    target.parent.mkdir(parents=True)
+    target.write_text(build_context(sample, []) if files else "", encoding="utf-8")
+    return [str(company), str(folder / "precios.csv")], target
+
+
+def capture_budget(out_dir: Path) -> list[Path]:
+    """
+    Guarda `contexto_<estado>_<tema>.png` (pie del Agente) y `config_contexto_<estado>_<tema>.png`
+    (panel de Configuración): vacía, a medias y casi llena. Con contexto, ya hubo un envío con
+    un `usage` de ejemplo (la estimación, todo de la caché salvo lo nuevo).
+    """
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+
+    from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
+    from coordinator_profiles import AgentProfiles
+    from services.service_profiles import ProfileStore
+    from ui._00_ui_main import MainWindow, load_fonts
+    from ui.config_page import ClaudeConfigPage
+
+    app = QApplication.instance() or QApplication([])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fonts = load_fonts()
+    paths = []
     for theme in THEMES:
-        for state in AGENT_STATES:
-            coordinator = PreviewCoordinator()
-            settings = ClaudeSettings(ClaudeModelConfig(model="sonnet", effort="high"))
-            agent = PreviewAgent(coordinator, settings)
-            window = MainWindow(coordinator, fonts, theme, agent=agent)
-            window.show_module("agent")
-            _play_agent(coordinator, agent, state)
-            window.show()
-            app.processEvents()
-            path = out_dir / f"agente_{state}_{theme}.png"
-            window.grab().save(str(path))
-            paths.append(path)
-            window.close()
+        for state, files in BUDGET_STATES:
+            with tempfile.TemporaryDirectory(prefix="ivybells_contexto_") as folder:
+                store = ProfileStore(Path(folder) / "perfiles")
+                store.create("demo soporte", SAMPLE_PROFILE)
+                context_paths, target = _sample_photo(Path(folder), files)
+                settings = ClaudeSettings(
+                    ClaudeModelConfig(model="haiku", effort="max"),
+                    accounts_dir=Path(folder) / "cuentas",
+                    profiles=AgentProfiles(store, "demo soporte"),
+                    context=AgentContext(context_paths, target=target),
+                )
+                coordinator = PreviewCoordinator()
+                agent = PreviewAgent(coordinator, settings)
+                window = MainWindow(coordinator, fonts, theme, agent=agent)
+                window.show_module("agent")
+                _play_agent(coordinator, agent, "sin_seleccion")
+                if files:
+                    agent.mark_start(0, 0)
+                    agent.mark_end(0, 99)
+                    tokens = agent.budget.estimated_tokens
+                    agent.on_text("")
+                    agent.turns[-1].first_text_s = 9.7
+                    agent.answer(AGENT_ANSWERS[0], usage=Usage(tokens, tokens - 40, 1_000_000))
+                window.show()
+                app.processEvents()
+                path = out_dir / f"contexto_{state}_{theme}.png"
+                window.grab().save(str(path))
+                paths.append(path)
+                page = ClaudeConfigPage(settings, agent)
+                page.resize(900, 1240)
+                page.show()
+                app.processEvents()
+                path = out_dir / f"config_contexto_{state}_{theme}.png"
+                page.grab().save(str(path))
+                paths.append(path)
+                page.close()
+                window.close()
     return paths
 
 
@@ -259,5 +346,6 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("Uso: captura_ui.py <carpeta>")
     out = Path(sys.argv[1])
-    for saved in [*capture_states(out), *capture_agent(out), *capture_config(out)]:
+    captures = [*capture_states(out), *capture_agent(out), *capture_config(out)]
+    for saved in [*captures, *capture_budget(out)]:
         sys.stdout.write(f"{saved}\n")

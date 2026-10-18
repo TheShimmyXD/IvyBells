@@ -3,7 +3,8 @@ Coordinador del módulo Agente: une la máquina de estados, la selección, el pr
 
 Lee el texto del interlocutor de la misma escucha en vivo (`LiveCoordinator`), así que
 cambiar de módulo no detiene ni recarga nada; el modelo, el esfuerzo y la cuenta salen de
-`ClaudeSettings` (módulo Configuración). La vista solo habla con él.
+`ClaudeSettings` (módulo Configuración). La vista solo habla con él. También lleva cuánto
+de la ventana del modelo ocupa el envío (`budget`), que muestran el Agente y Configuración.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ from core.agent_prompt import Exchange, build_prompt
 from core.agent_selection import Selection, WordPos, select_range, word_at
 from core.agent_state import AgentLogic, AgentState
 from core.claude_model import ClaudeModelConfig
+from core.claude_stream import Usage
+from core.context_budget import MEASURED_WINDOWS, ContextBudget, build_budget
 from core.live_view import SOURCES
 from services.service_claude import ClaudeCli, ClaudeService
 from workers.worker_agent import AgentWorker
@@ -50,6 +53,7 @@ class AgentTurn:
     error: str = ""
     cancelled: bool = False
     done: bool = False
+    usage: Usage | None = None
 
 
 class AgentCoordinator(QObject):
@@ -59,11 +63,13 @@ class AgentCoordinator(QObject):
     state_changed(dict) -> `state` y `status` de la máquina de estados.
     turns_changed()     -> cambió la lista de turnos o la respuesta en curso.
     marks_changed()     -> cambió el inicio marcado o los rangos enviados (resaltado).
+    budget_changed()    -> cambió el presupuesto de contexto (`budget`).
     """
 
     state_changed = Signal(dict)
     turns_changed = Signal()
     marks_changed = Signal()
+    budget_changed = Signal()
 
     def __init__(
         self,
@@ -84,8 +90,17 @@ class AgentCoordinator(QObject):
         self._cancel = threading.Event()
         self._worker: AgentWorker | None = None
         self._thread: QThread | None = None
+        # La ventana de cada modelo; la del primer envío reemplaza a la medida en el banco.
+        self._windows = dict(MEASURED_WINDOWS)
+        self._budget: ContextBudget | None = None
         live.session_started.connect(self.reset)
         live.sources_changed.connect(self._on_sources_changed)
+        settings = self.settings
+        settings.config_changed.connect(lambda _config: self.refresh_budget())
+        settings.profiles.active_changed.connect(lambda _name: self.refresh_budget())
+        settings.profiles.profiles_changed.connect(self.refresh_budget)
+        settings.context.reloaded.connect(self._on_context_reloaded)
+        self.refresh_budget()
 
     # -- Pedidos de la vista -----------------------------------
 
@@ -100,6 +115,10 @@ class AgentCoordinator(QObject):
             if turn.first_text_s is not None:
                 return turn.first_text_s
         return None
+
+    @property
+    def budget(self) -> ContextBudget:
+        return self._budget
 
     def sent_ranges(self, source: str) -> list[tuple[WordPos, WordPos]]:
         """Rangos ya enviados del interlocutor, para resaltarlos."""
@@ -154,6 +173,7 @@ class AgentCoordinator(QObject):
         self.marks_changed.emit()
         self.turns_changed.emit()
         self._emit_state()
+        self.refresh_budget()
 
     def cancel(self) -> None:
         sending = self.logic.state is AgentState.SENDING
@@ -176,6 +196,7 @@ class AgentCoordinator(QObject):
         self.turns_changed.emit()
         self.marks_changed.emit()
         self._emit_state()
+        self.refresh_budget()
 
     def close(self) -> None:
         """Cancela el envío en curso y espera al worker; la ventana lo llama al cerrarse."""
@@ -206,6 +227,9 @@ class AgentCoordinator(QObject):
             return
         turn = self.turns[-1]
         turn.done = True
+        turn.usage = payload.get("usage")
+        if turn.usage is not None and turn.usage.context_window:
+            self._windows[turn.model] = turn.usage.context_window
         if payload.get("cancelled"):
             turn.cancelled = True
         elif not turn.error:
@@ -214,8 +238,33 @@ class AgentCoordinator(QObject):
             self.logic.answered()
         self.turns_changed.emit()
         self._emit_state()
+        self.refresh_budget()
+
+    @Slot()
+    def refresh_budget(self) -> None:
+        """
+        Rehace el presupuesto: el fragmento es el del envío en curso (si no, ninguno) y
+        la cifra real, la del último envío que la trajo.
+        """
+        profiles = self.settings.profiles
+        sending = self.turns[-1] if self.turns and not self.turns[-1].done else None
+        measured = next((turn for turn in reversed(self.turns) if turn.usage), None)
+        self._budget = build_budget(
+            profiles.system_prompt(""),
+            profiles.system_prompt(self.settings.context.text()),
+            self._history,
+            sending.selection.text() if sending else "",
+            self._windows.get(self.settings.config.model),
+            measured.usage if measured else None,
+            measured.first_text_s if measured else None,
+        )
+        self.budget_changed.emit()
 
     # -- Internos ----------------------------------------------
+
+    def _on_context_reloaded(self, payload: dict) -> None:
+        if payload.get("level") != "busy":
+            self.refresh_budget()
 
     def _open_sources(self) -> list[str]:
         return [source for source in SOURCES if source not in self.live.closed_sources]

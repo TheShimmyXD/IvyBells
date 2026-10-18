@@ -3,7 +3,9 @@ Página Configuración: con qué cuenta y qué modelo responde Claude en el mód
 
 Arriba la cuenta (correo, Comprobar y, si hace falta, la orden para iniciar sesión);
 después el modelo, el esfuerzo, el respaldo y el tiempo máximo; abajo los perfiles del
-agente (`ProfileEditor`) y su contexto (`ContextEditor`). Solo habla con `ClaudeSettings`.
+agente (`ProfileEditor`), su contexto (`ContextEditor`) y cuánto de la ventana del modelo
+ocupa un envío. Habla con `ClaudeSettings`; la barra de contexto escucha al coordinador del
+Agente, que es quien conoce el historial (si no se pasa, el panel no aparece).
 """
 
 from __future__ import annotations
@@ -22,7 +24,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from coordinator_agent import AgentCoordinator
 from coordinator_config import CLAUDE_MODELS, EFFORTS, FALLBACKS, TIMEOUTS_S, ClaudeSettings
+from ui.blocks.context_bar import ContextBar
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
@@ -46,9 +50,15 @@ def _muted(text: str = "") -> QLabel:
 
 
 class ClaudeConfigPage(QWidget):
-    def __init__(self, settings: ClaudeSettings, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        settings: ClaudeSettings,
+        agent: AgentCoordinator | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.settings = settings
+        self.agent = agent
         # En una ventana baja la página se desplaza en vez de aplastar el editor del perfil.
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -67,6 +77,13 @@ class ClaudeConfigPage(QWidget):
         layout.addWidget(self.profile_editor, 1)
         self.context_editor = ContextEditor(settings.context)
         layout.addWidget(self.context_editor)
+        self.context_bar = ContextBar(detailed=True)
+        if agent is not None:
+            frame, panel = titled_panel("gauge", "Uso del contexto")
+            panel.addWidget(self.context_bar)
+            layout.addWidget(frame)
+            agent.budget_changed.connect(lambda: self.context_bar.set_budget(agent.budget))
+            self.context_bar.set_budget(agent.budget)
         settings.account_checked.connect(self._on_account_checked)
         settings.config_changed.connect(lambda _config: self._refresh())
         self._refresh()
@@ -164,6 +181,9 @@ class ClaudeConfigPage(QWidget):
         self.login_edit.setCursorPosition(0)
         self.copy_button.setText("Copiar")
         self.login_box.setVisible(bool(payload["login"]))
+
+    def refresh_theme(self) -> None:
+        self.context_bar.refresh_theme()
 
     def _refresh(self) -> None:
         """Pone los controles como dice la configuración, sin volver a guardarla."""

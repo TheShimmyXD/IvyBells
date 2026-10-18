@@ -22,7 +22,7 @@ class AgentWorker(QObject):
     -------
     text(str)      -> un trozo de la respuesta, en cuanto llega.
     failed(str)    -> motivo de la falla, en una línea.
-    finished(dict) -> siempre al final: `_request_id`, `answer` y `cancelled`.
+    finished(dict) -> siempre al final: `_request_id`, `answer`, `cancelled` y `usage`.
     """
 
     text = Signal(str)
@@ -45,9 +45,11 @@ class AgentWorker(QObject):
 
     def run(self) -> None:
         answer = ""
+        usage = None
         cancelled = False
         try:
-            answer = self._service.ask(self._prompt, self.text.emit, self._cancel).text
+            finished = self._service.ask(self._prompt, self.text.emit, self._cancel)
+            answer, usage = finished.text, finished.usage
         except ClaudeCancelled:
             cancelled = True
             logger.info("Envío a Claude cancelado")
@@ -60,5 +62,10 @@ class AgentWorker(QObject):
             self.failed.emit(str(exc) or type(exc).__name__)
         finally:
             self.finished.emit(
-                {"_request_id": self._request_id, "answer": answer, "cancelled": cancelled}
+                {
+                    "_request_id": self._request_id,
+                    "answer": answer,
+                    "cancelled": cancelled,
+                    "usage": usage,
+                }
             )

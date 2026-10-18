@@ -2,7 +2,8 @@
 Página Agente (maqueta A): el cliente a la izquierda y lo que responde Claude a la derecha.
 
 Clic izquierdo marca el inicio, clic derecho el final y envía; Esc o Cancelar cancela.
-El modelo, el esfuerzo y la cuenta se muestran aquí y se cambian en Configuración.
+El modelo, el esfuerzo y la cuenta se muestran aquí y se cambian en Configuración; en el
+pie, cuánto de la ventana ocupa el envío y el primer texto y la caché del último.
 Solo habla con `AgentCoordinator` (y, por él, con la escucha en vivo).
 """
 
@@ -24,7 +25,9 @@ from PySide6.QtWidgets import (
 from coordinator_agent import AgentCoordinator
 from core.agent_state import AgentState
 from core.claude_model import ClaudeModelConfig
+from core.context_budget import format_percent
 from ui.agent_view import SelectableTranscript, keep_scroll, transcript_html, turns_html
+from ui.blocks.context_bar import ContextBar
 from ui.blocks.icons import GlyphLabel
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
@@ -52,10 +55,11 @@ def config_text(config: ClaudeModelConfig, profile: str = "") -> str:
     return f"Claude: {config.model}, esfuerzo {effort}, {account}, perfil {profile or 'ninguno'}"
 
 
-def first_text(seconds: float | None) -> str:
-    return (
-        "Primer texto -" if seconds is None else f"Primer texto {seconds:.1f} s".replace(".", ",")
-    )
+def first_text(seconds: float | None, cached: float | None = None) -> str:
+    if seconds is None:
+        return "Primer texto -"
+    text = f"Primer texto {seconds:.1f} s".replace(".", ",")
+    return text if cached is None else f"{text}, caché {format_percent(cached)}"
 
 
 class AgentPage(QWidget):
@@ -82,6 +86,7 @@ class AgentPage(QWidget):
         agent.state_changed.connect(self._on_state)
         agent.turns_changed.connect(self.refresh_turns)
         agent.marks_changed.connect(self.refresh_transcript)
+        agent.budget_changed.connect(self._on_budget)
         agent.settings.config_changed.connect(self._on_config)
         agent.settings.profiles.active_changed.connect(
             lambda _name: self._on_config(agent.settings.config)
@@ -93,6 +98,7 @@ class AgentPage(QWidget):
         self._on_sources()
         self._on_state({})
         self._on_live_state({})
+        self._on_budget()
         self.refresh_theme()
 
     # -- Construcción ------------------------------------------
@@ -140,6 +146,9 @@ class AgentPage(QWidget):
         set_tone(hint, Tone.MUTED)
         row.addWidget(hint)
         row.addStretch(1)
+        self.context_bar = ContextBar()
+        row.addWidget(self.context_bar)
+        row.addSpacing(8)
         row.addWidget(GlyphLabel("timer", FOOTER_ICON_SIZE, Tone.MUTED))
         self.first_text_label = QLabel(first_text(None))
         self.first_text_label.setFont(mono_font())
@@ -187,6 +196,15 @@ class AgentPage(QWidget):
         self.speaker_selector.select(self.agent.speaker)
         self.refresh_transcript()
 
+    def _on_budget(self) -> None:
+        self.context_bar.set_budget(self.agent.budget)
+        self._refresh_first_text()
+
+    def _refresh_first_text(self) -> None:
+        budget = self.agent.budget
+        cached = budget.cached_fraction if budget is not None else None
+        self.first_text_label.setText(first_text(self.agent.last_first_text_s, cached))
+
     def _on_config(self, config: ClaudeModelConfig) -> None:
         self.config_label.setText(config_text(config, self.agent.settings.profiles.active))
 
@@ -206,8 +224,9 @@ class AgentPage(QWidget):
 
     def refresh_turns(self) -> None:
         keep_scroll(self.turns_view, turns_html(self.agent.turns, tokens(), mono_font().family()))
-        self.first_text_label.setText(first_text(self.agent.last_first_text_s))
+        self._refresh_first_text()
 
     def refresh_theme(self) -> None:
         self.refresh_transcript()
         self.refresh_turns()
+        self.context_bar.refresh_theme()

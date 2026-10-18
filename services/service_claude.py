@@ -22,7 +22,7 @@ from typing import Protocol
 
 from core.agent_profile import build_system_prompt
 from core.claude_model import ClaudeModelConfig
-from core.claude_stream import Finished, TextDelta, parse_line
+from core.claude_stream import Finished, TextDelta, Usage, parse_line
 from paths import AGENT_WORKDIR
 from services.service_claude_account import claude_env, config_dir_for
 from services.service_profiles import write_if_changed
@@ -162,13 +162,21 @@ class ScriptedClaude:
     """
     Responde con trozos fijos, con una pausa entre trozos (pruebas y capturas).
 
-    Con `error` falla después de los trozos; atiende la cancelación entre trozos.
+    Con `error` falla después de los trozos; atiende la cancelación entre trozos. Con
+    `usage`, el resultado lo trae como lo traería la CLI.
     """
 
-    def __init__(self, chunks: Sequence[str], pause_s: float = 0.0, error: str = "") -> None:
+    def __init__(
+        self,
+        chunks: Sequence[str],
+        pause_s: float = 0.0,
+        error: str = "",
+        usage: Usage | None = None,
+    ) -> None:
         self.chunks = list(chunks)
         self.pause_s = pause_s
         self.error = error
+        self.usage = usage
         self.prompts: list[str] = []
 
     def ask(self, prompt: str, on_text: TextCallback, cancel: threading.Event) -> Finished:
@@ -179,4 +187,4 @@ class ScriptedClaude:
             on_text(chunk)
         if self.error:
             raise ClaudeError(self.error)
-        return Finished("".join(self.chunks), False)
+        return Finished("".join(self.chunks), False, usage=self.usage)

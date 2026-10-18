@@ -16,6 +16,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 from core.agent_context import clean_paths
+from core.context_budget import estimate_tokens, path_weights, section_chars
 from paths import AGENT_CONTEXT_FILE
 from services.service_context import read_context, write_context
 from workers.worker_context import ContextWorker, ContextWriter
@@ -74,6 +75,13 @@ class AgentContext(QObject):
 
     def text(self) -> str:
         return read_context(self.target)
+
+    def weights(self) -> dict[str, int]:
+        """Tokens estimados que aporta cada ruta a la foto; 0 si todavía no entró."""
+        sizes = section_chars(self.text())
+        return {
+            path: estimate_tokens(chars) for path, chars in path_weights(self.paths, sizes).items()
+        }
 
     def set_paths(self, lines: list[str]) -> None:
         paths = clean_paths(lines)

@@ -2,11 +2,13 @@
 Panel de contexto del agente (módulo Configuración).
 
 Las rutas van una por línea, escritas o agregadas con los botones; Recargar rehace la
-foto `contexto.md` y Abrir la deja revisar o corregir a mano. Solo habla con
-`AgentContext`.
+foto `contexto.md` y Abrir la deja revisar o corregir a mano. Debajo de las rutas, lo que
+pesa cada una en la foto. Solo habla con `AgentContext`.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QTextCursor
@@ -22,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from coordinator_context import AgentContext
+from core.context_budget import format_tokens
 from ui.blocks.panel import titled_panel
 from ui.blocks.status_line import StatusLine
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
@@ -41,6 +44,19 @@ HELP_TEXT = (
 PATHS_HEIGHT = 96
 # Espera tras la última tecla antes de guardar las rutas.
 SAVE_DELAY_MS = 800
+
+
+def weights_text(weights: dict[str, int]) -> str:
+    """ "Peso en contexto.md: empresa ~4,2 k, manual.txt 0 (sin leer)"."""
+    if not weights:
+        return ""
+    shown = [
+        f"{Path(path).name or path} ~{format_tokens(tokens)}"
+        if tokens
+        else f"{Path(path).name or path} 0 (sin leer o vacío)"
+        for path, tokens in weights.items()
+    ]
+    return "Peso en contexto.md (tokens): " + ", ".join(shown)
 
 
 def pick_files(parent: QWidget) -> list[str]:
@@ -77,6 +93,10 @@ class ContextEditor(QWidget):
         self.paths_edit.setFixedHeight(PATHS_HEIGHT)
         self.paths_edit.textChanged.connect(lambda: self._save_timer.start())
         layout.addWidget(self.paths_edit)
+        self.weights_label = QLabel()
+        self.weights_label.setWordWrap(True)
+        set_tone(self.weights_label, Tone.MUTED)
+        layout.addWidget(self.weights_label)
 
         row = QHBoxLayout()
         row.setSpacing(6)
@@ -136,6 +156,8 @@ class ContextEditor(QWidget):
         self.status.set_status(payload["text"], LEVEL_TONES.get(payload["level"]))
         self.reload_button.setEnabled(payload["level"] != "busy")
         self._refresh_open()
+        if payload["level"] != "busy":
+            self._refresh_weights()
 
     # -- Internos ----------------------------------------------
 
@@ -146,8 +168,14 @@ class ContextEditor(QWidget):
         self._save_timer.stop()
         self.context.set_paths(self._lines())
 
+    def _refresh_weights(self) -> None:
+        text = weights_text(self.context.weights())
+        self.weights_label.setText(text)
+        self.weights_label.setVisible(bool(text))
+
     def _show_paths(self) -> None:
         """Pone las rutas guardadas sin pisar lo que el autor está escribiendo."""
+        self._refresh_weights()
         if [line.strip() for line in self._lines() if line.strip()] == self.context.paths:
             return
         self.paths_edit.blockSignals(True)

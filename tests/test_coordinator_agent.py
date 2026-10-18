@@ -8,6 +8,7 @@ import pytest
 from PySide6.QtCore import QObject, Signal
 
 from core.agent_state import AgentState
+from core.claude_stream import Usage
 from core.engine import TranscriptEvent
 from core.live_view import LiveTranscript
 from services.service_claude import ScriptedClaude
@@ -158,14 +159,22 @@ def test_click_outside_the_phrases_does_nothing(qapp, make):
 def test_worker_reports_cancel_and_answer(qapp):
     cancel = threading.Event()
     worker = AgentWorker(
-        service=ScriptedClaude(["a", "b"]), prompt="p", cancel_event=cancel, request_id=3
+        service=ScriptedClaude(["a", "b"], usage=Usage(10, 4, 1_000)),
+        prompt="p",
+        cancel_event=cancel,
+        request_id=3,
     )
     got = {"text": [], "failed": [], "finished": []}
     for name, items in got.items():
         getattr(worker, name).connect(lambda *args, items=items: items.append(args))
     worker.run()
     assert [args[0] for args in got["text"]] == ["a", "b"]
-    assert got["finished"][0][0] == {"_request_id": 3, "answer": "ab", "cancelled": False}
+    assert got["finished"][0][0] == {
+        "_request_id": 3,
+        "answer": "ab",
+        "cancelled": False,
+        "usage": Usage(10, 4, 1_000),
+    }
 
 
 def test_active_profile_reaches_the_service(qapp, tmp_path):
@@ -200,3 +209,42 @@ def test_active_profile_reaches_the_service(qapp, tmp_path):
     assert "Somos Acme." in system_prompts[0]
     assert system_prompts[0].startswith("Reglas de IvyBells")
     assert system_prompts[0].index("Somos Acme.") < system_prompts[0].index("Horario de 8 a 18.")
+
+
+def test_budget_learns_the_window_and_moves_the_fragment_to_history(qapp, tmp_path):
+    from coordinator_agent import AgentCoordinator
+    from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
+    from coordinator_profiles import AgentProfiles
+    from services.service_profiles import ProfileStore
+
+    folder = tmp_path / "perfiles"
+    folder.mkdir()
+    photo = tmp_path / "contexto.md"
+    photo.write_text("Horario de 8 a 18.", encoding="utf-8")
+    settings = ClaudeSettings(
+        profiles=AgentProfiles(ProfileStore(folder), ""), context=AgentContext(target=photo)
+    )
+    service = ScriptedClaude(["listo"], usage=Usage(1_500, 1_000, 200_000))
+    coordinator = AgentCoordinator(
+        _FakeLive(PHRASES), settings, service_factory=lambda _config, _prompt: service
+    )
+    changes = []
+    coordinator.budget_changed.connect(lambda: changes.append(1))
+    before = {part.key: part for part in coordinator.budget.parts}
+    assert coordinator.budget.window is None  # sonnet: sin medir hasta su primer envío
+    assert before["context"].chars > 0 and before["history"].chars == 0
+    coordinator.mark_start(1, 0)
+    coordinator.mark_end(1, 99)
+    sending = {part.key: part for part in coordinator.budget.parts}
+    assert sending["fragment"].chars > before["fragment"].chars
+    _wait(qapp, lambda: coordinator.logic.state is AgentState.ANSWERED)
+    coordinator.close()
+    _wait(qapp, lambda: coordinator._thread is None)
+    after = coordinator.budget
+    parts = {part.key: part for part in after.parts}
+    assert after.window == 200_000
+    assert after.last == Usage(1_500, 1_000, 200_000)
+    assert after.first_text_s is not None
+    assert parts["history"].chars > 0 and parts["fragment"].chars == before["fragment"].chars
+    assert len(changes) >= 2

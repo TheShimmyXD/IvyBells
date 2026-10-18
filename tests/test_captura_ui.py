@@ -4,10 +4,12 @@ from PySide6.QtGui import QImage
 
 from captura_ui import (
     AGENT_STATES,
+    BUDGET_STATES,
     CONFIG_STATES,
     STATES,
     THEMES,
     capture_agent,
+    capture_budget,
     capture_config,
     capture_states,
 )
@@ -32,3 +34,9 @@ def test_captures_agent_module(qapp, tmp_path):
     paths = capture_agent(tmp_path)
     assert len(paths) == len(AGENT_STATES) * len(THEMES)
     assert all(QImage(str(path)).width() >= 760 for path in paths)
+
+
+def test_captures_context_bar(qapp, tmp_path):
+    paths = capture_budget(tmp_path)
+    assert len(paths) == 2 * len(BUDGET_STATES) * len(THEMES)
+    assert all(not QImage(str(path)).isNull() for path in paths)
