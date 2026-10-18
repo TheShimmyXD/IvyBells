@@ -2,6 +2,8 @@
 Página Agente (maqueta A): el cliente a la izquierda y lo que responde Claude a la derecha.
 
 Clic izquierdo marca el inicio, clic derecho el final y envía; Esc o Cancelar cancela.
+En el modo anticipado se envía solo al terminar cada turno del interlocutor, la
+respuesta sale en una tarjeta y la columna derecha es más ancha; los clics siguen.
 El modelo, el esfuerzo y la cuenta se muestran aquí y se cambian en Configuración; en el
 pie, cuánto de la ventana ocupa el envío y el primer texto y la caché del último.
 Solo habla con `AgentCoordinator` (y, por él, con la escucha en vivo).
@@ -23,10 +25,17 @@ from PySide6.QtWidgets import (
 )
 
 from coordinator_agent import AgentCoordinator
+from core.agent_ahead import AHEAD, MANUAL, TURN_SILENCE_S
 from core.agent_state import AgentState
 from core.claude_model import ClaudeModelConfig
 from core.context_budget import format_percent
-from ui.agent_view import SelectableTranscript, keep_scroll, transcript_html, turns_html
+from ui.agent_view import (
+    SelectableTranscript,
+    ahead_html,
+    keep_scroll,
+    transcript_html,
+    turns_html,
+)
 from ui.blocks.context_bar import ContextBar
 from ui.blocks.icons import GlyphLabel
 from ui.blocks.panel import titled_panel
@@ -46,7 +55,20 @@ SPEAKERS = (
     Segment("ellos", "Ellos", "Lo que suena por la salida"),
     Segment("tu", "Tú", "El micrófono"),
 )
+MODES = (
+    Segment(MANUAL, "Manual", "Envía lo que marcas con clics"),
+    Segment(AHEAD, "Anticipado", "Responde solo al terminar cada turno del interlocutor"),
+)
 HINT = "Clic izquierdo: inicio   Clic derecho: final y enviar   Esc: cancelar"
+HINT_AHEAD = f"Responde tras {TURN_SILENCE_S:.1f} s de silencio".replace(".", ",") + (
+    "   Clics: envío forzado   Esc: cancelar"
+)
+FIRST_TEXT_TIPS = {
+    MANUAL: "Desde el clic derecho hasta el primer texto de la respuesta",
+    AHEAD: "Desde que llegó la última frase del turno hasta el primer texto de la respuesta",
+}
+# Columnas (texto, respuestas): en anticipado importan más las respuestas.
+STRETCH = {MANUAL: (1, 1), AHEAD: (2, 3)}
 
 
 def config_text(config: ClaudeModelConfig, profile: str = "") -> str:
@@ -75,11 +97,11 @@ class AgentPage(QWidget):
         layout.setContentsMargins(16, 14, 16, 12)
         layout.setSpacing(10)
         layout.addLayout(self._build_header(toggle_run))
-        columns = QHBoxLayout()
-        columns.setSpacing(10)
-        columns.addWidget(self._build_client(), 1)
-        columns.addWidget(self._build_turns(), 1)
-        layout.addLayout(columns, 1)
+        self.columns = QHBoxLayout()
+        self.columns.setSpacing(10)
+        self.columns.addWidget(self._build_client(), 1)
+        self.columns.addWidget(self._build_turns(), 1)
+        layout.addLayout(self.columns, 1)
         layout.addLayout(self._build_footer())
         QShortcut(QKeySequence("Esc"), self, activated=agent.cancel)
 
@@ -87,6 +109,7 @@ class AgentPage(QWidget):
         agent.turns_changed.connect(self.refresh_turns)
         agent.marks_changed.connect(self.refresh_transcript)
         agent.budget_changed.connect(self._on_budget)
+        agent.mode_changed.connect(lambda _mode: self._apply_mode())
         agent.settings.config_changed.connect(self._on_config)
         agent.settings.profiles.active_changed.connect(
             lambda _name: self._on_config(agent.settings.config)
@@ -99,7 +122,7 @@ class AgentPage(QWidget):
         self._on_state({})
         self._on_live_state({})
         self._on_budget()
-        self.refresh_theme()
+        self._apply_mode()
 
     # -- Construcción ------------------------------------------
 
@@ -108,6 +131,10 @@ class AgentPage(QWidget):
         row.setSpacing(10)
         self.status = StatusLine()
         row.addWidget(self.status, 1)
+        self.mode_selector = SegmentedButtons(MODES)
+        self.mode_selector.select(self.agent.mode)
+        self.mode_selector.changed.connect(self._on_mode)
+        row.addWidget(self.mode_selector)
         self.config_label = QLabel()
         set_tone(self.config_label, Tone.MUTED)
         row.addWidget(self.config_label)
@@ -142,9 +169,9 @@ class AgentPage(QWidget):
     def _build_footer(self) -> QHBoxLayout:
         row = QHBoxLayout()
         row.setSpacing(8)
-        hint = QLabel(HINT)
-        set_tone(hint, Tone.MUTED)
-        row.addWidget(hint)
+        self.hint = QLabel(HINT)
+        set_tone(self.hint, Tone.MUTED)
+        row.addWidget(self.hint)
         row.addStretch(1)
         self.context_bar = ContextBar()
         row.addWidget(self.context_bar)
@@ -164,6 +191,18 @@ class AgentPage(QWidget):
         else:
             self.agent.mark_start(phrase, offset)
 
+    def _on_mode(self, mode: str) -> None:
+        self.agent.set_mode(mode)
+
+    def _apply_mode(self) -> None:
+        mode = self.agent.mode
+        self.mode_selector.select(mode)
+        for index, stretch in enumerate(STRETCH[mode]):
+            self.columns.setStretch(index, stretch)
+        self.hint.setText(HINT_AHEAD if mode == AHEAD else HINT)
+        self.first_text_label.setToolTip(FIRST_TEXT_TIPS[mode])
+        self.refresh_theme()
+
     def _on_speaker(self, source: str) -> None:
         self.agent.set_speaker(source)
         self.refresh_transcript()
@@ -176,7 +215,7 @@ class AgentPage(QWidget):
 
     def _on_state(self, payload: dict) -> None:
         logic = self.agent.logic
-        self.status.set_status(logic.status, STATE_TONES[logic.state])
+        self.status.set_status(self.agent.status, STATE_TONES[logic.state])
         self.cancel_button.setEnabled(logic.state in (AgentState.START_MARKED, AgentState.SENDING))
         self.speaker_selector.setEnabled(logic.state is not AgentState.SENDING)
 
@@ -223,7 +262,8 @@ class AgentPage(QWidget):
         self.transcript.show_phrases(html, len(finals))
 
     def refresh_turns(self) -> None:
-        keep_scroll(self.turns_view, turns_html(self.agent.turns, tokens(), mono_font().family()))
+        render = ahead_html if self.agent.mode == AHEAD else turns_html
+        keep_scroll(self.turns_view, render(self.agent.turns, tokens(), mono_font().family()))
         self._refresh_first_text()
 
     def refresh_theme(self) -> None:

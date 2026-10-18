@@ -4,6 +4,7 @@ Máquina de estados del módulo Agente (sin Qt).
 Transiciones:
     idle | answered | error | start_marked -> mark_start -> start_marked
     start_marked -> mark_end  -> sending      (devuelve el rango ordenado)
+    idle | answered | error -> begin -> sending  (envío del modo anticipado, sin marcar)
     start_marked -> cancel    -> idle | answered
     sending      -> answered  -> answered
     sending      -> fail      -> error
@@ -70,6 +71,14 @@ class AgentLogic:
         self.model = model
         self.state = AgentState.SENDING
         return start, end
+
+    def begin(self, model: str = "") -> bool:
+        """Envío sin rango marcado (modo anticipado); no interrumpe un inicio a medias."""
+        if self.state in (AgentState.START_MARKED, AgentState.SENDING):
+            return False
+        self.model = model
+        self.state = AgentState.SENDING
+        return True
 
     def cancel(self) -> bool:
         if self.state not in (AgentState.START_MARKED, AgentState.SENDING):

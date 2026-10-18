@@ -17,6 +17,7 @@ from pathlib import Path
 
 from coordinator_agent import AgentCoordinator
 from coordinator_live import DEFAULT_MODEL, LiveCoordinator
+from core.agent_ahead import AHEAD
 from core.agent_context import MAX_FILE_CHARS, ContextFile, build_context
 from core.claude_account import AccountStatus
 from core.claude_model import ClaudeModelConfig
@@ -54,7 +55,9 @@ AGENT_ANSWERS = (
     "primeros cinco días hábiles después de la contratación, y sí puede pagar",
 )
 AGENT_ERROR = "Claude no respondió en 120 s"
-AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error")
+AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error", "anticipado")
+# Modo anticipado: un turno respondido, uno superado (el cliente siguió) y el último.
+AHEAD_SUPERSEDED = "Perfecto, ¿me confirma el correo donde la espera?"
 # Barra de contexto con haiku (ventana medida de 1 M): archivos sintéticos de 20 000
 # caracteres en `contexto.md` para llenarla vacía, a medias y casi llena.
 BUDGET_STATES = (("vacia", 0), ("media", 58), ("llena", 101))
@@ -215,9 +218,35 @@ def capture_config(out_dir: Path) -> list[Path]:
     return paths
 
 
+def _close_turn(agent: PreviewAgent) -> None:
+    """Da por vencido el silencio del turno sin esperarlo."""
+    agent._watcher.last_final -= 60.0
+    agent._tick()
+
+
+def _play_ahead(coordinator: PreviewCoordinator, agent: PreviewAgent) -> None:
+    agent.set_mode(AHEAD)
+    phrases = [TranscriptEvent("ellos", True, text, s, s + 3.0) for s, text in AGENT_EVENTS]
+    coordinator.on_event(phrases[0])
+    _close_turn(agent)
+    agent.answer(AGENT_ANSWERS[0])
+    coordinator.on_event(phrases[1])
+    _close_turn(agent)
+    agent.answer(AHEAD_SUPERSEDED)
+    agent.turns[-1].superseded = True
+    for event in phrases[2:]:
+        coordinator.on_event(event)
+    _close_turn(agent)
+    agent.turns[-1].first_text_s = 2.1
+    agent.answer(AGENT_ANSWERS[1])
+
+
 def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str) -> None:
     coordinator.start(DEFAULT_MODEL, {"ellos": MONITOR.name})
     coordinator.on_loaded(STARTED)
+    if state == "anticipado":
+        _play_ahead(coordinator, agent)
+        return
     for start_s, text in AGENT_EVENTS:
         coordinator.on_event(TranscriptEvent("ellos", True, text, start_s, start_s + 3.0))
     start_s, text = AGENT_PARTIAL

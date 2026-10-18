@@ -20,6 +20,7 @@ class _FakeLive(QObject):
 
     session_started = Signal()
     sources_changed = Signal()
+    transcript_changed = Signal(str)
 
     def __init__(self, phrases: dict[str, list[str]]) -> None:
         super().__init__()

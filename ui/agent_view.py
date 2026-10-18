@@ -1,5 +1,6 @@
 """
-Vistas del módulo Agente: el texto del cliente que se marca con clics y la lista de turnos.
+Vistas del módulo Agente: el texto del cliente que se marca con clics y la lista de turnos
+(en el modo anticipado, la última respuesta en una tarjeta y las anteriores debajo).
 
 Cada frase final es un párrafo: la hora, un salto de línea y el texto. El salto (`<br>`)
 queda en el documento como separador de línea, así que la posición del clic dentro del
@@ -15,6 +16,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QFrame, QTextBrowser, QWidget
 
 from coordinator_agent import AgentTurn
+from core.agent_ahead import shown_answer
 from core.agent_selection import WordPos
 from core.live_view import Line
 from ui.theme import ColorTokens
@@ -115,6 +117,70 @@ def turns_html(turns: list[AgentTurn], colors: ColorTokens, mono: str) -> str:
             f"font-size:small'><span style='font-family:{mono}'>{turn.clock}</span>"
             f"&nbsp;&nbsp;<i>«{escape(_quote(turn))}»</i></p>"
             f"<p style='margin-top:0; margin-bottom:10px'>{body}</p>"
+        )
+    return f"<div style='color:{colors.text}'>{''.join(out)}</div>"
+
+
+def _seconds(value: float) -> str:
+    return f"{value:.1f} s".replace(".", ",")
+
+
+def _ahead_meta(turn: AgentTurn, colors: ColorTokens, mono: str, extra: str = "") -> str:
+    return (
+        f"<p style='margin:0; color:{colors.text_muted}; font-size:small'>"
+        f"<span style='font-family:{mono}'>{turn.clock}</span>"
+        f"&nbsp;&nbsp;<i>«{escape(_quote(turn))}»</i>{extra}</p>"
+    )
+
+
+def ahead_html(turns: list[AgentTurn], colors: ColorTokens, mono: str) -> str:
+    """
+    Modo anticipado (maqueta A): la última respuesta vigente, grande y en una tarjeta;
+    debajo las anteriores, la más nueva arriba. Los "-" no se ven; las superadas, en gris.
+    """
+    shown = [turn for turn in turns if turn.error or shown_answer(turn.answer)]
+    card = next((turn for turn in reversed(shown) if not (turn.superseded or turn.cancelled)), None)
+    out = []
+    if card is None:
+        out.append(
+            f"<p style='color:{colors.text_muted}'>La respuesta aparece aquí al terminar "
+            "cada turno del interlocutor.</p>"
+        )
+    else:
+        if card.error:
+            state = f"&nbsp;&nbsp;·&nbsp;&nbsp;<span style='color:{colors.error}'>error</span>"
+        elif card.done and card.first_text_s is not None:
+            state = f"&nbsp;&nbsp;·&nbsp;&nbsp;primer texto en {_seconds(card.first_text_s)}"
+        else:
+            state = "&nbsp;&nbsp;·&nbsp;&nbsp;llegando..."
+        body = escape(shown_answer(card.answer))
+        if card.error:
+            body += f"<br><span style='color:{colors.error}'>Error: {escape(card.error)}</span>"
+        out.append(
+            f"<table width='100%' cellpadding='12' cellspacing='0' "
+            f"style='background:{colors.brand_soft}'><tr><td>"
+            f"{_ahead_meta(card, colors, mono, state)}"
+            f"<p style='font-size:x-large; margin-top:6px; margin-bottom:0'>{body}</p>"
+            "</td></tr></table>"
+        )
+    older = [turn for turn in reversed(shown) if turn is not card]
+    if older:
+        out.append(
+            f"<p style='color:{colors.text_muted}; font-size:small; margin-top:14px'>Anteriores</p>"
+        )
+    for turn in older:
+        tag = ""
+        if turn.superseded:
+            tag = "&nbsp;&nbsp;(superada)"
+        elif turn.cancelled:
+            tag = "&nbsp;&nbsp;(cancelada)"
+        tone = colors.text_muted if tag else colors.text
+        body = escape(shown_answer(turn.answer))
+        if turn.error:
+            body += f"<br><span style='color:{colors.error}'>Error: {escape(turn.error)}</span>"
+        out.append(
+            f"<div style='margin-top:8px'>{_ahead_meta(turn, colors, mono, tag)}"
+            f"<p style='margin-top:0; color:{tone}'>{body}</p></div>"
         )
     return f"<div style='color:{colors.text}'>{''.join(out)}</div>"
 

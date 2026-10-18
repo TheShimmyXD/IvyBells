@@ -61,6 +61,7 @@ class MainWindow(QWidget):
         self._remember = remember
         prefs = prefs or {}
         self.agent.set_speaker(prefs.get("speaker", self.agent.speaker))
+        self.agent.set_mode(prefs.get("agent_mode", self.agent.mode))
         self._apply_theme()
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(app_icon())
@@ -110,6 +111,7 @@ class MainWindow(QWidget):
         self.agent_page.speaker_selector.changed.connect(
             lambda speaker: self._save("speaker", speaker)
         )
+        self.agent_page.mode_selector.changed.connect(lambda mode: self._save("agent_mode", mode))
 
     def _save(self, key: str, value: object) -> None:
         if self._remember is not None:
@@ -187,6 +189,7 @@ def run_app() -> None:
         "live_model": config.live_model,
         "devices": config.devices,
         "speaker": config.speaker,
+        "agent_mode": config.agent_mode,
         "module": config.module,
     }
     store = ProfileStore()

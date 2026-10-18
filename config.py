@@ -5,6 +5,7 @@ import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from core.agent_ahead import AGENT_MODES, MANUAL
 from core.claude_model import ClaudeModelConfig
 from core.live_view import SOURCES
 from paths import APP_SETTINGS_JSON, LOCAL_SETTINGS_JSON
@@ -51,6 +52,7 @@ class AppConfig:
     devices : fuente elegida por voz ("ellos", "tu"), por nombre de PipeWire; sin clave
               o vacía = seguir la predeterminada del sistema.
     speaker : interlocutor del módulo Agente ("ellos" o "tu").
+    agent_mode : modo del Agente ("manual" o "ahead", el anticipado).
     closed_sources : canales cerrados en Transcripción; nunca los dos.
     agent_profile : perfil del agente en uso (si ya no existe, se usa el de ejemplo).
     agent_context_paths : archivos y carpetas de contexto del agente, en su orden.
@@ -65,6 +67,7 @@ class AppConfig:
     live_model: str = "large-v3-turbo"
     devices: dict[str, str] = field(default_factory=dict)
     speaker: str = "ellos"
+    agent_mode: str = MANUAL
     closed_sources: list[str] = field(default_factory=list)
     agent_profile: str = "ejemplo"
     agent_context_paths: list[str] = field(default_factory=list)
@@ -77,6 +80,7 @@ class AppConfig:
         base = cls()
         theme = as_str(data.get("theme"), base.theme)
         speaker = as_str(data.get("speaker"), base.speaker)
+        agent_mode = as_str(data.get("agent_mode"), base.agent_mode)
         module = as_str(data.get("module"), base.module)
         devices = data.get("devices")
         context = data.get("agent_context_paths")
@@ -95,6 +99,7 @@ class AppConfig:
                 if source in SOURCES and isinstance(name, str) and name.strip()
             },
             speaker=speaker if speaker in SOURCES else base.speaker,
+            agent_mode=agent_mode if agent_mode in AGENT_MODES else base.agent_mode,
             closed_sources=closed if len(closed) < len(SOURCES) else [],
             agent_profile=as_str(data.get("agent_profile"), base.agent_profile),
             agent_context_paths=[
