@@ -33,8 +33,10 @@ from core.agent_context import (
         ("llamada.wav", REASON_MEDIA),
         ("demo.mp4", REASON_MEDIA),
         ("model.safetensors", REASON_MODEL),
-        ("catalogo.pdf", REASON_DOCUMENT),
-        ("contrato.docx", REASON_DOCUMENT),
+        ("catalogo.pdf", ""),
+        ("contrato.DOCX", ""),
+        ("contrato.doc", REASON_DOCUMENT),
+        ("precios.xlsx", REASON_DOCUMENT),
         ("logo.png", REASON_TYPE),
         ("sin_extension", REASON_TYPE),
     ],
@@ -56,12 +58,12 @@ def test_clip():
 
 def test_build_context_is_stable_and_sorted():
     files = [ContextFile("/b/zeta.md", "z"), ContextFile("/a/alfa.md", "a", truncated=True)]
-    omitted = [Omitted("/c/x.pdf", REASON_DOCUMENT)]
+    omitted = [Omitted("/c/x.doc", REASON_DOCUMENT)]
     text = build_context(files, omitted)
     assert text == build_context(list(reversed(files)), omitted)
     assert text.index("## /a/alfa.md") < text.index("## /b/zeta.md") < text.index("## Omitidos")
     assert f"Recortado a {MAX_FILE_CHARS}" in text
-    assert "- /c/x.pdf: PDF u Office" in text
+    assert "- /c/x.doc: Office sin lector" in text
 
 
 def test_fence_is_longer_than_backticks_inside():

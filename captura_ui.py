@@ -140,7 +140,7 @@ def _sample_context(folder: Path) -> list[str]:
     folder.mkdir()
     (folder / "servicios.md").write_text("# Servicios\n\n- Plan básico\n", encoding="utf-8")
     (folder / "precios.csv").write_text("plan,precio\nbásico,10\n", encoding="utf-8")
-    (folder / "catalogo.pdf").write_bytes(b"%PDF-1.4")
+    (folder / "precios.xlsx").write_bytes(b"PK")
     return [str(folder), str(folder.parent / "manual_no_existe.txt")]
 
 

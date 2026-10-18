@@ -1,8 +1,9 @@
 """
 Contexto de la empresa para el Agente: qué archivos entran y cómo se arma `contexto.md`.
 
-Solo entra texto con una extensión conocida; lo demás (audio, video, modelos, binarios,
-PDF, Word, claves) queda listado como omitido con su motivo y nunca se abre. El armado
+Entra texto con una extensión conocida, y PDF y Word (.docx), de los que el servicio
+extrae el texto; lo demás (audio, video, modelos, binarios, el resto de Office, claves)
+queda listado como omitido con su motivo y nunca se abre. El armado
 no lleva fecha ni nada que cambie solo: con los mismos archivos sale el mismo texto, así
 el prefijo del system prompt sigue saliendo de la caché.
 """
@@ -34,7 +35,9 @@ MEDIA_SUFFIXES = frozenset(
 MODEL_SUFFIXES = frozenset(
     {".bin", ".safetensors", ".pt", ".pth", ".onnx", ".gguf", ".ckpt", ".npy", ".npz", ".pkl"}
 )
-DOCUMENT_SUFFIXES = frozenset({".pdf", ".doc", ".docx", ".odt", ".xls", ".xlsx", ".ppt", ".pptx"})
+# De estos el servicio extrae el texto; el resto de Office sigue fuera.
+EXTRACTED_SUFFIXES = frozenset({".pdf", ".docx"})
+DOCUMENT_SUFFIXES = frozenset({".doc", ".odt", ".xls", ".xlsx", ".ppt", ".pptx"})
 SECRET_SUFFIXES = frozenset({".key", ".pem", ".p12", ".pfx", ".crt"})
 SKIP_DIRS = frozenset({".git", ".venv", "venv", "node_modules", "__pycache__"})
 
@@ -42,7 +45,7 @@ REASON_HIDDEN = "oculto"
 REASON_SECRET = "posible clave o credencial"
 REASON_MEDIA = "audio o video"
 REASON_MODEL = "modelo o binario"
-REASON_DOCUMENT = "PDF u Office, no se incluye"
+REASON_DOCUMENT = "Office sin lector"
 REASON_TYPE = "tipo no incluido"
 
 
@@ -64,7 +67,7 @@ def skip_dir(name: str) -> bool:
 
 
 def omit_reason(name: str) -> str:
-    """Por qué un archivo no entra, solo por su nombre; "" si es texto y entra."""
+    """Por qué un archivo no entra, solo por su nombre; "" si es texto o documento y entra."""
     suffix = PurePath(name).suffix.lower()
     if name.startswith(".env") or suffix in SECRET_SUFFIXES:
         return REASON_SECRET
@@ -76,7 +79,7 @@ def omit_reason(name: str) -> str:
         return REASON_MODEL
     if suffix in DOCUMENT_SUFFIXES:
         return REASON_DOCUMENT
-    return "" if suffix in TEXT_SUFFIXES else REASON_TYPE
+    return "" if suffix in TEXT_SUFFIXES or suffix in EXTRACTED_SUFFIXES else REASON_TYPE
 
 
 def clip(text: str, limit: int = MAX_FILE_CHARS) -> tuple[str, bool]:

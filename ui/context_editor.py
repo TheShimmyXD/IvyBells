@@ -29,8 +29,8 @@ from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 LEVEL_TONES = {"ok": Tone.OK, "warning": Tone.WARNING, "info": Tone.INFO, "error": Tone.ERROR}
 PATHS_HINT = "Una ruta por línea: archivos o carpetas con información de la empresa"
 HELP_TEXT = (
-    "IvyBells lee solo texto (md, txt, csv, json, código); audio, video, PDF y Word quedan "
-    "fuera. Es una foto: se rehace con Recargar, no en cada envío."
+    "IvyBells lee texto (md, txt, csv, json, código), PDF y Word (.docx); audio, video y el "
+    "resto de Office quedan fuera. Es una foto: se rehace con Recargar, no en cada envío."
 )
 PATHS_HEIGHT = 96
 # Espera tras la última tecla antes de guardar las rutas.

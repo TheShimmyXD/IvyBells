@@ -3,9 +3,36 @@ from __future__ import annotations
 import os
 
 import pytest
+from docx import Document
+from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from core.agent_context import REASON_MEDIA, REASON_SECRET
 from services.service_context import collect, read_context, write_context
+
+_HELVETICA = DictionaryObject(
+    {
+        NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"),
+        NameObject("/BaseFont"): NameObject("/Helvetica"),
+    }
+)
+
+
+def _pdf(path, pages, password=None):
+    """Un PDF real con una línea de texto por página (sin acentos: Helvetica estándar)."""
+    writer = PdfWriter()
+    for text in pages:
+        page = writer.add_blank_page(612, 792)
+        page[NameObject("/Resources")] = DictionaryObject(
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): _HELVETICA})}
+        )
+        stream = DecodedStreamObject()
+        stream.set_data(f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("ascii"))
+        page.replace_contents(stream)
+    if password:
+        writer.encrypt(password, algorithm="RC4-128")
+    writer.write(path)
 
 
 @pytest.fixture
@@ -81,3 +108,51 @@ def test_no_paths_empty_photo(tmp_path):
     write_context([], target)
     assert read_context(target) == ""
     assert read_context(tmp_path / "no_hay.md") == ""
+
+
+def test_pdf_text(tmp_path):
+    _pdf(tmp_path / "catalogo.pdf", ["Plan basico 10 USD", "Plan premium 25 USD"])
+    files, omitted = collect([str(tmp_path)])
+    assert not omitted
+    assert "Plan basico 10 USD" in files[0].text and "Plan premium 25 USD" in files[0].text
+
+
+def test_docx_text_keeps_order_and_tables(tmp_path):
+    document = Document()
+    document.add_paragraph("Contrato de servicio")
+    table = document.add_table(rows=2, cols=2)
+    for row, values in zip(table.rows, [("plan", "precio"), ("básico", "10")], strict=True):
+        for cell, value in zip(row.cells, values, strict=True):
+            cell.text = value
+    document.add_paragraph("Vigencia: un año")
+    document.save(tmp_path / "contrato.docx")
+    files, _ = collect([str(tmp_path)])
+    assert files[0].text == "Contrato de servicio\nplan | precio\nbásico | 10\nVigencia: un año"
+
+
+def test_documents_that_give_no_text(tmp_path):
+    _pdf(tmp_path / "cifrado.pdf", ["secreto"], password="clave")
+    _pdf(tmp_path / "escaneado.pdf", [""])
+    (tmp_path / "roto.pdf").write_bytes(b"%PDF-1.4 basura")
+    (tmp_path / "roto.docx").write_bytes(b"PK no es zip")
+    files, omitted = collect([str(tmp_path)])
+    assert not files
+    reasons = _reasons(omitted)
+    assert reasons["cifrado.pdf"] == "PDF con contraseña"
+    assert reasons["escaneado.pdf"] == "sin texto (¿escaneado?)"
+    assert reasons["roto.pdf"] == reasons["roto.docx"] == "documento dañado o no soportado"
+
+
+def test_big_document_is_not_opened(tmp_path, monkeypatch):
+    import services.service_context as module
+
+    monkeypatch.setattr(module, "MAX_DOCUMENT_BYTES", 10)
+    _pdf(tmp_path / "grande.pdf", ["texto"])
+    _, omitted = collect([str(tmp_path)])
+    assert _reasons(omitted)["grande.pdf"].startswith("más de")
+
+
+def test_long_pdf_stops_at_the_cap(tmp_path):
+    _pdf(tmp_path / "manual.pdf", ["x" * 90] * 400)
+    files, _ = collect([str(tmp_path)])
+    assert files[0].truncated and len(files[0].text) == 20_000
