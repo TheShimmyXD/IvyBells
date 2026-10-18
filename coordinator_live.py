@@ -49,11 +49,13 @@ class LiveCoordinator(QObject):
     state_changed(dict)          -> payload de la máquina de estados (`state`, `status`, ...).
     transcript_changed(str)      -> la fuente cuyo texto cambió.
     latency_changed(float, float) -> última latencia final y mediana.
+    session_started()            -> empezó una escucha nueva (el texto anterior se borró).
     """
 
     state_changed = Signal(dict)
     transcript_changed = Signal(str)
     latency_changed = Signal(float, float)
+    session_started = Signal()
 
     def __init__(
         self,
@@ -120,6 +122,7 @@ class LiveCoordinator(QObject):
     @Slot(object)
     def on_loaded(self, started: datetime) -> None:
         self.transcript.reset(started)
+        self.session_started.emit()
         for source in ("ellos", "tu"):
             self.transcript_changed.emit(source)
         self._emit_state(self.logic.loaded())

@@ -9,6 +9,8 @@ local_settings.json
 # Preferencias de la ventana en esta máquina (tema)
 resources/json/app_settings.json
 secure_credentials.json
+# Perfil del agente con los datos de la empresa
+resources/agent/perfil_local.md
 logs/
 
 # Diario de trabajo del agente (no se versiona)
