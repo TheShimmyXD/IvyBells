@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 PACTL_TIMEOUT_S = 5
 
+# Sustituciones ya avisadas: la ventana consulta PipeWire cada pocos segundos y el mismo
+# aviso no debe repetirse en la terminal en cada consulta.
+_warned_fallbacks: set[tuple[str, str]] = set()
+
 
 @dataclass(frozen=True, slots=True)
 class AudioSource:
@@ -86,7 +90,7 @@ def find_capture_sources(
     Lo que suena es la `.monitor` de la salida predeterminada (`<default_sink>.monitor`):
     ahí sale el audio de Meet o del navegador. El micrófono es la entrada predeterminada,
     salvo que sea una `.monitor`. Si alguna no aparece, se usa la primera de su tipo y se
-    deja un aviso en el log.
+    deja un aviso en el log (una sola vez por sustitución).
     """
     monitors = [source for source in sources if source.is_monitor]
     inputs = [source for source in sources if not source.is_monitor]
@@ -95,13 +99,23 @@ def find_capture_sources(
     monitor = next((source for source in monitors if source.name == monitor_name), None)
     if monitor is None and monitors:
         monitor = monitors[0]
-        logger.warning("No hay monitor de la salida predeterminada; se usa %s", monitor.name)
+        _warn_once("No hay monitor de la salida predeterminada; se usa %s", monitor.name)
 
     microphone = next((source for source in inputs if source.name == default_source), None)
     if microphone is None and inputs:
         microphone = inputs[0]
-        logger.warning("La entrada predeterminada no es un micrófono; se usa %s", microphone.name)
+        _warn_once("La entrada predeterminada no es un micrófono; se usa %s", microphone.name)
     return CaptureSources(monitor=monitor, microphone=microphone)
+
+
+def _warn_once(message: str, source_name: str) -> None:
+    """Avisa una sustitución la primera vez; las repeticiones quedan en debug."""
+    key = (message, source_name)
+    if key in _warned_fallbacks:
+        logger.debug(message, source_name)
+        return
+    _warned_fallbacks.add(key)
+    logger.warning(message, source_name)
 
 
 def _run_pactl(*args: str) -> str:

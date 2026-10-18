@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from services import service_pipewire
@@ -75,6 +76,17 @@ def test_missing_monitor_or_microphone_gives_none():
     assert capture.monitor is None
     assert capture.microphone is not None and capture.microphone.name == "alsa_input.x"
     assert find_capture_sources([]) == CaptureSources(monitor=None, microphone=None)
+
+
+def test_fallback_warning_is_logged_once(monkeypatch, caplog):
+    monkeypatch.setattr(service_pipewire, "_warned_fallbacks", set())
+    sources = parse_short_sources("49\talsa_input.x\tPipeWire\ts32le 2ch\tIDLE\n")
+    with caplog.at_level(logging.WARNING, logger=service_pipewire.__name__):
+        for _ in range(3):
+            find_capture_sources(sources, default_source="otra")
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "alsa_input.x" in warnings[0].getMessage()
 
 
 def _fake_pactl(sources_file: str, info_file: str):
