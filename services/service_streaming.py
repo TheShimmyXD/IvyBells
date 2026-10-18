@@ -72,8 +72,10 @@ class StreamingEngine:
         vad: VadFn | None = None,
         load: Callable[[], tuple[Recognizer, VadFn]] | None = None,
         clock: Callable[[], float] = time.perf_counter,
+        partial_interval_s: float = PARTIAL_INTERVAL_S,
     ) -> None:
         self._on_event = on_event
+        self._partial_windows = _windows(partial_interval_s)
         self._recognizer = recognizer
         self._vad = vad
         self._load = load
@@ -119,7 +121,7 @@ class StreamingEngine:
 
         if (
             stream.segmenter.in_speech
-            and stream.windows_since_partial >= _windows(PARTIAL_INTERVAL_S)
+            and stream.windows_since_partial >= self._partial_windows
             and self.lag_s(source) <= MAX_LAG_FOR_PARTIAL_S
             and self._clock() - self._last_call_end >= self._last_call_cost
         ):
@@ -199,6 +201,7 @@ def create_whisper_engine(
     compute_type: str = "int8",
     language: str = "es",
     beam_size: int = 5,
+    partial_interval_s: float = PARTIAL_INTERVAL_S,
 ) -> StreamingEngine:
     """Motor con faster-whisper en la GPU y el VAD Silero; el modelo se carga en `start`."""
 
@@ -217,4 +220,4 @@ def create_whisper_engine(
 
         return recognize, SileroVad()
 
-    return StreamingEngine(on_event, load=load)
+    return StreamingEngine(on_event, load=load, partial_interval_s=partial_interval_s)

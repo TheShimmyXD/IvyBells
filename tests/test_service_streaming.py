@@ -116,3 +116,18 @@ def test_partials_are_skipped_while_the_engine_is_behind(events):
     assert 1 <= len(partials) <= 3
     assert len(finals) == 1
     assert finals[0].text == " ".join(f"p{index}" for index in range(12))
+
+
+def test_shorter_partial_interval_gives_more_partials():
+    audio = _signal(("voz", 4.0), ("silencio", 1.0))
+    step = int(CHUNK_S * SAMPLE_RATE)
+    counts = []
+    for interval in (1.0, 0.5):
+        received = []
+        engine = StreamingEngine(
+            received.append, recognizer=fake_recognizer, vad=fake_vad, partial_interval_s=interval
+        )
+        for start in range(0, len(audio), step):
+            engine.feed("ellos", audio[start : start + step])
+        counts.append(sum(1 for event in received if not event.is_final))
+    assert counts[1] > counts[0] >= 1

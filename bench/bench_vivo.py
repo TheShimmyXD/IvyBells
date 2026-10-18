@@ -4,7 +4,7 @@ Banco del motor en vivo: alimenta una grabación a ritmo real y mide la latencia
 Uso (desde la raíz del proyecto):
     .venv/bin/python -m bench.bench_vivo
     .venv/bin/python -m bench.bench_vivo --seconds 30
-    .venv/bin/python -m bench.bench_vivo --sources ellos
+    .venv/bin/python -m bench.bench_vivo --sources ellos --partial-interval 0.5
 
 Las pistas elegidas ("ellos" = sonido, "tu" = micrófono; las dos por defecto) entran intercaladas en bloques de
 100 ms, como llegarían de la captura. La latencia final se mide desde que el VAD cierra
@@ -93,6 +93,9 @@ def main() -> None:
     parser.add_argument(
         "--sources", default=",".join(TRACKS), help="pistas separadas por coma: ellos, tu"
     )
+    parser.add_argument(
+        "--partial-interval", type=float, default=0.0, help="segundos; 0 = el del motor"
+    )
     args = parser.parse_args()
     sources = [name.strip() for name in args.sources.split(",") if name.strip()]
     unknown = [name for name in sources if name not in TRACKS]
@@ -121,7 +124,10 @@ def main() -> None:
         total = min(total, int(args.seconds * SAMPLE_RATE))
 
     recorder = _Recorder()
-    engine = create_whisper_engine(recorder, args.model, args.compute_type)
+    partial_interval_s = args.partial_interval or PARTIAL_INTERVAL_S
+    engine = create_whisper_engine(
+        recorder, args.model, args.compute_type, partial_interval_s=partial_interval_s
+    )
     engine.start()
 
     step = int(CHUNK_S * SAMPLE_RATE)
@@ -153,7 +159,7 @@ def main() -> None:
             "compute_type": args.compute_type,
             "bloque_s": CHUNK_S,
             "silencio_cierre_s": MIN_SILENCE_S,
-            "intervalo_provisional_s": PARTIAL_INTERVAL_S,
+            "intervalo_provisional_s": partial_interval_s,
             "frase_max_s": MAX_PHRASE_S,
         },
         "atraso_max_s": round(max_lag_s, 3),

@@ -1,0 +1,66 @@
+{
+  "fecha": "2026-10-17_2113",
+  "equipo": {
+    "gpu": "NVIDIA GeForce GTX 1660 SUPER",
+    "driver": "580.173.02"
+  },
+  "versiones": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.8.3",
+    "nvidia-cublas-cu12": "12.9.2.10",
+    "nvidia-cudnn-cu12": "9.27.0.42"
+  },
+  "audio": {
+    "ellos": "f11b_sonido.wav"
+  },
+  "segundos": 180.0,
+  "opciones": {
+    "modelo": "large-v3-turbo",
+    "compute_type": "int8",
+    "bloque_s": 0.1,
+    "silencio_cierre_s": 0.5,
+    "intervalo_provisional_s": 0.5,
+    "frase_max_s": 20.0
+  },
+  "atraso_max_s": 2.092,
+  "frases_finales": 19,
+  "provisionales": 20,
+  "latencia_final_s": {
+    "mediana": 1.27,
+    "p90": 2.16,
+    "max": 2.288,
+    "valores": [
+      1.637,
+      1.651,
+      1.116,
+      2.16,
+      1.207,
+      1.492,
+      1.121,
+      1.367,
+      1.75,
+      1.449,
+      1.133,
+      2.288,
+      1.124,
+      1.193,
+      1.14,
+      1.839,
+      1.27,
+      1.243,
+      1.217
+    ]
+  },
+  "por_fuente": {
+    "ellos": {
+      "frases_finales": 19,
+      "mediana": 1.27,
+      "p90": 2.16,
+      "max": 2.288
+    }
+  },
+  "primer_provisional_s": {
+    "mediana": 3.136,
+    "p90": 3.628
+  }
+}
