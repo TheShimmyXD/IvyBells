@@ -2,8 +2,8 @@
 Página Configuración: con qué cuenta y qué modelo responde Claude en el módulo Agente.
 
 Arriba la cuenta (correo, Comprobar y, si hace falta, la orden para iniciar sesión);
-abajo el modelo, el esfuerzo, el respaldo, el tiempo máximo y el perfil en uso.
-Solo habla con `ClaudeSettings`.
+después el modelo, el esfuerzo, el respaldo y el tiempo máximo; abajo los perfiles del
+agente (`ProfileEditor`). Solo habla con `ClaudeSettings`.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -25,6 +26,7 @@ from coordinator_config import CLAUDE_MODELS, EFFORTS, FALLBACKS, TIMEOUTS_S, Cl
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
+from ui.profile_editor import ProfileEditor
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
 LEVEL_TONES = {"ok": Tone.OK, "warning": Tone.WARNING, "error": Tone.ERROR, "busy": Tone.INFO}
@@ -46,12 +48,22 @@ class ClaudeConfigPage(QWidget):
     def __init__(self, settings: ClaudeSettings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.settings = settings
-        layout = QVBoxLayout(self)
+        # En una ventana baja la página se desplaza en vez de aplastar el editor del perfil.
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(16, 14, 16, 12)
         layout.setSpacing(10)
         layout.addWidget(self._build_account())
         layout.addWidget(self._build_answer())
-        layout.addStretch(1)
+        self.profile_editor = ProfileEditor(settings.profiles)
+        layout.addWidget(self.profile_editor, 1)
         settings.account_checked.connect(self._on_account_checked)
         settings.config_changed.connect(lambda _config: self._refresh())
         self._refresh()
@@ -122,10 +134,6 @@ class ClaudeConfigPage(QWidget):
             lambda _i: self.settings.set_timeout(self.timeout_box.currentData())
         )
         form.addRow("Tiempo máximo", self.timeout_box)
-        self.profile_label = QLabel()
-        self.profile_label.setFont(mono_font())
-        set_tone(self.profile_label, Tone.MUTED)
-        form.addRow("Perfil", self.profile_label)
         layout.addLayout(form)
         return frame
 
@@ -177,4 +185,3 @@ class ClaudeConfigPage(QWidget):
                 index = box.count() - 1
             box.setCurrentIndex(index)
             box.blockSignals(False)
-        self.profile_label.setText(self.settings.profile_text)

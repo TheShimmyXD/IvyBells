@@ -1,8 +1,9 @@
 """
 Servicio de Claude por la CLI de Claude Code (`claude -p`), sin clave de API.
 
-Lanza la orden aislada de `ClaudeModelConfig.command`, le pasa el prompt por stdin y lee
-el stream: cada trozo de texto se entrega en cuanto llega. Respeta el tiempo máximo y se
+Lanza la orden aislada de `ClaudeModelConfig.command`, con el system prompt (reglas,
+perfil y contexto) en un archivo de la carpeta neutra que solo se reescribe cuando cambia;
+le pasa el prompt por stdin y lee el stream: cada trozo de texto se entrega en cuanto llega. Respeta el tiempo máximo y se
 cancela terminando el proceso (y sus hijos). `ScriptedClaude` responde con un guion fijo,
 para las pruebas y las capturas: nunca gasta el cupo del autor.
 """
@@ -19,10 +20,12 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
+from core.agent_profile import build_system_prompt
 from core.claude_model import ClaudeModelConfig
 from core.claude_stream import Finished, TextDelta, parse_line
-from paths import AGENT_PROFILE, AGENT_PROFILE_LOCAL, AGENT_WORKDIR
+from paths import AGENT_WORKDIR
 from services.service_claude_account import claude_env, config_dir_for
+from services.service_profiles import write_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,7 @@ TextCallback = Callable[[str], None]
 # Cada cuánto se revisa si se pidió cancelar o se pasó el tiempo.
 _WATCH_S = 0.1
 _KILL_GRACE_S = 2.0
+SYSTEM_PROMPT_FILE = "system_prompt.md"
 
 
 class ClaudeError(RuntimeError):
@@ -45,27 +49,26 @@ class ClaudeService(Protocol):
         """Envía el prompt y llama `on_text` con cada trozo; devuelve el resultado final."""
 
 
-def resolve_profile() -> Path:
-    """El perfil de la empresa si existe; si no, el de ejemplo."""
-    return AGENT_PROFILE_LOCAL if AGENT_PROFILE_LOCAL.exists() else AGENT_PROFILE
-
-
 class ClaudeCli:
     """`claude -p` aislado, en una carpeta vacía fuera del proyecto."""
 
     def __init__(
         self,
         config: ClaudeModelConfig,
-        profile: Path | None = None,
+        system_prompt: str = "",
         workdir: Path = AGENT_WORKDIR,
     ) -> None:
         self.config = config
-        self.profile = profile or resolve_profile()
+        # Sin perfil van al menos las reglas fijas.
+        self.system_prompt = system_prompt or build_system_prompt("")
         self.workdir = workdir
 
     def ask(self, prompt: str, on_text: TextCallback, cancel: threading.Event) -> Finished:
         self.workdir.mkdir(parents=True, exist_ok=True)
-        command = self.config.command(self.profile)
+        system_file = self.workdir / SYSTEM_PROMPT_FILE
+        if write_if_changed(system_file, self.system_prompt):
+            logger.info("System prompt nuevo: %d caracteres", len(self.system_prompt))
+        command = self.config.command(system_file)
         logger.info("Enviando a Claude (%s), %d caracteres", self.config.model, len(prompt))
         try:
             process = subprocess.Popen(

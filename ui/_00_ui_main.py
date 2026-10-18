@@ -167,6 +167,9 @@ def load_fonts() -> ThemeFonts:
 
 def run_app() -> None:
     from config import load_app_config, save_app_config
+    from coordinator_profiles import AgentProfiles
+    from paths import AGENT_PROFILE_LOCAL
+    from services.service_profiles import ProfileStore
 
     app = QApplication.instance() or QApplication(sys.argv)
     config = load_app_config()
@@ -181,9 +184,15 @@ def run_app() -> None:
         "speaker": config.speaker,
         "module": config.module,
     }
+    store = ProfileStore()
+    store.adopt_legacy(AGENT_PROFILE_LOCAL)
+    profiles = AgentProfiles(
+        store, config.agent_profile, lambda name: remember("agent_profile", name)
+    )
     live = LiveCoordinator()
     agent = AgentCoordinator(
-        live, ClaudeSettings(config.claude, lambda claude: remember("claude", claude))
+        live,
+        ClaudeSettings(config.claude, lambda claude: remember("claude", claude), profiles=profiles),
     )
     window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs)
     window.show()

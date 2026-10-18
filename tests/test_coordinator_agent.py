@@ -51,7 +51,7 @@ def make(qapp):
 
     def build(service):
         live = _FakeLive(PHRASES)
-        coordinator = AgentCoordinator(live, service_factory=lambda _config: service)
+        coordinator = AgentCoordinator(live, service_factory=lambda _config, _prompt: service)
         made.append(coordinator)
         return live, coordinator
 
@@ -149,3 +149,30 @@ def test_worker_reports_cancel_and_answer(qapp):
     worker.run()
     assert [args[0] for args in got["text"]] == ["a", "b"]
     assert got["finished"][0][0] == {"_request_id": 3, "answer": "ab", "cancelled": False}
+
+
+def test_active_profile_reaches_the_service(qapp, tmp_path):
+    from coordinator_agent import AgentCoordinator
+    from coordinator_config import ClaudeSettings
+    from coordinator_profiles import AgentProfiles
+    from services.service_profiles import ProfileStore
+
+    folder = tmp_path / "perfiles"
+    folder.mkdir()
+    (folder / "acme.md").write_text("Somos Acme.", encoding="utf-8")
+    settings = ClaudeSettings(profiles=AgentProfiles(ProfileStore(folder), "acme"))
+    system_prompts = []
+    service = ScriptedClaude(["listo"])
+
+    def factory(_config, system_prompt):
+        system_prompts.append(system_prompt)
+        return service
+
+    coordinator = AgentCoordinator(_FakeLive(PHRASES), settings, service_factory=factory)
+    coordinator.mark_start(0, 0)
+    coordinator.mark_end(0, 0)
+    _wait(qapp, lambda: coordinator.logic.state is AgentState.ANSWERED)
+    coordinator.close()
+    _wait(qapp, lambda: coordinator._thread is None)
+    assert "Somos Acme." in system_prompts[0]
+    assert system_prompts[0].startswith("Reglas de IvyBells")

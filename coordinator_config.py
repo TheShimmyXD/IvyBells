@@ -2,7 +2,7 @@
 Coordinador de la configuración de Claude: cuenta, modelo, esfuerzo, respaldo y tiempo máximo.
 
 Es la fuente única del `ClaudeModelConfig` que usa el Agente: cada cambio se guarda en
-`app_settings.json` y se avisa. Comprobar la cuenta corre en su propio hilo.
+`app_settings.json` y se avisa. Lleva también los perfiles del agente (`profiles`). Comprobar la cuenta corre en su propio hilo.
 """
 
 from __future__ import annotations
@@ -13,10 +13,10 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
+from coordinator_profiles import AgentProfiles
 from core.claude_account import AccountStatus, describe
 from core.claude_model import ClaudeModelConfig, clean_account
-from paths import CLAUDE_ACCOUNTS_DIR, ROOT
-from services.service_claude import resolve_profile
+from paths import CLAUDE_ACCOUNTS_DIR
 from services.service_claude_account import (
     config_dir_for,
     login_command,
@@ -65,10 +65,12 @@ class ClaudeSettings(QObject):
         save_config: Callable[[ClaudeModelConfig], object] | None = None,
         status_reader: StatusReader = read_status,
         accounts_dir: Path = CLAUDE_ACCOUNTS_DIR,
+        profiles: AgentProfiles | None = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.config = config or ClaudeModelConfig()
+        self.profiles = profiles or AgentProfiles(parent=self)
         self._save_config = save_config
         self._reader = status_reader
         self._accounts_dir = accounts_dir
@@ -77,16 +79,6 @@ class ClaudeSettings(QObject):
         self._thread: QThread | None = None
 
     # -- Pedidos de la vista -----------------------------------
-
-    @property
-    def profile_path(self) -> Path:
-        return resolve_profile()
-
-    @property
-    def profile_text(self) -> str:
-        """El perfil en uso, relativo al proyecto si está dentro."""
-        path = self.profile_path
-        return str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
 
     def config_dir(self) -> Path | None:
         return config_dir_for(self.config.account, self._accounts_dir)

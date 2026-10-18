@@ -51,6 +51,7 @@ QPushButton[role="danger"] {{
     padding: 6px 18px;
 }}
 QPushButton[role="danger"]:hover {{ background: {c.surface_alt}; }}
+QPushButton[role="danger"]:disabled {{ color: {c.text_muted}; border-color: {c.border_soft}; }}
 QPushButton[role="quiet"] {{ color: {c.text_muted}; border-color: transparent; background: transparent; }}
 QPushButton[role="quiet"]:hover {{ color: {c.text}; background: {c.surface_alt}; }}
 QLineEdit {{

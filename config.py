@@ -51,6 +51,7 @@ class AppConfig:
     devices : fuente elegida por voz ("ellos", "tu"), por nombre de PipeWire; sin clave
               o vacía = seguir la predeterminada del sistema.
     speaker : interlocutor del módulo Agente ("ellos" o "tu").
+    agent_profile : perfil del agente en uso (si ya no existe, se usa el de ejemplo).
     module : último módulo abierto.
 
     Las claves faltantes en el JSON toman sus valores por defecto.
@@ -62,6 +63,7 @@ class AppConfig:
     live_model: str = "large-v3-turbo"
     devices: dict[str, str] = field(default_factory=dict)
     speaker: str = "ellos"
+    agent_profile: str = "ejemplo"
     module: str = "live"
 
     @classmethod
@@ -84,6 +86,7 @@ class AppConfig:
                 if source in SOURCES and isinstance(name, str) and name.strip()
             },
             speaker=speaker if speaker in SOURCES else base.speaker,
+            agent_profile=as_str(data.get("agent_profile"), base.agent_profile),
             module=module if module in MODULE_NAMES else base.module,
         )
 

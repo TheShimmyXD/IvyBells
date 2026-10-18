@@ -46,10 +46,10 @@ SPEAKERS = (
 HINT = "Clic izquierdo: inicio   Clic derecho: final y enviar   Esc: cancelar"
 
 
-def config_text(config: ClaudeModelConfig) -> str:
+def config_text(config: ClaudeModelConfig, profile: str = "") -> str:
     effort = config.effort or "por defecto"
     account = config.account or "sesión de siempre"
-    return f"Claude: {config.model}, esfuerzo {effort}, {account}"
+    return f"Claude: {config.model}, esfuerzo {effort}, {account}, perfil {profile or 'ninguno'}"
 
 
 def first_text(seconds: float | None) -> str:
@@ -83,6 +83,9 @@ class AgentPage(QWidget):
         agent.turns_changed.connect(self.refresh_turns)
         agent.marks_changed.connect(self.refresh_transcript)
         agent.settings.config_changed.connect(self._on_config)
+        agent.settings.profiles.active_changed.connect(
+            lambda _name: self._on_config(agent.settings.config)
+        )
         agent.live.transcript_changed.connect(self._on_live_transcript)
         agent.live.state_changed.connect(self._on_live_state)
         self._on_config(agent.settings.config)
@@ -173,7 +176,7 @@ class AgentPage(QWidget):
         self.run_button.setEnabled(live.can_stop or live.can_start)
 
     def _on_config(self, config: ClaudeModelConfig) -> None:
-        self.config_label.setText(config_text(config))
+        self.config_label.setText(config_text(config, self.agent.settings.profiles.active))
 
     def refresh_transcript(self) -> None:
         source = self.agent.speaker

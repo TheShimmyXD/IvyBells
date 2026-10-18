@@ -54,9 +54,23 @@ AGENT_ANSWERS = (
 AGENT_ERROR = "Claude no respondió en 120 s"
 AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error")
 # Página Configuración: (estado, cuenta escrita, lo que diría `claude auth status`).
+# (estado, cuenta, estado de la cuenta, perfil abierto en el editor)
 CONFIG_STATES = (
-    ("con_sesion", "persona@example.com", AccountStatus(True, "persona@example.com", "pro")),
-    ("sin_sesion", "otra@example.com", AccountStatus(False)),
+    (
+        "con_sesion",
+        "persona@example.com",
+        AccountStatus(True, "persona@example.com", "pro"),
+        "demo soporte",
+    ),
+    ("sin_sesion", "otra@example.com", AccountStatus(False), "ejemplo"),
+)
+SAMPLE_PROFILE = (
+    "Eres el asistente de soporte técnico de una empresa de ejemplo.\n\n"
+    "Cómo respondes:\n"
+    "- Con calma y en frases cortas: la respuesta se lee en voz alta.\n"
+    "- Primero confirmas qué entendiste del problema y luego das un solo paso a seguir.\n\n"
+    "Datos de la empresa:\n"
+    "- Soporte de lunes a sábado, de 7:00 a 20:00.\n"
 )
 
 
@@ -122,11 +136,17 @@ def capture_states(out_dir: Path) -> list[Path]:
 
 
 def capture_config(out_dir: Path) -> list[Path]:
-    """Guarda `config_<estado>_<tema>.png`; las carpetas de cuentas van a un temporal."""
+    """
+    Guarda `config_<estado>_<tema>.png`; las carpetas de cuentas y los perfiles van a un
+    temporal (nunca se muestra el perfil real de la empresa).
+    """
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
     from coordinator_config import ClaudeSettings
+    from coordinator_profiles import AgentProfiles
+    from paths import AGENT_PROFILES_DIR
+    from services.service_profiles import ProfileStore
     from ui._00_ui_main import load_fonts
     from ui.config_page import ClaudeConfigPage
     from ui.theme import apply_theme, resolve_theme
@@ -135,15 +155,23 @@ def capture_config(out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     fonts = load_fonts()
     paths = []
-    with tempfile.TemporaryDirectory(prefix="ivybells_cuentas_") as accounts:
+    with (
+        tempfile.TemporaryDirectory(prefix="ivybells_cuentas_") as accounts,
+        tempfile.TemporaryDirectory(prefix="ivybells_perfiles_") as folder,
+    ):
+        store = ProfileStore(Path(folder))
+        store.create("ejemplo", (AGENT_PROFILES_DIR / "ejemplo.md").read_text(encoding="utf-8"))
+        store.create("demo soporte", SAMPLE_PROFILE)
         for theme in THEMES:
             apply_theme(app, fonts, resolve_theme(theme))
-            for state, account, status in CONFIG_STATES:
+            for state, account, status, opened in CONFIG_STATES:
                 config = ClaudeModelConfig(model="sonnet", effort="high", account=account)
-                settings = ClaudeSettings(config, accounts_dir=Path(accounts))
+                profiles = AgentProfiles(store, "demo soporte")
+                settings = ClaudeSettings(config, accounts_dir=Path(accounts), profiles=profiles)
                 page = ClaudeConfigPage(settings)
                 settings.show_status(status)
-                page.resize(900, 560)
+                page.profile_editor.select(opened)
+                page.resize(900, 820)
                 page.show()
                 app.processEvents()
                 path = out_dir / f"config_{state}_{theme}.png"

@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 
 CLOSE_TIMEOUT_MS = 5_000
 
-ServiceFactory = Callable[[ClaudeModelConfig], ClaudeService]
+# Recibe el modelo y el system prompt (reglas, perfil activo y contexto).
+ServiceFactory = Callable[[ClaudeModelConfig, str], ClaudeService]
 
 
 @dataclass(slots=True)
@@ -224,7 +225,9 @@ class AgentCoordinator(QObject):
     def _launch(self, prompt: str) -> None:
         self._cancel = threading.Event()
         worker = self._worker = AgentWorker(
-            service=self._service_factory(self.settings.config),
+            service=self._service_factory(
+                self.settings.config, self.settings.profiles.system_prompt()
+            ),
             prompt=prompt,
             cancel_event=self._cancel,
             request_id=self._requests.next(),

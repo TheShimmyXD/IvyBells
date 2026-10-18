@@ -50,9 +50,7 @@ def _cli(tmp_path, mode, timeout_s=10):
     )
     script.chmod(0o755)
     config = ClaudeModelConfig(executable=str(script), timeout_s=timeout_s)
-    profile = tmp_path / "perfil.md"
-    profile.write_text("perfil", encoding="utf-8")
-    return ClaudeCli(config, profile, tmp_path / "neutral")
+    return ClaudeCli(config, "perfil", tmp_path / "neutral")
 
 
 def _process_gone(tmp_path) -> bool:
@@ -101,9 +99,7 @@ def test_cancel_kills_the_process(tmp_path):
 def test_missing_executable(tmp_path):
     config = ClaudeModelConfig(executable=str(tmp_path / "no_existe"))
     with pytest.raises(ClaudeError, match="No se pudo lanzar"):
-        ClaudeCli(config, tmp_path / "perfil.md", tmp_path).ask(
-            "hola", lambda _: None, threading.Event()
-        )
+        ClaudeCli(config, "perfil", tmp_path).ask("hola", lambda _: None, threading.Event())
 
 
 def test_scripted_service():
