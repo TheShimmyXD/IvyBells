@@ -2,7 +2,8 @@
 Ventana principal: la barra con tres módulos (Transcripción, Agente y Configuración).
 
 Es la raíz de composición: recibe la escucha en vivo y crea (si no se los pasan) la
-configuración de Claude y el coordinador del Agente; cada página solo habla con el suyo.
+configuración de Claude, el coordinador del Agente y el del chat propio; cada página
+solo habla con los suyos.
 Los tres comparten la misma escucha: cambiar de módulo no la detiene. Lo que el autor
 elige (tema, modelo de transcripción, fuentes, interlocutor y módulo) llega en `prefs` y
 cada cambio sale por `remember(clave, valor)`; la ventana no escribe la configuración.
@@ -17,6 +18,7 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QStackedWidget, QWidget
 
 from coordinator_agent import AgentCoordinator
+from coordinator_chat import ChatCoordinator
 from coordinator_config import ClaudeSettings
 from coordinator_live import LiveCoordinator
 from ui._00_ui_sidebar import COLLAPSED_WIDTH, NavSidebar
@@ -51,10 +53,12 @@ class MainWindow(QWidget):
         remember: Callable[[str, object], object] | None = None,
         agent: AgentCoordinator | None = None,
         prefs: dict | None = None,
+        chat: ChatCoordinator | None = None,
     ) -> None:
         super().__init__()
         self.coordinator = coordinator
         self.agent = agent or AgentCoordinator(coordinator, ClaudeSettings(), parent=self)
+        self.chat = chat or ChatCoordinator(coordinator, self.agent.settings, parent=self)
         self._fonts = fonts
         self._theme = theme
         # Las capturas y las pruebas no pasan ninguno: no escriben la configuración.
@@ -92,7 +96,8 @@ class MainWindow(QWidget):
         self.live_page = LivePage(self.coordinator, prefs.get("devices"))
         if prefs.get("live_model"):
             self.live_page.model_selector.select(prefs["live_model"])
-        self.agent_page = AgentPage(self.agent, self.live_page.toggle_run)
+        self.agent_page = AgentPage(self.agent, self.live_page.toggle_run, self.chat)
+        self.agent_page.show_panel(prefs.get("agent_panel", "agent"))
         self.config_page = ClaudeConfigPage(self.agent.settings, self.agent)
         self.pages = {"live": self.live_page, "agent": self.agent_page, "config": self.config_page}
         self.stack = QStackedWidget()
@@ -112,6 +117,7 @@ class MainWindow(QWidget):
             lambda speaker: self._save("speaker", speaker)
         )
         self.agent_page.mode_selector.changed.connect(lambda mode: self._save("agent_mode", mode))
+        self.agent_page.panel_changed.connect(lambda panel: self._save("agent_panel", panel))
 
     def _save(self, key: str, value: object) -> None:
         if self._remember is not None:
@@ -157,6 +163,7 @@ class MainWindow(QWidget):
 
     def closeEvent(self, event) -> None:  # noqa: N802 (nombre impuesto por Qt)
         self.agent.close()
+        self.chat.close()
         self.agent.settings.close()
         self.coordinator.close()
         super().closeEvent(event)
@@ -190,6 +197,7 @@ def run_app() -> None:
         "devices": config.devices,
         "speaker": config.speaker,
         "agent_mode": config.agent_mode,
+        "agent_panel": config.agent_panel,
         "module": config.module,
     }
     store = ProfileStore()
@@ -210,7 +218,8 @@ def run_app() -> None:
             context=context,
         ),
     )
-    window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs)
+    chat = ChatCoordinator(live, agent.settings, config.chat_model, config.chat_effort, remember)
+    window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs, chat)
     window.show()
     logger.info("Ventana principal lista")
     sys.exit(app.exec())

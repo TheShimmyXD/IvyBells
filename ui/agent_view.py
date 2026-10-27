@@ -185,12 +185,15 @@ def ahead_html(turns: list[AgentTurn], colors: ColorTokens, mono: str) -> str:
     return f"<div style='color:{colors.text}'>{''.join(out)}</div>"
 
 
-def keep_scroll(browser: QTextBrowser, html: str) -> None:
-    """Repinta y baja al final solo si el lector ya estaba abajo."""
+def keep_scroll(browser: QTextBrowser, text: str, markdown: bool = False) -> None:
+    """Repinta (HTML o Markdown) y baja al final solo si el lector ya estaba abajo."""
     bar = browser.verticalScrollBar()
     at_bottom = bar.value() >= bar.maximum() - 4
     previous = bar.value()
-    browser.setHtml(html)
+    if markdown:
+        browser.setMarkdown(text)
+    else:
+        browser.setHtml(text)
     bar.setValue(bar.maximum() if at_bottom else previous)
 
 

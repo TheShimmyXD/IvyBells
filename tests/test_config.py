@@ -37,3 +37,11 @@ def test_theme_round_trip_and_unknown_falls_back(tmp_path):
     assert load_app_config(path).theme == "dark"
     path.write_text(json.dumps({"theme": "neon"}), encoding="utf-8")
     assert load_app_config(path).theme == "light"
+
+
+def test_chat_settings_are_kept_apart_and_invalid_fall_back():
+    config = AppConfig.from_dict({"chat_model": "opus", "chat_effort": "", "agent_panel": "chat"})
+    assert (config.chat_model, config.chat_effort, config.agent_panel) == ("opus", "", "chat")
+    assert config.claude.model == "sonnet"
+    bad = AppConfig.from_dict({"chat_model": "gpt", "chat_effort": "turbo", "agent_panel": "x"})
+    assert (bad.chat_model, bad.chat_effort, bad.agent_panel) == ("haiku", "low", "agent")

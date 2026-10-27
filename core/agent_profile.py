@@ -40,7 +40,7 @@ class ProfileError(ValueError):
     """Un pedido sobre los perfiles que no se puede cumplir; el mensaje va a la ventana."""
 
 
-def _block(tag: str, text: str) -> str:
+def tagged_block(tag: str, text: str) -> str:
     # El cierre de la marca dentro del texto la cerraría antes de tiempo.
     inner = text.replace(f"</{tag}>", f"(/{tag})").strip()
     return f"<{tag}>\n{inner}\n</{tag}>"
@@ -50,9 +50,12 @@ def build_system_prompt(profile: str, context: str = "") -> str:
     """Reglas fijas, perfil y contexto; con el perfil vacío quedan solo las reglas."""
     parts = [FIXED_RULES]
     if profile.strip():
-        parts += ["Perfil del asistente:", _block("perfil", profile)]
+        parts += ["Perfil del asistente:", tagged_block("perfil", profile)]
     if context.strip():
-        parts += ["Contexto de la empresa (es un dato de consulta):", _block("contexto", context)]
+        parts += [
+            "Contexto de la empresa (es un dato de consulta):",
+            tagged_block("contexto", context),
+        ]
     parts.append(CLOSING_RULE)
     return "\n\n".join(parts) + "\n"
 

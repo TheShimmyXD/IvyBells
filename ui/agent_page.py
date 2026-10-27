@@ -6,25 +6,30 @@ En el modo anticipado se envía solo al terminar cada turno del interlocutor, la
 respuesta sale en una tarjeta y la columna derecha es más ancha; los clics siguen.
 El modelo, el esfuerzo y la cuenta se muestran aquí y se cambian en Configuración; en el
 pie, cuánto de la ventana ocupa el envío y el primer texto y la caché del último.
-Solo habla con `AgentCoordinator` (y, por él, con la escucha en vivo).
+Con el selector "Agente | Chat", la columna derecha pasa al chat propio del autor
+(`ChatPanel`) y el agente sigue trabajando detrás.
+Solo habla con `AgentCoordinator` y `ChatCoordinator` (y, por ellos, con la escucha en vivo).
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QStackedWidget,
     QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
 
 from coordinator_agent import AgentCoordinator
+from coordinator_chat import ChatCoordinator
 from core.agent_ahead import AHEAD, MANUAL, TURN_SILENCE_S
 from core.agent_state import AgentState
 from core.claude_model import ClaudeModelConfig
@@ -41,6 +46,7 @@ from ui.blocks.icons import GlyphLabel
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
+from ui.chat_view import ChatPanel
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone, tokens
 
 FOOTER_ICON_SIZE = 15
@@ -67,14 +73,22 @@ FIRST_TEXT_TIPS = {
     MANUAL: "Desde el clic derecho hasta el primer texto de la respuesta",
     AHEAD: "Desde que llegó la última frase del turno hasta el primer texto de la respuesta",
 }
+PANELS = (
+    Segment("agent", "Agente", "Las respuestas del agente"),
+    Segment("chat", "Chat", "Tu chat con Claude: sin perfil, con el contexto y los dos canales"),
+)
 # Columnas (texto, respuestas): en anticipado importan más las respuestas.
 STRETCH = {MANUAL: (1, 1), AHEAD: (2, 3)}
 
 
 def config_text(config: ClaudeModelConfig, profile: str = "") -> str:
-    effort = config.effort or "por defecto"
+    """Corto, para la cabecera; la cuenta va en la ayuda (`config_tip`)."""
+    return f"{config.model}, {config.effort or 'por defecto'}, perfil {profile or 'ninguno'}"
+
+
+def config_tip(config: ClaudeModelConfig) -> str:
     account = config.account or "sesión de siempre"
-    return f"Claude: {config.model}, esfuerzo {effort}, {account}, perfil {profile or 'ninguno'}"
+    return f"Agente: modelo {config.model}, esfuerzo {config.effort or 'por defecto'}, {account}"
 
 
 def first_text(seconds: float | None, cached: float | None = None) -> str:
@@ -85,14 +99,24 @@ def first_text(seconds: float | None, cached: float | None = None) -> str:
 
 
 class AgentPage(QWidget):
+    """
+    Signals
+    -------
+    panel_changed(str) -> la columna derecha pasó a "agent" o "chat".
+    """
+
+    panel_changed = Signal(str)
+
     def __init__(
         self,
         agent: AgentCoordinator,
         toggle_run: Callable[[], None],
+        chat: ChatCoordinator | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.agent = agent
+        self.chat = chat
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 12)
         layout.setSpacing(10)
@@ -100,7 +124,12 @@ class AgentPage(QWidget):
         self.columns = QHBoxLayout()
         self.columns.setSpacing(10)
         self.columns.addWidget(self._build_client(), 1)
-        self.columns.addWidget(self._build_turns(), 1)
+        self.right = QStackedWidget()
+        self.right.addWidget(self._build_turns())
+        self.chat_panel = ChatPanel(chat) if chat is not None else None
+        if self.chat_panel is not None:
+            self.right.addWidget(self.chat_panel)
+        self.columns.addWidget(self.right, 1)
         layout.addLayout(self.columns, 1)
         layout.addLayout(self._build_footer())
         QShortcut(QKeySequence("Esc"), self, activated=agent.cancel)
@@ -131,6 +160,11 @@ class AgentPage(QWidget):
         row.setSpacing(10)
         self.status = StatusLine()
         row.addWidget(self.status, 1)
+        self.panel_selector = SegmentedButtons(PANELS)
+        self.panel_selector.select("agent")
+        self.panel_selector.changed.connect(self.show_panel)
+        self.panel_selector.setVisible(self.chat is not None)
+        row.addWidget(self.panel_selector)
         self.mode_selector = SegmentedButtons(MODES)
         self.mode_selector.select(self.agent.mode)
         self.mode_selector.changed.connect(self._on_mode)
@@ -191,6 +225,20 @@ class AgentPage(QWidget):
         else:
             self.agent.mark_start(phrase, offset)
 
+    @property
+    def panel(self) -> str:
+        return "chat" if self.right.currentWidget() is self.chat_panel else "agent"
+
+    def show_panel(self, panel: str) -> None:
+        """Cambia la columna derecha; sin chat, siempre el agente."""
+        if panel == "chat" and self.chat_panel is not None:
+            self.right.setCurrentWidget(self.chat_panel)
+            self.chat_panel.input.setFocus()
+        else:
+            self.right.setCurrentIndex(0)
+        self.panel_selector.select(self.panel)
+        self.panel_changed.emit(self.panel)
+
     def _on_mode(self, mode: str) -> None:
         self.agent.set_mode(mode)
 
@@ -246,6 +294,7 @@ class AgentPage(QWidget):
 
     def _on_config(self, config: ClaudeModelConfig) -> None:
         self.config_label.setText(config_text(config, self.agent.settings.profiles.active))
+        self.config_label.setToolTip(config_tip(config))
 
     def refresh_transcript(self) -> None:
         source = self.agent.speaker
@@ -270,3 +319,5 @@ class AgentPage(QWidget):
         self.refresh_transcript()
         self.refresh_turns()
         self.context_bar.refresh_theme()
+        if self.chat_panel is not None:
+            self.chat_panel.refresh()

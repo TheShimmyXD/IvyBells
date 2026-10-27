@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 from coordinator_agent import AgentCoordinator
+from coordinator_chat import ChatCoordinator
 from coordinator_live import DEFAULT_MODEL, LiveCoordinator
 from core.agent_ahead import AHEAD
 from core.agent_context import MAX_FILE_CHARS, ContextFile, build_context
@@ -58,6 +59,19 @@ AGENT_ERROR = "Claude no respondió en 120 s"
 AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error", "anticipado")
 # Modo anticipado: un turno respondido, uno superado (el cliente siguió) y el último.
 AHEAD_SUPERSEDED = "Perfecto, ¿me confirma el correo donde la espera?"
+# Chat propio (D-30): (estado, peticiones con su respuesta; la última puede ir a medias).
+CHAT_REQUESTS = (
+    "¿Qué me preguntó exactamente el cliente?",
+    "Dame la respuesta en dos frases y el paso que sigue",
+)
+CHAT_ANSWERS = (
+    "Preguntó dos cosas:\n\n- **Cuándo le envían la factura** del plan empresarial que "
+    "contrató la semana pasada.\n- **Si puede pagar con transferencia.**\n\nAl final empezó "
+    "otra pregunta («Ah, y otra cosa») que todavía no termina.",
+    "La factura sale en los primeros cinco días hábiles después de la contratación y sí "
+    "puede pagar con transferencia. Como paso siguiente, confírmale el correo",
+)
+CHAT_STATES = ("vacio", "respuesta", "escribiendo")
 # Barra de contexto con haiku (ventana medida de 1 M): archivos sintéticos de 20 000
 # caracteres en `contexto.md` para llenarla vacía, a medias y casi llena.
 BUDGET_STATES = (("vacia", 0), ("media", 58), ("llena", 101))
@@ -263,6 +277,75 @@ def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str
     agent.answer(AGENT_ANSWERS[1], done=False, error=AGENT_ERROR if state == "error" else "")
 
 
+class PreviewChat(ChatCoordinator):
+    """El coordinador real del chat sin lanzar la CLI: las respuestas se dan a mano."""
+
+    busy = False
+
+    @property
+    def sending(self) -> bool:
+        return self.busy
+
+    def _launch(self, config: ClaudeModelConfig, prompt: str) -> None:
+        self._requests.next()
+        self.busy = True
+
+    def answer(self, text: str, done: bool = True, first_text_s: float = 1.9) -> None:
+        self.turns[-1].first_text_s = first_text_s
+        for chunk in text.split(" "):
+            self.on_text(chunk + " ")
+        if done:
+            self.on_finished({"_request_id": self._requests._current, "answer": text})
+            self.busy = False
+            self.sending_changed.emit(False)
+
+
+def _play_chat(chat: PreviewChat, state: str) -> None:
+    if state == "vacio":
+        return
+    for index, (request, text) in enumerate(zip(CHAT_REQUESTS, CHAT_ANSWERS, strict=True)):
+        chat.send(request)
+        last = index == len(CHAT_REQUESTS) - 1
+        chat.answer(text, done=not (last and state == "escribiendo"))
+
+
+def capture_chat(out_dir: Path) -> list[Path]:
+    """Guarda `agente_chat_<estado>_<tema>.png`: la columna derecha con el chat propio."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+
+    from coordinator_config import ClaudeSettings
+    from coordinator_context import AgentContext
+    from ui._00_ui_main import MainWindow, load_fonts
+
+    app = QApplication.instance() or QApplication([])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fonts = load_fonts()
+    paths = []
+    with tempfile.TemporaryDirectory(prefix="ivybells_chat_") as empty:
+        for theme in THEMES:
+            for state in CHAT_STATES:
+                coordinator = PreviewCoordinator()
+                context = AgentContext(target=Path(empty) / "contexto.md")
+                settings = ClaudeSettings(
+                    ClaudeModelConfig(model="haiku", effort="low"), context=context
+                )
+                agent = PreviewAgent(coordinator, settings)
+                chat = PreviewChat(coordinator, settings, "sonnet", "medium")
+                window = MainWindow(coordinator, fonts, theme, agent=agent, chat=chat)
+                window.show_module("agent")
+                _play_agent(coordinator, agent, "sin_seleccion")
+                window.agent_page.show_panel("chat")
+                _play_chat(chat, state)
+                window.show()
+                app.processEvents()
+                path = out_dir / f"agente_chat_{state}_{theme}.png"
+                window.grab().save(str(path))
+                paths.append(path)
+                window.close()
+    return paths
+
+
 def capture_agent(out_dir: Path) -> list[Path]:
     """Guarda `agente_<estado>_<tema>.png` (ventana real en el módulo Agente)."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -375,6 +458,6 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("Uso: captura_ui.py <carpeta>")
     out = Path(sys.argv[1])
-    captures = [*capture_states(out), *capture_agent(out), *capture_config(out)]
+    captures = [*capture_states(out), *capture_agent(out), *capture_chat(out), *capture_config(out)]
     for saved in [*captures, *capture_budget(out)]:
         sys.stdout.write(f"{saved}\n")
