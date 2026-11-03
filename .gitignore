@@ -14,6 +14,7 @@ resources/agent/perfil_local.md
 resources/agent/perfiles/*
 !resources/agent/perfiles/ejemplo.md
 resources/agent/contexto/
+resources/agent/contextos/
 logs/
 
 # Diario de trabajo del agente (no se versiona)

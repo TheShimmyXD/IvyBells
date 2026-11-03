@@ -205,9 +205,7 @@ def run_app() -> None:
     profiles = AgentProfiles(
         store, config.agent_profile, lambda name: remember("agent_profile", name)
     )
-    context = AgentContext(
-        config.agent_context_paths, lambda paths: remember("agent_context_paths", paths)
-    )
+    context = AgentContext(config.agent_context, lambda name: remember("agent_context", name))
     live = LiveCoordinator(closed_sources=config.closed_sources)
     agent = AgentCoordinator(
         live,

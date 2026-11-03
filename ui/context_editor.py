@@ -1,33 +1,35 @@
 """
 Panel de contexto del agente (módulo Configuración).
 
-Las rutas van una por línea, escritas o agregadas con los botones; Recargar rehace la
-foto `contexto.md` y Abrir la deja revisar o corregir a mano. Debajo de las rutas, lo que
-pesa cada una en la foto. Solo habla con `AgentContext`.
+El autor elige un contexto con nombre (una carpeta de `resources/agent/contextos/`)
+en la lista; elegirlo rehace la foto `contexto.md`. Nuevo crea la carpeta y la abre para
+llenarla, Renombrar le cambia el nombre, Abrir carpeta la muestra en el explorador,
+Recargar rehace la foto tras cambiar archivos y Abrir contexto.md la deja revisar a mano.
+Debajo, lo que pesa cada archivo en la foto. Solo habla con `AgentContext`.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QTextCursor
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QFileDialog,
+    QComboBox,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
-    QPlainTextEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from coordinator_context import AgentContext
+from coordinator_context import NEW_NAME, AgentContext
 from core.context_budget import format_tokens
 from ui.blocks.panel import titled_panel
 from ui.blocks.status_line import StatusLine
-from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
+from ui.theme import ButtonRole, Tone, set_role, set_tone
 
 LEVEL_TONES = {
     "ok": Tone.OK,
@@ -36,14 +38,12 @@ LEVEL_TONES = {
     "error": Tone.ERROR,
     "busy": Tone.INFO,
 }
-PATHS_HINT = "Una ruta por línea: archivos o carpetas con información de la empresa"
+NO_CONTEXT = "Sin contexto"
 HELP_TEXT = (
-    "IvyBells lee texto (md, txt, csv, json, código), PDF y Word (.docx); audio, video y el "
-    "resto de Office quedan fuera. Es una foto: se rehace con Recargar, no en cada envío."
+    "Cada contexto es una carpeta de resources/agent/contextos: pon ahí los archivos y pulsa "
+    "Recargar. IvyBells lee texto (md, txt, csv, json, código), PDF y Word (.docx); audio, "
+    "video y el resto de Office quedan fuera. Es una foto: no se rehace en cada envío."
 )
-PATHS_HEIGHT = 96
-# Espera tras la última tecla antes de guardar las rutas.
-SAVE_DELAY_MS = 800
 
 
 def weights_text(weights: dict[str, int]) -> str:
@@ -59,13 +59,14 @@ def weights_text(weights: dict[str, int]) -> str:
     return "Peso en contexto.md (tokens): " + ", ".join(shown)
 
 
-def pick_files(parent: QWidget) -> list[str]:
-    files, _filter = QFileDialog.getOpenFileNames(parent, "Agregar archivos de contexto")
-    return files
+def ask_name(parent: QWidget, title: str, current: str) -> str | None:
+    """El nombre que escribe el autor, o None si cancela."""
+    text, ok = QInputDialog.getText(parent, title, "Nombre:", text=current)
+    return text if ok else None
 
 
-def pick_folder(parent: QWidget) -> str:
-    return QFileDialog.getExistingDirectory(parent, "Agregar carpeta de contexto")
+def open_folder(path: Path) -> None:
+    QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
 
 
 class ContextEditor(QWidget):
@@ -75,42 +76,43 @@ class ContextEditor(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._build())
-        self._save_timer = QTimer(self, singleShot=True, interval=SAVE_DELAY_MS)
-        self._save_timer.timeout.connect(self._save_paths)
-        context.paths_changed.connect(self._show_paths)
+        context.contexts_changed.connect(self._fill_combo)
+        context.active_changed.connect(lambda _name: self._fill_combo())
         context.reloaded.connect(self._on_reloaded)
-        self._show_paths()
+        self._fill_combo()
         self._refresh_open()
 
     # -- Construcción ------------------------------------------
 
     def _build(self) -> QFrame:
         frame, layout = titled_panel("files", "Contexto de la empresa")
-        self.paths_edit = QPlainTextEdit()
-        self.paths_edit.setFont(mono_font())
-        self.paths_edit.setPlaceholderText(PATHS_HINT)
-        self.paths_edit.setAccessibleName("Rutas de contexto")
-        self.paths_edit.setFixedHeight(PATHS_HEIGHT)
-        self.paths_edit.textChanged.connect(lambda: self._save_timer.start())
-        layout.addWidget(self.paths_edit)
+        row = QHBoxLayout()
+        row.setSpacing(6)
+        self.combo = QComboBox()
+        self.combo.setAccessibleName("Contexto en uso")
+        self.combo.setMinimumContentsLength(24)
+        self.combo.activated.connect(self._on_chosen)
+        row.addWidget(self.combo, 1)
+        self.new_button = self._button("Nuevo", self._on_new)
+        self.rename_button = self._button("Renombrar", self._on_rename)
+        self.folder_button = self._button("Abrir carpeta", self._on_open_folder)
+        for button in (self.new_button, self.rename_button, self.folder_button):
+            row.addWidget(button)
+        layout.addLayout(row)
+
         self.weights_label = QLabel()
         self.weights_label.setWordWrap(True)
         set_tone(self.weights_label, Tone.MUTED)
         layout.addWidget(self.weights_label)
 
-        row = QHBoxLayout()
-        row.setSpacing(6)
-        self.add_files_button = self._button("Agregar archivos", self._on_add_files)
-        self.add_folder_button = self._button("Agregar carpeta", self._on_add_folder)
-        self.remove_button = self._button("Quitar ruta", self._on_remove)
-        for button in (self.add_files_button, self.add_folder_button, self.remove_button):
-            row.addWidget(button)
-        row.addStretch(1)
+        actions = QHBoxLayout()
+        actions.setSpacing(6)
+        actions.addStretch(1)
         self.open_button = self._button("Abrir contexto.md", self._on_open)
-        row.addWidget(self.open_button)
+        actions.addWidget(self.open_button)
         self.reload_button = self._button("Recargar", self._on_reload, ButtonRole.PRIMARY)
-        row.addWidget(self.reload_button)
-        layout.addLayout(row)
+        actions.addWidget(self.reload_button)
+        layout.addLayout(actions)
 
         self.status = StatusLine()
         layout.addWidget(self.status)
@@ -128,28 +130,31 @@ class ContextEditor(QWidget):
 
     # -- Eventos -----------------------------------------------
 
-    def _on_add_files(self) -> None:
-        self._save_paths()
-        self.context.add(pick_files(self))
+    def _on_chosen(self, index: int) -> None:
+        self.context.set_active(self.combo.itemData(index) or "")
 
-    def _on_add_folder(self) -> None:
-        folder = pick_folder(self)
-        self._save_paths()
-        if folder:
-            self.context.add([folder])
+    def _on_new(self) -> None:
+        name = ask_name(self, "Nuevo contexto", NEW_NAME)
+        if name is None:
+            return
+        created = self.context.create(name)
+        if created and self.context.folder is not None:
+            open_folder(self.context.folder)
 
-    def _on_remove(self) -> None:
-        """Quita la línea donde está el cursor."""
-        cursor = self.paths_edit.textCursor()
-        line = cursor.block().text().strip()
-        self._save_paths()
-        self.context.set_paths([path for path in self.context.paths if path != line])
+    def _on_rename(self) -> None:
+        current = self.context.active
+        name = ask_name(self, "Renombrar contexto", current)
+        if name is not None and current:
+            self.context.rename(current, name)
+
+    def _on_open_folder(self) -> None:
+        if self.context.folder is not None:
+            open_folder(self.context.folder)
 
     def _on_open(self) -> None:
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.context.target)))
+        open_folder(self.context.target)
 
     def _on_reload(self) -> None:
-        self._save_paths()
         self.context.reload()
 
     def _on_reloaded(self, payload: dict) -> None:
@@ -161,27 +166,23 @@ class ContextEditor(QWidget):
 
     # -- Internos ----------------------------------------------
 
-    def _lines(self) -> list[str]:
-        return self.paths_edit.toPlainText().splitlines()
-
-    def _save_paths(self) -> None:
-        self._save_timer.stop()
-        self.context.set_paths(self._lines())
+    def _fill_combo(self) -> None:
+        active = self.context.active
+        self.combo.blockSignals(True)
+        self.combo.clear()
+        self.combo.addItem(NO_CONTEXT, "")
+        for name in self.context.names():
+            self.combo.addItem(name, name)
+        self.combo.setCurrentIndex(max(self.combo.findData(active), 0))
+        self.combo.blockSignals(False)
+        self.rename_button.setEnabled(bool(active))
+        self.folder_button.setEnabled(bool(active))
+        self._refresh_weights()
 
     def _refresh_weights(self) -> None:
         text = weights_text(self.context.weights())
         self.weights_label.setText(text)
         self.weights_label.setVisible(bool(text))
-
-    def _show_paths(self) -> None:
-        """Pone las rutas guardadas sin pisar lo que el autor está escribiendo."""
-        self._refresh_weights()
-        if [line.strip() for line in self._lines() if line.strip()] == self.context.paths:
-            return
-        self.paths_edit.blockSignals(True)
-        self.paths_edit.setPlainText("\n".join(self.context.paths))
-        self.paths_edit.moveCursor(QTextCursor.MoveOperation.End)
-        self.paths_edit.blockSignals(False)
 
     def _refresh_open(self) -> None:
         self.open_button.setEnabled(self.context.target.is_file())

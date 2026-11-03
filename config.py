@@ -59,7 +59,8 @@ class AppConfig:
     chat_model, chat_effort : modelo y esfuerzo del chat propio, aparte del agente.
     closed_sources : canales cerrados en Transcripción; nunca los dos.
     agent_profile : perfil del agente en uso (si ya no existe, se usa el de ejemplo).
-    agent_context_paths : archivos y carpetas de contexto del agente, en su orden.
+    agent_context : contexto con nombre en uso, una carpeta de resources/agent/contextos
+                    ("" = sin contexto).
     module : último módulo abierto.
 
     Las claves faltantes en el JSON toman sus valores por defecto.
@@ -77,7 +78,7 @@ class AppConfig:
     chat_effort: str = DEFAULT_CHAT_EFFORT
     closed_sources: list[str] = field(default_factory=list)
     agent_profile: str = "ejemplo"
-    agent_context_paths: list[str] = field(default_factory=list)
+    agent_context: str = ""
     module: str = "live"
 
     @classmethod
@@ -93,7 +94,6 @@ class AppConfig:
         chat_model = as_str(data.get("chat_model"), base.chat_model)
         chat_effort = data.get("chat_effort")
         devices = data.get("devices")
-        context = data.get("agent_context_paths")
         closed = data.get("closed_sources")
         closed = sorted(
             {source for source in (closed if isinstance(closed, list) else ()) if source in SOURCES}
@@ -115,11 +115,7 @@ class AppConfig:
             chat_effort=chat_effort if chat_effort in EFFORT_LEVELS else base.chat_effort,
             closed_sources=closed if len(closed) < len(SOURCES) else [],
             agent_profile=as_str(data.get("agent_profile"), base.agent_profile),
-            agent_context_paths=[
-                path.strip()
-                for path in (context if isinstance(context, list) else ())
-                if isinstance(path, str) and path.strip()
-            ],
+            agent_context=as_str(data.get("agent_context"), base.agent_context),
             module=module if module in MODULE_NAMES else base.module,
         )
 

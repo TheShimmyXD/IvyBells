@@ -45,3 +45,9 @@ def test_chat_settings_are_kept_apart_and_invalid_fall_back():
     assert config.claude.model == "sonnet"
     bad = AppConfig.from_dict({"chat_model": "gpt", "chat_effort": "turbo", "agent_panel": "x"})
     assert (bad.chat_model, bad.chat_effort, bad.agent_panel) == ("haiku", "low", "agent")
+
+
+def test_agent_context_is_a_name_and_old_paths_are_ignored():
+    config = AppConfig.from_dict({"agent_context": " entrevista ", "agent_context_paths": ["/a"]})
+    assert config.agent_context == "entrevista"
+    assert AppConfig.from_dict({"agent_context_paths": ["/a"]}).agent_context == ""

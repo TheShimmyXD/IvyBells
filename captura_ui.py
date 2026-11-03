@@ -24,6 +24,7 @@ from core.claude_account import AccountStatus
 from core.claude_model import ClaudeModelConfig
 from core.claude_stream import Usage
 from core.engine import TranscriptEvent
+from services.service_contexts import ContextStore
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
 MONITOR = AudioSource(48, "alsa_output.pci-0000_0d_00.4.analog-stereo.monitor", "PipeWire", "", "")
@@ -167,13 +168,15 @@ def capture_states(out_dir: Path) -> list[Path]:
     return paths
 
 
-def _sample_context(folder: Path) -> list[str]:
-    """Archivos de ejemplo para el panel de contexto (nunca los del autor)."""
-    folder.mkdir()
+def _sample_context(root: Path) -> ContextStore:
+    """Contextos de ejemplo para el panel de contexto (nunca los del autor)."""
+    store = ContextStore(root)
+    folder = store.path(store.create("empresa"))
+    store.create("entrevista")
     (folder / "servicios.md").write_text("# Servicios\n\n- Plan básico\n", encoding="utf-8")
     (folder / "precios.csv").write_text("plan,precio\nbásico,10\n", encoding="utf-8")
     (folder / "precios.xlsx").write_bytes(b"PK")
-    return [str(folder), str(folder.parent / "manual_no_existe.txt")]
+    return store
 
 
 def capture_config(out_dir: Path) -> list[Path]:
@@ -204,14 +207,14 @@ def capture_config(out_dir: Path) -> list[Path]:
         store = ProfileStore(Path(folder))
         store.create("ejemplo", (AGENT_PROFILES_DIR / "ejemplo.md").read_text(encoding="utf-8"))
         store.create("demo soporte", SAMPLE_PROFILE)
-        sample_paths = _sample_context(Path(folder) / "empresa")
+        contexts = _sample_context(Path(folder) / "contextos")
         for theme in THEMES:
             apply_theme(app, fonts, resolve_theme(theme))
             for state, account, status, opened in CONFIG_STATES:
                 config = ClaudeModelConfig(model="sonnet", effort="high", account=account)
                 profiles = AgentProfiles(store, "demo soporte")
                 context = AgentContext(
-                    sample_paths, target=Path(folder) / "contexto" / "contexto.md"
+                    "empresa", target=Path(folder) / "contexto" / "contexto.md", store=contexts
                 )
                 settings = ClaudeSettings(
                     config, accounts_dir=Path(accounts), profiles=profiles, context=context
@@ -381,16 +384,17 @@ def capture_agent(out_dir: Path) -> list[Path]:
     return paths
 
 
-def _sample_photo(folder: Path, files: int) -> tuple[list[str], Path]:
-    """Una foto `contexto.md` sintética con `files` archivos de la carpeta `empresa`."""
-    company = folder / "empresa"
+def _sample_photo(folder: Path, files: int) -> tuple[ContextStore, Path]:
+    """Una foto `contexto.md` sintética con `files` archivos del contexto `empresa`."""
+    store = ContextStore(folder / "contextos")
+    company = store.path(store.create("empresa"))
     line = "El plan empresarial incluye soporte de lunes a sábado. "
     text = (line * (MAX_FILE_CHARS // len(line) + 1))[:MAX_FILE_CHARS]
     sample = [ContextFile(str(company / f"manual_{index:03d}.md"), text) for index in range(files)]
     target = folder / "contexto" / "contexto.md"
     target.parent.mkdir(parents=True)
     target.write_text(build_context(sample, []) if files else "", encoding="utf-8")
-    return [str(company), str(folder / "precios.csv")], target
+    return store, target
 
 
 def capture_budget(out_dir: Path) -> list[Path]:
@@ -418,12 +422,12 @@ def capture_budget(out_dir: Path) -> list[Path]:
             with tempfile.TemporaryDirectory(prefix="ivybells_contexto_") as folder:
                 store = ProfileStore(Path(folder) / "perfiles")
                 store.create("demo soporte", SAMPLE_PROFILE)
-                context_paths, target = _sample_photo(Path(folder), files)
+                contexts, target = _sample_photo(Path(folder), files)
                 settings = ClaudeSettings(
                     ClaudeModelConfig(model="haiku", effort="max"),
                     accounts_dir=Path(folder) / "cuentas",
                     profiles=AgentProfiles(store, "demo soporte"),
-                    context=AgentContext(context_paths, target=target),
+                    context=AgentContext("empresa", target=target, store=contexts),
                 )
                 coordinator = PreviewCoordinator()
                 agent = PreviewAgent(coordinator, settings)

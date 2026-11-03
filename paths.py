@@ -23,6 +23,8 @@ AGENT_PROFILES_DIR = AGENT_DIR / "perfiles"
 AGENT_PROFILE_LOCAL = AGENT_DIR / "perfil_local.md"
 # Foto de los archivos de contexto que eligió el autor (nunca se versiona).
 AGENT_CONTEXT_FILE = AGENT_DIR / "contexto" / "contexto.md"
+# Contextos con nombre: una carpeta por contexto, con los archivos que lee el agente.
+AGENT_CONTEXTS_DIR = AGENT_DIR / "contextos"
 # Carpeta vacía fuera del proyecto donde corre la CLI de Claude, para que no descubra
 # el CLAUDE.md ni las skills de ninguna carpeta padre.
 AGENT_WORKDIR = Path(tempfile.gettempdir()) / "ivybells_agent"

@@ -110,6 +110,10 @@ def build_context(files: list[ContextFile], omitted: list[Omitted]) -> str:
     return "\n".join(lines) + "\n"
 
 
+class ContextError(ValueError):
+    """Un pedido sobre los contextos con nombre que no se puede cumplir; va a la ventana."""
+
+
 def clean_paths(lines: list[str]) -> list[str]:
     """Rutas sin espacios sobrantes, sin vacías ni repetidas, en el orden dado."""
     seen: list[str] = []
