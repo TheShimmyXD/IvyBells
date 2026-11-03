@@ -65,6 +65,16 @@ def test_usb_headset_sample_follows_the_defaults():
     assert capture.microphone is not None and capture.microphone.name == HEADSET_MIC
 
 
+def test_pactl_17_on_pipewire_1_6_sample():
+    # Ubuntu 26.04 (2026-11-03): pactl 17.0 sobre PipeWire 1.6.2; salida a la placa y
+    # entrada al headset USB.
+    capture = _capture_from_sample(
+        "2026-11-03_pactl_info.txt", "2026-11-03_pactl_list_short_sources.txt"
+    )
+    assert capture.monitor is not None and capture.monitor.name == ANALOG_MONITOR
+    assert capture.microphone is not None and capture.microphone.name == HEADSET_MIC
+
+
 def test_malformed_lines_are_skipped():
     text = "x\tfoo\tPipeWire\ts32le\tRUNNING\n\n48\tbad line\n"
     assert parse_short_sources(text) == []
