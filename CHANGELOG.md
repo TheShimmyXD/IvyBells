@@ -6,6 +6,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Sin publicar]
 
+### Agregado
+- Logo de IvyBells al inicio del README, en versión para tema claro y oscuro; el acceso del
+  menú usa la misma campana.
+
 ## [0.1.0] - 2026-11-06
 
 Primera versión en GitHub.

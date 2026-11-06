@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo-light.png" alt="Logo de IvyBells" width="128">
+  </picture>
+</p>
+
 # IvyBells
 
 Transcribe en vivo, en la GPU de tu equipo y sin mandar el audio a ninguna nube,

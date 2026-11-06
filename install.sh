@@ -33,7 +33,7 @@ Name=IvyBells
 Comment=Transcripcion en vivo, local y en GPU
 Exec="$DIR/.venv/bin/python" "$DIR/main.py"
 Path=$DIR
-Icon=audio-input-microphone
+Icon=$DIR/docs/logo-light.png
 Terminal=false
 Categories=AudioVideo;Audio;Utility;
 EOF
