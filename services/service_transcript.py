@@ -42,7 +42,10 @@ class TranscriptWriter:
         self._write(format_phrase(event, self._started))
         self.phrases += 1
 
-    def close(self) -> None:
+    def close(self, footer: str = "") -> None:
+        """Cierra el archivo; `footer` (por ejemplo, la latencia de la sesión) va al final."""
+        if footer:
+            self._write(footer)
         self._handle.close()
 
     def _write(self, text: str) -> None:

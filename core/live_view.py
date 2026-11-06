@@ -6,12 +6,21 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from core.bench_metrics import median_s
+from core.bench_metrics import median_s, percentile
 from core.engine import TranscriptEvent
 
 SOURCES = ("ellos", "tu")
 # "alsa_output.pci-0000_0d_00.4.analog-stereo.monitor" -> "analog-stereo.monitor".
 _ALSA_PREFIX = re.compile(r"^alsa_(input|output)\.(pci-[0-9a-f_]+\.\d+\.)?")
+
+
+@dataclass(frozen=True, slots=True)
+class LatencySummary:
+    """Latencia final de un canal en una sesión: frases medidas, mediana y p90, en segundos."""
+
+    count: int
+    median: float
+    p90: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,18 +80,30 @@ class LatencyTracker:
         self._sample_rate = sample_rate
         self._origin: float | None = None
         self._values: list[float] = []
+        self._by_source: dict[str, list[float]] = {}
 
     def mark_audio(self, samples: int, now: float) -> None:
         """Se llama con cada bloque capturado; solo el primero fija el origen."""
         if self._origin is None:
             self._origin = now - samples / self._sample_rate
 
-    def add_final(self, end_s: float, now: float) -> float | None:
+    def add_final(self, end_s: float, now: float, source: str = "") -> float | None:
         if self._origin is None:
             return None
         value = max(now - self._origin - end_s, 0.0)
         self._values.append(value)
+        self._by_source.setdefault(source, []).append(value)
         return value
+
+    def summary(self) -> dict[str, LatencySummary]:
+        """Mediana y p90 por canal, en el orden de `SOURCES` (los canales sin frases no salen)."""
+        order = {source: index for index, source in enumerate(SOURCES)}
+        sources = sorted(self._by_source, key=lambda source: order.get(source, len(order)))
+        return {
+            source: LatencySummary(len(values), median_s(values), percentile(values, 0.9))
+            for source in sources
+            if (values := self._by_source[source])
+        }
 
     @property
     def last(self) -> float | None:

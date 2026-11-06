@@ -18,6 +18,7 @@ from PySide6.QtCore import QObject, Signal
 
 from core.engine import EventCallback, TranscriptEvent, TranscriptionEngine
 from core.live_view import LatencyTracker
+from core.transcript_markdown import format_latency_footer, format_latency_line
 from services.service_capture import AudioCapture, BlockCallback
 from services.service_live import CaptureFactory, LiveSession
 from services.service_transcript import TranscriptWriter
@@ -114,7 +115,7 @@ class LiveWorker(QObject):
             self.failed.emit(str(exc) or type(exc).__name__)
         finally:
             if writer is not None:
-                writer.close()
+                writer.close(self._latency_footer())
             self.finished.emit(
                 {
                     "_request_id": self._request_id,
@@ -125,10 +126,18 @@ class LiveWorker(QObject):
 
     def _emit_event(self, event: TranscriptEvent) -> None:
         if event.is_final:
-            value = self._tracker.add_final(event.end_s, time.monotonic())
+            value = self._tracker.add_final(event.end_s, time.monotonic(), event.source)
             if value is not None:
                 self.latency.emit(value, self._tracker.median)
         self.event.emit(event)
+
+    def _latency_footer(self) -> str:
+        """Deja en el log la latencia de cada canal y devuelve el pie del .md."""
+        summaries = self._tracker.summary()
+        if summaries:
+            lines = [format_latency_line(source, item) for source, item in summaries.items()]
+            logger.info("Latencia final de la sesión: %s", "; ".join(lines))
+        return format_latency_footer(summaries)
 
     def _timed_capture(self, source: str, device: str, on_block: BlockCallback) -> AudioCapture:
         """La captura de siempre, marcando cuándo llegó el primer bloque (origen de la latencia)."""

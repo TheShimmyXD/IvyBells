@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from core.engine import TranscriptEvent
+from core.live_view import LatencySummary
 
 # Fuente del motor -> como se muestra al lector.
 SOURCE_LABELS = {"ellos": "Ellos", "tu": "Tú"}
@@ -34,3 +35,22 @@ def format_phrase(event: TranscriptEvent, started: datetime) -> str:
     """
     stamp = started + timedelta(seconds=event.start_s)
     return f"- **{stamp:%H:%M:%S} {source_label(event.source)}:** {event.text.strip()}\n"
+
+
+def format_latency_line(source: str, summary: LatencySummary) -> str:
+    """Por ejemplo "Ellos: mediana 1,8 s, p90 2,4 s (120 frases)", con coma decimal."""
+    text = f"mediana {summary.median:.1f} s, p90 {summary.p90:.1f} s".replace(".", ",")
+    unit = "frase" if summary.count == 1 else "frases"
+    return f"{source_label(source)}: {text} ({summary.count} {unit})"
+
+
+def format_latency_footer(summaries: dict[str, LatencySummary]) -> str:
+    """
+    Pie del .md con la latencia final de cada canal (fin de la frase -> texto final).
+
+    Sin frases medidas no hay pie: el archivo queda como antes.
+    """
+    if not summaries:
+        return ""
+    lines = [f"- {format_latency_line(source, item)}" for source, item in summaries.items()]
+    return "\n## Latencia\n\n" + "\n".join(lines) + "\n"

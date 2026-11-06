@@ -14,6 +14,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
   vid2aud y Molink; `install.sh` lo usa. La ventana se llama IvyBells para que el dock la
   agrupe con su icono.
 
+- Al detener la escucha, el `.md` termina con la latencia de cada canal (mediana, p90 y
+  cuántas frases se midieron), y la misma línea queda en el log.
+
 ### Corregido
 - La app no arrancaba fuera de su carpeta (`python /ruta/main.py`): el relanzamiento con
   cuBLAS y cuDNN no encontraba `main`.

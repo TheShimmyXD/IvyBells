@@ -80,7 +80,10 @@ def test_worker_runs_session_and_writes_markdown(qapp, tmp_path):
     assert got["failed"] == []
     payload = got["finished"][0][0]
     assert payload["_request_id"] == 7 and payload["phrases"] == 1
-    assert "Hola a todos." in payload["path"].read_text(encoding="utf-8")
+    text = payload["path"].read_text(encoding="utf-8")
+    assert "Hola a todos." in text
+    # La latencia de la sesión queda al final del .md (frase de "tu" del motor falso).
+    assert "\n## Latencia\n\n- Tú: mediana " in text and text.endswith("(1 frase)\n")
     assert engines[0].stopped
 
 

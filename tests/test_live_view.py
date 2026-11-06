@@ -4,6 +4,7 @@ from datetime import datetime
 
 from core.engine import TranscriptEvent
 from core.live_view import (
+    LatencySummary,
     LatencyTracker,
     LiveTranscript,
     format_latency,
@@ -49,6 +50,19 @@ def test_latency_from_first_block_like_bench():
     assert abs(tracker.add_final(end_s=5.0, now=107.5) - 2.5) < 1e-9
     assert abs(tracker.last - 2.5) < 1e-9
     assert abs(tracker.median - 2.0) < 1e-9
+
+
+def test_latency_summary_per_source_in_sources_order():
+    tracker = LatencyTracker(sample_rate=16_000)
+    assert tracker.summary() == {}
+    tracker.mark_audio(1_600, now=100.1)  # origen en 100,0
+    for end_s, now in ((1.0, 102.0), (2.0, 104.0), (3.0, 106.0)):  # 1, 2 y 3 s
+        tracker.add_final(end_s, now, "tu")
+    tracker.add_final(5.0, 106.5, "ellos")  # 1,5 s
+    summary = tracker.summary()
+    assert list(summary) == ["ellos", "tu"]
+    assert summary["tu"] == LatencySummary(3, 2.0, 3.0)
+    assert summary["ellos"] == LatencySummary(1, 1.5, 1.5)
 
 
 def test_short_device_names_from_fixtures():
