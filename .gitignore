@@ -17,11 +17,6 @@ resources/agent/contexto/
 resources/agent/contextos/
 logs/
 
-# Diario de trabajo del agente (no se versiona)
-Agente_IvyBells/ESTADO*.md
-Agente_IvyBells/SESIONES.md
-Agente_IvyBells/Observador/trazas/
-
 # Audio y transcripciones reales (no se versionan)
 grabaciones/
 transcripciones/
