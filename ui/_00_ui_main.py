@@ -186,6 +186,10 @@ def run_app() -> None:
     from services.service_profiles import ProfileStore
 
     app = QApplication.instance() or QApplication(sys.argv)
+    # El mismo nombre que el acceso del menú: el dock agrupa la ventana con su icono.
+    app.setApplicationName("IvyBells")
+    app.setApplicationDisplayName("IvyBells")
+    app.setDesktopFileName("IvyBells")
     config = load_app_config()
 
     def remember(key: str, value: object) -> None:

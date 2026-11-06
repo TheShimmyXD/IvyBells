@@ -10,6 +10,8 @@ RESOURCES_DIR = ROOT / "resources" / "json"
 # Letras (IBM Plex, OFL) e iconos (Phosphor, MIT) de la interfaz, con sus licencias.
 FONTS_DIR = ROOT / "resources" / "fonts"
 ICONS_DIR = ROOT / "resources" / "icons"
+# Logo en 256 px para el acceso del menú (el mismo del README).
+LOGO_PNG = ROOT / "docs" / "logo-light.png"
 ICON_FONT = ICONS_DIR / "phosphor-regular.woff2"
 ICON_MAP = ICONS_DIR / "phosphor-regular.json"
 APP_SETTINGS_JSON = RESOURCES_DIR / "app_settings.json"

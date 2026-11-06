@@ -20,20 +20,34 @@ def list_sources() -> None:
     )
 
 
+def install_launcher() -> None:
+    """Deja IvyBells en el menú de aplicaciones con su logo."""
+    from paths import LOGO_PNG, ROOT
+    from services.service_launcher import install_launcher as write_launcher
+
+    write_launcher(ROOT, ROOT / ".venv" / "bin" / "python", LOGO_PNG)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="IvyBells")
     parser.add_argument("--fuentes", action="store_true", help="lista las fuentes de audio y sale")
     parser.add_argument("--cli", action="store_true", help="transcribe en vivo en la consola")
     parser.add_argument("--model", default="large-v3-turbo", help="modelo de faster-whisper")
     parser.add_argument("--compute-type", default="int8", help="int8, int8_float16 o float16")
+    parser.add_argument(
+        "--install-launcher", action="store_true", help="crea el acceso en el menú y sale"
+    )
     args = parser.parse_args()
 
-    if not args.fuentes:
+    if not (args.fuentes or args.install_launcher):
         # La GPU necesita LD_LIBRARY_PATH desde el arranque: relanza el proceso si falta.
         from services.service_whisper import reexec_with_cuda_libraries
 
         reexec_with_cuda_libraries("main")
     setup_logging()
+    if args.install_launcher:
+        install_launcher()
+        return
     if args.fuentes:
         list_sources()
         return

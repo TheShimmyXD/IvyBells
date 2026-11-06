@@ -3,7 +3,6 @@
 # No usa sudo ni toca el sistema: todo queda en esta carpeta y en ~/.local/share.
 set -euo pipefail
 cd "$(dirname "$0")"
-DIR="$(pwd)"
 
 PYTHON="${PYTHON:-python3}"
 if ! "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)' 2>/dev/null; then
@@ -23,20 +22,7 @@ fi
 # Toolkit); el codigo corre desde esta carpeta.
 .venv/bin/python -m pip install .
 
-# Acceso en el menu de aplicaciones.
-APPS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-mkdir -p "$APPS_DIR"
-cat > "$APPS_DIR/ivybells.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=IvyBells
-Comment=Transcripcion en vivo, local y en GPU
-Exec="$DIR/.venv/bin/python" "$DIR/main.py"
-Path=$DIR
-Icon=$DIR/docs/logo-light.png
-Terminal=false
-Categories=AudioVideo;Audio;Utility;
-EOF
+.venv/bin/python main.py --install-launcher
 
 # Lo que no se instala con pip; solo se avisa.
 if ! command -v pactl >/dev/null || ! command -v parec >/dev/null; then

@@ -56,8 +56,24 @@ def reexec_with_cuda_libraries(module: str) -> None:
     current = os.environ.get("LD_LIBRARY_PATH", "")
     if not dirs or all(lib_dir in current.split(os.pathsep) for lib_dir in dirs):
         return
-    env = {**os.environ, "LD_LIBRARY_PATH": os.pathsep.join([*dirs, current]).rstrip(os.pathsep)}
-    os.execve(sys.executable, [sys.executable, "-m", module, *sys.argv[1:]], env)
+    os.execve(sys.executable, [sys.executable, "-m", module, *sys.argv[1:]], reexec_env(dirs))
+
+
+def reexec_env(dirs: list[str]) -> dict[str, str]:
+    """
+    Entorno del proceso relanzado: cuBLAS y cuDNN en LD_LIBRARY_PATH y la raíz del proyecto
+    en PYTHONPATH, para que `-m <module>` se encuentre aunque se arranque desde otra carpeta
+    (el acceso del menú o `python /ruta/main.py`).
+    """
+    from paths import ROOT
+
+    current = os.environ.get("LD_LIBRARY_PATH", "")
+    python_path = os.environ.get("PYTHONPATH", "")
+    return {
+        **os.environ,
+        "LD_LIBRARY_PATH": os.pathsep.join([*dirs, current]).rstrip(os.pathsep),
+        "PYTHONPATH": os.pathsep.join([str(ROOT), python_path]).rstrip(os.pathsep),
+    }
 
 
 def engine_versions() -> dict[str, str]:
