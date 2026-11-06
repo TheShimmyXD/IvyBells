@@ -1,36 +1,45 @@
-"""El logo de IvyBells: una campana con dos voces.
+"""El logo de IvyBells: una campana maciza dentro del sello de la familia.
 
 Se dibuja con QPainter sobre una rejilla de 64, en cualquier tamano y con los
-colores del tema; no hay archivo de imagen. Las ondas de la izquierda van en
-tinta (Ellos) y las de la derecha en ocre (Tú), como las dos columnas.
+colores del tema; no hay archivo de imagen. El sello (anillo ocre y anillo
+punteado) es el mismo de vid2aud y Molink; el glifo es una campana en tinta con
+el badajo en ocre.
 """
 
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap, QTransform
 
 from ui.theme import seal_colors
 
 GRID = 64.0
-BODY_WIDTH = 3.2
-CLAPPER_CENTER, CLAPPER_RADIUS = QPointF(32, 50.5), 3.6
-# Ondas: (radio, ancho) con centro en (32, 30); cada una abarca 50 grados por lado.
-WAVES = ((24.0, 2.6), (29.5, 2.6))
-WAVE_CENTER_Y = 30.0
-WAVE_SPAN_DEG = 50
+CENTER = QPointF(32, 32)
+OUTER_RADIUS, OUTER_WIDTH = 29.0, 3.0
+INNER_RADIUS, INNER_WIDTH = 23.5, 2.0
+# Trazo de 2.2 y hueco de 3.4 en la rejilla; Qt los mide en anchos de linea.
+INNER_DASHES = (2.2 / INNER_WIDTH, 3.4 / INNER_WIDTH)
+# La campana se dibuja en su propia rejilla de 64 y se reduce al centro del sello.
+BELL_SCALE = 0.70
+BELL_CENTER_Y = 31.0
+# Borde redondeado de la campana, medido en la rejilla del sello.
+BELL_EDGE_WIDTH = 2.4
+CLAPPER_CENTER, CLAPPER_RADIUS = QPointF(32, 51.5), 4.6
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
 PIXEL_RATIO = 2.0
 
 
-def _pen(color: QColor, width: float) -> QPen:
-    pen = QPen(color, width)
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-    return pen
+def _bell_transform() -> QTransform:
+    """Lleva la rejilla de la campana al centro del sello."""
+    transform = QTransform()
+    transform.translate(32, BELL_CENTER_Y)
+    transform.scale(BELL_SCALE, BELL_SCALE)
+    transform.translate(-32, -32)
+    return transform
 
 
 def _bell_body() -> QPainterPath:
+    """Cuerpo y asa de la campana, ya en la rejilla del sello."""
     body = QPainterPath()
     body.moveTo(15, 45)
     body.cubicTo(19, 41, 18, 33, 19, 27)
@@ -38,34 +47,47 @@ def _bell_body() -> QPainterPath:
     body.cubicTo(38, 14, 44, 18, 45, 27)
     body.cubicTo(46, 33, 45, 41, 49, 45)
     body.closeSubpath()
-    return body
+    return _bell_transform().map(body)
+
+
+def _round_pen(color: QColor, width: float) -> QPen:
+    pen = QPen(color, width)
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+    return pen
+
+
+def _paint_seal(painter: QPainter, seal: QColor) -> None:
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.setPen(QPen(seal, OUTER_WIDTH))
+    painter.drawEllipse(CENTER, OUTER_RADIUS, OUTER_RADIUS)
+    dashed = QPen(seal, INNER_WIDTH)
+    dashed.setDashPattern(list(INNER_DASHES))
+    painter.setPen(dashed)
+    painter.drawEllipse(CENTER, INNER_RADIUS, INNER_RADIUS)
+
+
+def _paint_bell(painter: QPainter, ink: QColor, seal: QColor) -> None:
+    transform = _bell_transform()
+    painter.setPen(_round_pen(ink, BELL_EDGE_WIDTH))
+    painter.setBrush(ink)
+    painter.drawPath(_bell_body())
+    painter.drawLine(transform.map(QPointF(32, 14)), transform.map(QPointF(32, 9.5)))
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(seal)
+    radius = CLAPPER_RADIUS * BELL_SCALE
+    painter.drawEllipse(transform.map(CLAPPER_CENTER), radius, radius)
 
 
 def paint_logo(painter: QPainter, rect: QRectF, ink: QColor, seal: QColor) -> None:
-    """Dibuja la campana dentro de ``rect`` (cuadrado)."""
+    """Dibuja el sello con la campana dentro de ``rect`` (cuadrado)."""
     painter.save()
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.translate(rect.topLeft())
     scale = min(rect.width(), rect.height()) / GRID
     painter.scale(scale, scale)
-
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    painter.setPen(_pen(ink, BODY_WIDTH))
-    painter.drawPath(_bell_body())
-    painter.drawLine(QPointF(32, 14), QPointF(32, 9.5))
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.setBrush(seal)
-    painter.drawEllipse(CLAPPER_CENTER, CLAPPER_RADIUS, CLAPPER_RADIUS)
-
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    half = WAVE_SPAN_DEG // 2
-    for radius, width in WAVES:
-        arc = QRectF(32 - radius, WAVE_CENTER_Y - radius, 2 * radius, 2 * radius)
-        # Qt mide los arcos en dieciseisavos de grado, desde las 3 en contra del reloj.
-        painter.setPen(_pen(ink, width))
-        painter.drawArc(arc, (180 - half) * 16, WAVE_SPAN_DEG * 16)
-        painter.setPen(_pen(seal, width))
-        painter.drawArc(arc, -half * 16, WAVE_SPAN_DEG * 16)
+    _paint_seal(painter, seal)
+    _paint_bell(painter, ink, seal)
     painter.restore()
 
 
