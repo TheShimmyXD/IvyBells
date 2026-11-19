@@ -15,6 +15,8 @@ LOGO_PNG = ROOT / "docs" / "logo-light.png"
 ICON_FONT = ICONS_DIR / "phosphor-regular.woff2"
 ICON_MAP = ICONS_DIR / "phosphor-regular.json"
 APP_SETTINGS_JSON = RESOURCES_DIR / "app_settings.json"
+# Puerto y token de la API local mientras corre; fuera de Git, permisos 0600.
+API_SESSION_JSON = RESOURCES_DIR / "api_session.json"
 # Datos propios de esta máquina (nunca se versionan).
 LOCAL_SETTINGS_JSON = ROOT / "local_settings.json"
 

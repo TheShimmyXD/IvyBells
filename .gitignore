@@ -23,3 +23,9 @@ transcripciones/
 
 # Logs de corridas largas del banco (los .json y .md sí se versionan)
 bench/resultados/*.log
+
+# -- Ventana de Tauri ------------------------------------------
+# La compilacion va a jacck_common/rust/target; esto es por si alguien compila sin .cargo/.
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+resources/json/api_session.json

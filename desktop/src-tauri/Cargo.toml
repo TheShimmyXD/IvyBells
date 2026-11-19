@@ -1,0 +1,14 @@
+[package]
+name = "ivybells-desktop"
+version = "0.1.0"
+description = "Ventana de escritorio de IvyBells: abre la interfaz web y lanza la API de Python"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[dependencies]
+# Misma version que jacck_tauri y Venona: la compilacion compartida se reutiliza.
+tauri = { version = "=2.12.5", features = [] }
+jacck_tauri = { path = "../../../jacck_common/rust/jacck_tauri" }

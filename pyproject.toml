@@ -21,6 +21,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=9", "ruff>=0.17"]
+# Ventana de Tauri: API local sobre jacck_common, sin remoto todavia; se instala
+# con `pip install -e "../jacck_common[webapi]"`. Extra aparte para que install.sh siga igual.
+web = ["jacck_common[webapi]>=0.2.0", "httpx>=0.28"]
 
 [tool.setuptools]
 # Solo se instalan las dependencias; el código se ejecuta desde la carpeta.

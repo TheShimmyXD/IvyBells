@@ -32,6 +32,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="IvyBells")
     parser.add_argument("--fuentes", action="store_true", help="lista las fuentes de audio y sale")
     parser.add_argument("--cli", action="store_true", help="transcribe en vivo en la consola")
+    parser.add_argument("--api", action="store_true", help="API local para la ventana de Tauri")
     parser.add_argument("--model", default="large-v3-turbo", help="modelo de faster-whisper")
     parser.add_argument("--compute-type", default="int8", help="int8, int8_float16 o float16")
     parser.add_argument(
@@ -51,6 +52,10 @@ def main() -> None:
     if args.fuentes:
         list_sources()
         return
+    if args.api:
+        from entrypoints.api.run import run_api
+
+        sys.exit(run_api())
     if args.cli:
         from cli_live import run_cli
 
