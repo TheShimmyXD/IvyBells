@@ -63,7 +63,15 @@ AGENT_ANSWERS = (
     "primeros cinco días hábiles después de la contratación, y sí puede pagar",
 )
 AGENT_ERROR = "Claude no respondió en 120 s"
-AGENT_STATES = ("sin_seleccion", "inicio", "enviando", "error", "anticipado")
+AGENT_STATES = (
+    "sin_seleccion",
+    "inicio",
+    "enviando",
+    "error",
+    "anticipado",
+    "lejos_del_final",
+    "lejos_del_final_solido",
+)
 # Modo anticipado: un turno respondido, uno superado (el cliente siguió) y el último.
 AHEAD_SUPERSEDED = "Perfecto, ¿me confirma el correo donde la espera?"
 # Chat propio (D-30): (estado, peticiones con su respuesta; la última puede ir a medias).
@@ -173,7 +181,7 @@ def capture_states(out_dir: Path) -> list[Path]:
             window.show()
             app.processEvents()
             if state == "lejos_del_final":
-                # El lector subió en "Ellos" para releer: aparece "Seguir en vivo".
+                # El lector subió en "Ellos" para releer: "Seguir en vivo" flota encima.
                 window.live_page.columns["ellos"].browser.verticalScrollBar().setValue(0)
                 app.processEvents()
             path = out_dir / f"ventana_{state}_{theme}.png"
@@ -283,7 +291,12 @@ def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str
         coordinator.on_event(TranscriptEvent("ellos", True, text, start_s, start_s + 3.0))
     start_s, text = AGENT_PARTIAL
     coordinator.on_event(TranscriptEvent("ellos", False, text, start_s, start_s + 1.0))
-    if state == "sin_seleccion":
+    if state.startswith("lejos_del_final"):
+        for index in range(12):
+            text = FILLER_TEXTS[index % len(FILLER_TEXTS)]
+            start_s = 80.0 + index * 6.0
+            coordinator.on_event(TranscriptEvent("ellos", True, text, start_s, start_s + 4))
+    if state == "sin_seleccion" or state.startswith("lejos_del_final"):
         return
     agent.mark_start(0, 0)
     agent.mark_end(0, 99)
@@ -367,6 +380,7 @@ def capture_chat(out_dir: Path) -> list[Path]:
 def capture_agent(out_dir: Path) -> list[Path]:
     """Guarda `agente_<estado>_<tema>.png` (ventana real en el módulo Agente)."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
 
     from coordinator_config import ClaudeSettings
@@ -392,6 +406,17 @@ def capture_agent(out_dir: Path) -> list[Path]:
                 _play_agent(coordinator, agent, state)
                 window.show()
                 app.processEvents()
+                if state.startswith("lejos_del_final"):
+                    # El lector subió para releer: aparece el botón flotante.
+                    window.agent_page.transcript.verticalScrollBar().setValue(0)
+                    app.processEvents()
+                if state == "lejos_del_final_solido":
+                    # Como con el mouse encima: fondo por :hover del QSS y el icono sólido.
+                    button = window.agent_page.follow_button
+                    button.setAttribute(Qt.WidgetAttribute.WA_UnderMouse, True)
+                    button.set_solid(True)
+                    button.style().polish(button)
+                    app.processEvents()
                 path = out_dir / f"agente_{state}_{theme}.png"
                 window.grab().save(str(path))
                 paths.append(path)

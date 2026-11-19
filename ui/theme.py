@@ -134,6 +134,7 @@ class ButtonRole(StrEnum):
     SECONDARY = "secondary"
     DANGER = "danger"
     QUIET = "quiet"
+    FLOATING = "floating"
 
 
 class Tone(StrEnum):

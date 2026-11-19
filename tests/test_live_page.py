@@ -181,7 +181,7 @@ def test_resume_keeps_the_text_and_shows_the_mark_in_each_column(make_page):
     assert "Reanudada 09:20" in page.columns["tu"].browser.toPlainText()
 
 
-def test_follow_live_appears_when_a_column_scrolls_up_and_brings_both_down(make_page, qapp):
+def test_follow_live_floats_on_the_column_away_from_the_end_and_brings_both_down(make_page, qapp):
     coordinator, page, _chosen = make_page()
     page.resize(900, 500)
     page.show()
@@ -191,19 +191,24 @@ def test_follow_live_appears_when_a_column_scrolls_up_and_brings_both_down(make_
             text = f"Frase de ejemplo número {index} para llenar la columna."
             coordinator.on_event(TranscriptEvent(source, True, text, index * 3.0, index * 3.0 + 2))
     qapp.processEvents()
-    assert all(column.at_bottom() for column in page.columns.values())
-    assert page.follow_button.isHidden()
+    buttons = {source: column.follow_button for source, column in page.columns.items()}
+    assert all(button.isHidden() for button in buttons.values())
+    page.columns["ellos"].browser.verticalScrollBar().setValue(0)
     page.columns["tu"].browser.verticalScrollBar().setValue(0)
-    assert not page.follow_button.isHidden()
+    qapp.processEvents()
+    assert not buttons["ellos"].isHidden() and not buttons["tu"].isHidden()
     # Lo nuevo no baja una columna alejada del final.
     coordinator.on_event(TranscriptEvent("tu", True, "Una más.", 200.0, 202.0))
+    qapp.processEvents()
     assert not page.columns["tu"].at_bottom()
-    assert not page.follow_button.isHidden()
-    page.follow_button.click()
+    # El botón de una columna baja las dos.
+    buttons["tu"].click()
+    qapp.processEvents()
     assert all(column.at_bottom() for column in page.columns.values())
-    assert page.follow_button.isHidden()
+    assert all(button.isHidden() for button in buttons.values())
     # Ya abajo, el texto nuevo se sigue solo.
     coordinator.on_event(TranscriptEvent("tu", True, "Y otra más.", 210.0, 212.0))
+    qapp.processEvents()
     assert page.columns["tu"].at_bottom()
-    assert page.follow_button.isHidden()
+    assert buttons["tu"].isHidden()
     page.close()

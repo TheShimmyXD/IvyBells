@@ -14,6 +14,15 @@ if TYPE_CHECKING:
 RADIUS = 5
 PILL_RADIUS = 11  # extremos de los botones segmentados
 PANEL_RADIUS = 10
+FLOATING_RADIUS = 17  # botón redondo de 34 px que flota sobre el texto
+# Opacidad del botón flotante sin el mouse encima (con el mouse, sólido).
+FLOATING_IDLE_ALPHA = 0.45
+
+
+def with_alpha(color: str, alpha: float) -> str:
+    """'#RRGGBB' -> 'rgba(r, g, b, alpha)' para QSS."""
+    red, green, blue = (int(color[i : i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({red}, {green}, {blue}, {alpha})"
 
 
 def build_qss(colors: ColorTokens) -> str:
@@ -57,6 +66,15 @@ QPushButton[role="quiet"]:hover {{ color: {c.text}; background: {c.surface_alt};
 QToolButton[role="quiet"] {{ border-color: transparent; background: transparent; padding: 2px; }}
 QToolButton[role="quiet"]:hover {{ background: {c.surface_alt}; }}
 QToolButton[role="quiet"]:focus {{ border-color: {c.brand}; }}
+QToolButton[role="floating"] {{
+    background: {with_alpha(c.brand, FLOATING_IDLE_ALPHA)};
+    border: none;
+    border-radius: {FLOATING_RADIUS}px;
+    padding: 0;
+}}
+QToolButton[role="floating"]:hover, QToolButton[role="floating"]:pressed {{
+    background: {c.brand};
+}}
 QLineEdit {{
     background: {c.surface};
     border: 1px solid {c.border};

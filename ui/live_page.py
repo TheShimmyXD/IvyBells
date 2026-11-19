@@ -4,7 +4,7 @@ Página Transcripción: "Ellos" y "Tú" en dos columnas.
 El icono de cada columna abre o cierra su canal, también con la escucha en marcha.
 
 Arriba el estado, el modelo y Iniciar/Detener; abajo las fuentes, la latencia y Guardar .md.
-Si alguna columna se aleja del final aparece "Seguir en vivo", que baja las dos a la vez.
+Si una columna se aleja del final, "Seguir en vivo" flota sobre su texto; baja las dos.
 Solo habla con `LiveCoordinator`.
 
 Cada combo de fuente empieza con "Predeterminada", que sigue a la del sistema aunque se
@@ -31,14 +31,13 @@ from PySide6.QtWidgets import (
 from coordinator_live import DEFAULT_MODEL, MODELS, LiveCoordinator
 from core.live_state import LiveState
 from core.live_view import SOURCES, format_latency, resolve_device, short_device_name
-from ui.blocks.icons import GlyphLabel, glyph_icon
+from ui.blocks.icons import GlyphLabel
 from ui.blocks.segmented import Segment, SegmentedButtons
 from ui.blocks.status_line import StatusLine
 from ui.live_column import TranscriptColumn
 from ui.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
 FOOTER_ICON_SIZE = 15
-FOLLOW_GLYPH = "arrow-down"
 STATE_TONES = {
     LiveState.STOPPED: Tone.INFO,
     LiveState.LOADING: Tone.WARNING,
@@ -90,7 +89,7 @@ class LivePage(QWidget):
         for source, title, glyph, closed_glyph in VOICES:
             column = self.columns[source] = TranscriptColumn(title, glyph, closed_glyph)
             column.channel_clicked.connect(lambda s=source: self._on_channel_clicked(s))
-            column.follow_changed.connect(self._refresh_follow)
+            column.follow_button.clicked.connect(self.follow_live)
             columns.addWidget(column, 1)
         layout.addLayout(columns, 1)
         layout.addLayout(self._build_footer())
@@ -105,7 +104,6 @@ class LivePage(QWidget):
         coordinator.sources_changed.connect(self.refresh_channels)
         self._on_state({})
         self.refresh_channels()
-        self._refresh_follow()
 
     # -- Construcción ------------------------------------------
 
@@ -147,12 +145,6 @@ class LivePage(QWidget):
         self.latency_label.setFont(mono_font())
         set_tone(self.latency_label, Tone.MUTED)
         row.addWidget(self.latency_label)
-        self.follow_button = QPushButton("Seguir en vivo")
-        self.follow_button.setIcon(glyph_icon(FOLLOW_GLYPH, self.palette(), FOOTER_ICON_SIZE))
-        self.follow_button.setToolTip("Bajar las dos columnas al final y seguir el texto nuevo")
-        set_role(self.follow_button, ButtonRole.SECONDARY)
-        self.follow_button.clicked.connect(self.follow_live)
-        row.addWidget(self.follow_button)
         self.save_button = QPushButton("Guardar .md")
         set_role(self.save_button, ButtonRole.SECONDARY)
         self.save_button.clicked.connect(self._on_save_clicked)
@@ -275,7 +267,6 @@ class LivePage(QWidget):
             self.refresh_transcript(source)
 
     def refresh_theme(self) -> None:
-        self.follow_button.setIcon(glyph_icon(FOLLOW_GLYPH, self.palette(), FOOTER_ICON_SIZE))
         for source in SOURCES:
             self.refresh_transcript(source)
 
@@ -285,11 +276,6 @@ class LivePage(QWidget):
         """Baja las dos columnas al final; el texto nuevo vuelve a seguirse solo."""
         for column in self.columns.values():
             column.scroll_to_end()
-        self._refresh_follow()
-
-    def _refresh_follow(self) -> None:
-        away = any(not column.at_bottom() for column in self.columns.values())
-        self.follow_button.setVisible(away)
 
     def _on_latency(self, last: float, median: float) -> None:
         self.latency_label.setText(format_latency(last, median))

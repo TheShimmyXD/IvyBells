@@ -42,6 +42,7 @@ from ui.agent_view import (
     turns_html,
 )
 from ui.blocks.context_bar import ContextBar
+from ui.blocks.follow_button import FollowButton
 from ui.blocks.icons import GlyphLabel
 from ui.blocks.panel import titled_panel
 from ui.blocks.segmented import Segment, SegmentedButtons
@@ -190,6 +191,7 @@ class AgentPage(QWidget):
         self.transcript.setAccessibleName("Texto del cliente")
         self.transcript.clicked.connect(self._on_clicked)
         layout.addWidget(self.transcript, 1)
+        self.follow_button = FollowButton(self.transcript)
         return frame
 
     def _build_turns(self) -> QFrame:

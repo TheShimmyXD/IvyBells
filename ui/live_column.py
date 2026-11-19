@@ -2,7 +2,7 @@
 Una columna de la ventana: el título de la voz y su texto, el provisional en gris y cursiva.
 
 El icono del título abre o cierra el canal; cerrado, todo se ve en gris.
-Avisa cuando el lector se aleja del final o vuelve a él, para el botón "Seguir en vivo".
+Si el lector se aleja del final, "Seguir en vivo" flota sobre el texto (`FollowButton`).
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QTextBrowser, QVBoxLayout, QWidget
 
 from core.live_view import Line
+from ui.blocks.follow_button import FollowButton, is_at_bottom
 from ui.blocks.icons import GlyphButton
 from ui.theme import (
     ButtonRole,
@@ -28,8 +29,6 @@ from ui.theme import (
 )
 
 TITLE_ICON_SIZE = 16
-# Píxeles de holgura para contar al lector como "abajo".
-BOTTOM_SLACK_PX = 4
 
 
 def _resume_row(clock: str, colors: ColorTokens, mono: str) -> str:
@@ -81,11 +80,9 @@ class TranscriptColumn(QFrame):
     Signals
     -------
     channel_clicked() -> clic en el icono del título (abrir o cerrar el canal).
-    follow_changed()  -> el lector se alejó del final o volvió a él (ver `at_bottom`).
     """
 
     channel_clicked = Signal()
-    follow_changed = Signal()
 
     def __init__(
         self, title: str, glyph: str, closed_glyph: str, parent: QWidget | None = None
@@ -94,7 +91,6 @@ class TranscriptColumn(QFrame):
         self._title = title
         self._glyphs = (glyph, closed_glyph)
         self.is_open = True
-        self._repainting = False
         set_kind(self, Kind.PANEL)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 10, 14, 10)
@@ -119,9 +115,7 @@ class TranscriptColumn(QFrame):
         self.browser.setFrameShape(QFrame.Shape.NoFrame)
         self.browser.setAccessibleName(title)
         layout.addWidget(self.browser, 1)
-        bar = self.browser.verticalScrollBar()
-        bar.valueChanged.connect(self._on_scrolled)
-        bar.rangeChanged.connect(self._on_scrolled)
+        self.follow_button = FollowButton(self.browser)
         self.set_open(True)
 
     def set_open(self, is_open: bool) -> None:
@@ -145,29 +139,15 @@ class TranscriptColumn(QFrame):
         bar = self.browser.verticalScrollBar()
         at_bottom = self.at_bottom()
         previous = bar.value()
-        # setHtml mueve la barra a medias: se avisa una sola vez, ya en su sitio.
-        self._repainting = True
-        try:
-            self.browser.setHtml(
-                column_html(
-                    finals, partial, tokens(), mono_font().family(), not self.is_open, resumes
-                )
-            )
-            bar.setValue(bar.maximum() if at_bottom else previous)
-        finally:
-            self._repainting = False
-        self.follow_changed.emit()
+        self.browser.setHtml(
+            column_html(finals, partial, tokens(), mono_font().family(), not self.is_open, resumes)
+        )
+        bar.setValue(bar.maximum() if at_bottom else previous)
 
     def at_bottom(self) -> bool:
         """True si el lector está al final del texto (o el texto cabe entero)."""
-        bar = self.browser.verticalScrollBar()
-        return bar.value() >= bar.maximum() - BOTTOM_SLACK_PX
+        return is_at_bottom(self.browser)
 
     def scroll_to_end(self) -> None:
         """Baja al final; desde ahí `show_lines` vuelve a seguir el texto nuevo."""
-        bar = self.browser.verticalScrollBar()
-        bar.setValue(bar.maximum())
-
-    def _on_scrolled(self, *_args: int) -> None:
-        if not self._repainting:
-            self.follow_changed.emit()
+        self.follow_button.follow()
