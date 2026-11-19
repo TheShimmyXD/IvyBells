@@ -63,7 +63,7 @@ def test_check_reads_in_a_thread_and_reports(qapp, tmp_path):
     got = []
     settings.account_checked.connect(got.append)
     assert settings.set_account("persona@example.com")
-    _wait(qapp, lambda: settings._thread is None and got[-1]["level"] != "busy")
+    _wait(qapp, lambda: not settings.is_busy() and got[-1]["level"] != "busy")
     assert got[0]["level"] == "busy"
     assert got[-1] == {
         "text": "Sesión de persona@example.com (plan pro)",

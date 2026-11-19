@@ -1,53 +1,23 @@
 """
-Coordinador de la configuración de Claude: cuenta, modelo, esfuerzo, respaldo y tiempo máximo.
+Adaptador Qt de la configuración de Claude (`app.settings.ClaudeOptions`).
 
-Es la fuente única del `ClaudeModelConfig` que usa el Agente: cada cambio se guarda en
-`app_settings.json` y se avisa. Lleva también los perfiles (`profiles`) y el contexto
-(`context`) del agente. Comprobar la cuenta corre en su propio hilo.
+La vista solo habla con él. Lleva los adaptadores de los perfiles (`profiles`) y del
+contexto (`context`); el resultado de comprobar la cuenta llega de su hilo por `post` y
+sale como señal.
 """
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QThread, Signal, Slot
+from PySide6.QtCore import QObject, Signal, Slot
 
-from app.claude_ask import RequestSequence
-from domain.claude.claude_account import AccountStatus, describe
-from domain.claude.claude_model import ClaudeModelConfig, clean_account
+from app.settings import ClaudeOptions, SettingsListeners, StatusReader
+from domain.claude.claude_account import AccountStatus
+from domain.claude.claude_model import ClaudeModelConfig
 from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
-from entrypoints.ui_qt.workers.worker_account import AccountWorker, StatusReader
-from entrypoints.ui_qt.workers.worker_runner import start_worker, stop_thread
-from paths import CLAUDE_ACCOUNTS_DIR
-from services.service_claude_account import (
-    config_dir_for,
-    login_command,
-    prepare_account_dir,
-    read_status,
-)
-
-logger = logging.getLogger(__name__)
-
-# (clave, nombre en el botón, ayuda); los tiempos son del banco de la CLI.
-CLAUDE_MODELS = (
-    ("haiku", "haiku", "El más barato; primer texto en ~2 s"),
-    ("sonnet", "sonnet", "Equilibrado; primer texto en ~2 s"),
-    ("opus", "opus", "El más capaz; primer texto en ~3 s"),
-)
-EFFORTS = (
-    ("", "por defecto", "El nivel que trae el modelo"),
-    ("low", "low", "Responde más rápido, razona menos"),
-    ("medium", "medium", ""),
-    ("high", "high", ""),
-    ("xhigh", "xhigh", ""),
-    ("max", "max", "Razona lo más posible; tarda más"),
-)
-FALLBACKS = ("", "haiku", "sonnet", "opus")
-TIMEOUTS_S = (60, 120, 300)
-CLOSE_TIMEOUT_MS = 3_000
 
 
 class ClaudeSettings(QObject):
@@ -61,107 +31,84 @@ class ClaudeSettings(QObject):
 
     config_changed = Signal(object)
     account_checked = Signal(dict)
+    # Tarea que llega del hilo de la cuenta: Qt la pone en cola y la corre en este hilo.
+    _posted = Signal(object)
 
     def __init__(
         self,
         config: ClaudeModelConfig | None = None,
         save_config: Callable[[ClaudeModelConfig], object] | None = None,
-        status_reader: StatusReader = read_status,
-        accounts_dir: Path = CLAUDE_ACCOUNTS_DIR,
+        status_reader: StatusReader | None = None,
+        accounts_dir: Path | None = None,
         profiles: AgentProfiles | None = None,
         context: AgentContext | None = None,
         parent: QObject | None = None,
+        *,
+        options: ClaudeOptions | None = None,
     ) -> None:
         super().__init__(parent)
-        self.config = config or ClaudeModelConfig()
-        self.profiles = profiles or AgentProfiles(parent=self)
-        self.context = context or AgentContext(parent=self)
-        self._save_config = save_config
-        self._reader = status_reader
-        self._accounts_dir = accounts_dir
-        self._requests = RequestSequence()
-        self._worker: AccountWorker | None = None
-        self._thread: QThread | None = None
+        if options is None:
+            extra: dict = {}
+            if status_reader is not None:
+                extra["status_reader"] = status_reader
+            if accounts_dir is not None:
+                extra["accounts_dir"] = accounts_dir
+            options = ClaudeOptions(
+                config,
+                save_config,
+                profiles=profiles.library if profiles else None,
+                context=context.library if context else None,
+                **extra,
+            )
+        self.options = options
+        self.profiles = profiles or AgentProfiles(library=options.profiles, parent=self)
+        self.context = context or AgentContext(library=options.context, parent=self)
+        self._posted.connect(self._run_posted)
+        options.attach(
+            self._posted.emit,
+            SettingsListeners(config=self.config_changed.emit, account=self.account_checked.emit),
+        )
+
+    # -- Lo que lee la vista -----------------------------------
+
+    @property
+    def config(self) -> ClaudeModelConfig:
+        return self.options.config
+
+    def config_dir(self) -> Path | None:
+        return self.options.config_dir()
+
+    def is_busy(self) -> bool:
+        return self.options.is_busy()
 
     # -- Pedidos de la vista -----------------------------------
 
-    def config_dir(self) -> Path | None:
-        return config_dir_for(self.config.account, self._accounts_dir)
-
     def set_model(self, model: str) -> None:
-        self._update(model=model)
+        self.options.set_model(model)
 
     def set_effort(self, effort: str) -> None:
-        self._update(effort=effort)
+        self.options.set_effort(effort)
 
     def set_fallback(self, model: str) -> None:
-        self._update(fallback_model=model)
+        self.options.set_fallback(model)
 
     def set_timeout(self, seconds: int) -> None:
-        self._update(timeout_s=seconds)
+        self.options.set_timeout(seconds)
 
     def set_account(self, text: str) -> bool:
-        """Cambia la cuenta y la comprueba; False si no parece un correo."""
-        account = clean_account(text)
-        if text.strip() and not account:
-            self.account_checked.emit(
-                {"text": f"«{text.strip()}» no parece un correo", "level": "error", "login": ""}
-            )
-            return False
-        self._update(account=account)
-        self.check()
-        return True
+        return self.options.set_account(text)
 
     def check(self) -> None:
-        if self._thread is not None:
-            return
-        self.account_checked.emit(
-            {"text": "Comprobando la cuenta...", "level": "busy", "login": ""}
-        )
-        worker = self._worker = AccountWorker(
-            reader=self._reader,
-            executable=self.config.executable,
-            config_dir=self.config_dir(),
-            request_id=self._requests.next(),
-        )
-        self._thread = start_worker(
-            self, worker, on_done=self.on_status, on_cleared=self._clear_refs
-        )
+        self.options.check()
 
     def show_status(self, status: AccountStatus) -> None:
-        """Avisa el estado; sin sesión o con otra cuenta, prepara la orden de inicio."""
-        text, level = describe(status, self.config.account)
-        login = ""
-        if level == "warning":
-            folder = None
-            if self.config.account:
-                # Nunca se inicia sesión de otra cuenta sobre la de siempre (~/.claude).
-                folder = prepare_account_dir(self.config.account, self._accounts_dir)
-            login = login_command(self.config.executable, self.config.account, folder)
-        self.account_checked.emit({"text": text, "level": level, "login": login})
+        self.options.show_status(status)
 
     def close(self) -> None:
-        stop_thread(self._thread, CLOSE_TIMEOUT_MS)
-        self.context.close()
-
-    # -- Señales del worker ------------------------------------
-
-    @Slot(dict)
-    def on_status(self, payload: dict) -> None:
-        if self._requests.is_current(payload):
-            self.show_status(payload["status"])
+        self.options.close()
 
     # -- Internos ----------------------------------------------
 
-    def _update(self, **changes) -> None:
-        new = ClaudeModelConfig.from_dict({**self.config.to_dict(), **changes})
-        if new == self.config:
-            return
-        self.config = new
-        if self._save_config is not None:
-            self._save_config(new)
-        self.config_changed.emit(new)
-
-    def _clear_refs(self) -> None:
-        self._worker = None
-        self._thread = None
+    @Slot(object)
+    def _run_posted(self, task: Callable[[], None]) -> None:
+        task()

@@ -23,12 +23,12 @@ from PySide6.QtWidgets import (
 )
 
 from app.chat import ChatTurn
+from app.settings import CLAUDE_MODELS, EFFORTS
 from domain.claude.claude_model import ClaudeModelConfig
 from entrypoints.ui_qt.agent_view import keep_scroll
 from entrypoints.ui_qt.blocks.panel import titled_panel
 from entrypoints.ui_qt.blocks.segmented import Segment, SegmentedButtons
 from entrypoints.ui_qt.coordinators.coordinator_chat import ChatCoordinator
-from entrypoints.ui_qt.coordinators.coordinator_config import CLAUDE_MODELS, EFFORTS
 from entrypoints.ui_qt.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 
 INPUT_LINES = 3

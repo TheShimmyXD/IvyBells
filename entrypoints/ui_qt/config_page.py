@@ -24,19 +24,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.settings import CLAUDE_MODELS, EFFORTS, FALLBACKS, TIMEOUTS_S
 from entrypoints.ui_qt.blocks.context_bar import ContextBar
 from entrypoints.ui_qt.blocks.panel import titled_panel
 from entrypoints.ui_qt.blocks.segmented import Segment, SegmentedButtons
 from entrypoints.ui_qt.blocks.status_line import StatusLine
 from entrypoints.ui_qt.context_editor import ContextEditor
 from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
-from entrypoints.ui_qt.coordinators.coordinator_config import (
-    CLAUDE_MODELS,
-    EFFORTS,
-    FALLBACKS,
-    TIMEOUTS_S,
-    ClaudeSettings,
-)
+from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
 from entrypoints.ui_qt.profile_editor import ProfileEditor
 from entrypoints.ui_qt.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 

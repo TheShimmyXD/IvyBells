@@ -17,7 +17,7 @@ from collections.abc import Callable
 
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QStackedWidget, QWidget
 
-from app.wiring import build_live
+from app.wiring import build_claude_options, build_live
 from entrypoints.ui_qt._00_ui_sidebar import COLLAPSED_WIDTH, NavSidebar
 from entrypoints.ui_qt.agent_page import AgentPage
 from entrypoints.ui_qt.blocks.icons import set_icon_font
@@ -181,10 +181,6 @@ def load_fonts() -> ThemeFonts:
 
 def run_app() -> None:
     from config import load_app_config, save_app_config
-    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
-    from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
-    from paths import AGENT_PROFILE_LOCAL
-    from services.service_profiles import ProfileStore
 
     app = QApplication.instance() or QApplication(sys.argv)
     # El mismo nombre que el acceso del menú: el dock agrupa la ventana con su icono.
@@ -205,22 +201,11 @@ def run_app() -> None:
         "agent_panel": config.agent_panel,
         "module": config.module,
     }
-    store = ProfileStore()
-    store.adopt_legacy(AGENT_PROFILE_LOCAL)
-    profiles = AgentProfiles(
-        store, config.agent_profile, lambda name: remember("agent_profile", name)
+    options = build_claude_options(
+        config.claude, config.agent_profile, config.agent_context, remember
     )
-    context = AgentContext(config.agent_context, lambda name: remember("agent_context", name))
     live = LiveCoordinator(build_live(config.closed_sources))
-    agent = AgentCoordinator(
-        live,
-        ClaudeSettings(
-            config.claude,
-            lambda claude: remember("claude", claude),
-            profiles=profiles,
-            context=context,
-        ),
-    )
+    agent = AgentCoordinator(live, ClaudeSettings(options=options))
     chat = ChatCoordinator(live, agent.settings, config.chat_model, config.chat_effort, remember)
     window = MainWindow(live, load_fonts(), config.theme, remember, agent, prefs, chat)
     window.show()

@@ -34,9 +34,13 @@ class AgentProfiles(QObject):
         active: str = EXAMPLE_NAME,
         save_active: Callable[[str], object] | None = None,
         parent: QObject | None = None,
+        *,
+        library: ProfileLibrary | None = None,
     ) -> None:
         super().__init__(parent)
-        library = self.library = ProfileLibrary(store, active, save_active)  # type: ignore[arg-type]
+        if library is None:
+            library = ProfileLibrary(store, active, save_active)  # type: ignore[arg-type]
+        self.library = library
         library.listeners = ProfileListeners(
             changed=self.profiles_changed.emit,
             active=self.active_changed.emit,
