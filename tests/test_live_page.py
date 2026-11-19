@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import pytest
 
 from captura_ui import PreviewCoordinator
 from config import AppConfig, load_app_config, save_app_config
+from core.engine import TranscriptEvent
 from core.live_view import resolve_device
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
@@ -161,3 +163,19 @@ def test_closed_channels_round_trip_and_never_both(tmp_path):
     assert load_app_config(path).closed_sources == ["tu"]
     path.write_text(json.dumps({"closed_sources": ["tu", "ellos", "x"]}), encoding="utf-8")
     assert load_app_config(path).closed_sources == []
+
+
+def test_resume_keeps_the_text_and_shows_the_mark_in_each_column(make_page):
+    coordinator, page, _chosen = make_page()
+    coordinator.on_loaded(datetime(2026, 11, 19, 9, 0, 0))
+    coordinator.on_event(TranscriptEvent("ellos", True, "Antes de parar.", 5.0, 8.0))
+    coordinator.on_loaded(datetime(2026, 11, 19, 9, 20, 0), False)
+    coordinator.on_event(TranscriptEvent("ellos", True, "Ya volvimos.", 2.0, 4.0))
+    ellos = page.columns["ellos"].browser.toPlainText()
+    assert (
+        ellos.index("Antes de parar.")
+        < ellos.index("Reanudada 09:20")
+        < ellos.index("Ya volvimos.")
+    )
+    # En "Tú" no hubo frases: la marca queda sola al final.
+    assert "Reanudada 09:20" in page.columns["tu"].browser.toPlainText()

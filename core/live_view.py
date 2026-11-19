@@ -41,12 +41,15 @@ class LiveTranscript:
         self._started: datetime | None = None
         self._finals: dict[str, list[Line]] = {source: [] for source in SOURCES}
         self._partials: dict[str, Line | None] = dict.fromkeys(SOURCES)
+        # Por fuente: (posición en sus frases finales, hora "HH:MM") de cada reanudación.
+        self._resumes: dict[str, list[tuple[int, str]]] = {source: [] for source in SOURCES}
 
     def reset(self, started: datetime) -> None:
         self._started = started
         for source in SOURCES:
             self._finals[source] = []
             self._partials[source] = None
+            self._resumes[source] = []
 
     def resume(self, started: datetime) -> None:
         """
@@ -54,8 +57,15 @@ class LiveTranscript:
         base, porque el motor vuelve a contar desde cero.
         """
         self._started = started
+        mark = f"{started:%H:%M}"
         for source in SOURCES:
             self._partials[source] = None
+            marks = self._resumes[source]
+            position = len(self._finals[source])
+            # Dos reanudaciones sin frases en medio: queda solo la última.
+            if marks and marks[-1][0] == position:
+                marks.pop()
+            marks.append((position, mark))
 
     def apply(self, event: TranscriptEvent) -> None:
         text = event.text.strip()
@@ -72,6 +82,10 @@ class LiveTranscript:
 
     def partial(self, source: str) -> Line | None:
         return self._partials.get(source)
+
+    def resume_marks(self, source: str) -> list[tuple[int, str]]:
+        """Dónde se reanudó la escucha: antes de qué frase final y a qué hora."""
+        return list(self._resumes.get(source, []))
 
     def _clock(self, start_s: float) -> str:
         if self._started is None:

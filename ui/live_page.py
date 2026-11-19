@@ -255,7 +255,9 @@ class LivePage(QWidget):
 
     def refresh_transcript(self, source: str) -> None:
         transcript = self.coordinator.transcript
-        self.columns[source].show_lines(transcript.finals(source), transcript.partial(source))
+        self.columns[source].show_lines(
+            transcript.finals(source), transcript.partial(source), transcript.resume_marks(source)
+        )
 
     def refresh_channels(self) -> None:
         for source, column in self.columns.items():

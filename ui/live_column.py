@@ -6,6 +6,7 @@ El icono del título abre o cierra el canal; cerrado, todo se ve en gris.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from html import escape
 
 from PySide6.QtCore import Signal
@@ -28,18 +29,35 @@ from ui.theme import (
 TITLE_ICON_SIZE = 16
 
 
+def _resume_row(clock: str, colors: ColorTokens, mono: str) -> str:
+    return (
+        f"<p align='center' style='margin-top:6px; margin-bottom:10px; "
+        f"color:{colors.text_muted}; font-family:{mono}; font-size:small'>"
+        f"&mdash;&mdash; Reanudada {escape(clock)} &mdash;&mdash;</p>"
+    )
+
+
 def column_html(
-    finals: list[Line], partial: Line | None, colors: ColorTokens, mono: str, muted: bool = False
+    finals: list[Line],
+    partial: Line | None,
+    colors: ColorTokens,
+    mono: str,
+    muted: bool = False,
+    resumes: Sequence[tuple[int, str]] = (),
 ) -> str:
     """
     Cada frase con su hora en mono encima; el provisional al final con puntos suspensivos.
-    `muted` (canal cerrado) pone todo el texto en gris.
+    `muted` (canal cerrado) pone todo el texto en gris. `resumes` son las reanudaciones
+    (antes de qué frase y a qué hora): una línea gris centrada en su sitio.
     """
     items = [(line, False) for line in finals]
     if partial is not None:
         items.append((partial, True))
+    marks: dict[int, str] = dict(resumes)
     rows = []
-    for line, is_partial in items:
+    for index, (line, is_partial) in enumerate(items):
+        if index in marks:
+            rows.append(_resume_row(marks.pop(index), colors, mono))
         body = escape(line.text)
         if is_partial:
             body = f"<i style='color:{colors.text_muted}'>{body} ...</i>"
@@ -47,6 +65,8 @@ def column_html(
             f"<p style='margin-bottom:8px'><span style='color:{colors.text_muted}; "
             f"font-family:{mono}; font-size:small'>{line.clock}</span><br>{body}</p>"
         )
+    # Reanudada sin frases todavía: la marca va al final.
+    rows += [_resume_row(clock, colors, mono) for clock in marks.values()]
     color = colors.text_muted if muted else colors.text
     return f"<div style='color:{color}'>{''.join(rows)}</div>"
 
@@ -106,12 +126,17 @@ class TranscriptColumn(QFrame):
         set_tone(self.title_label, None if is_open else Tone.MUTED)
         self.closed_label.setVisible(not is_open)
 
-    def show_lines(self, finals: list[Line], partial: Line | None) -> None:
+    def show_lines(
+        self,
+        finals: list[Line],
+        partial: Line | None,
+        resumes: Sequence[tuple[int, str]] = (),
+    ) -> None:
         """Repinta el texto y baja al final solo si el lector ya estaba abajo."""
         bar = self.browser.verticalScrollBar()
         at_bottom = bar.value() >= bar.maximum() - 4
         previous = bar.value()
         self.browser.setHtml(
-            column_html(finals, partial, tokens(), mono_font().family(), not self.is_open)
+            column_html(finals, partial, tokens(), mono_font().family(), not self.is_open, resumes)
         )
         bar.setValue(bar.maximum() if at_bottom else previous)

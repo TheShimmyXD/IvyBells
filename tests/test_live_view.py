@@ -54,6 +54,14 @@ def test_resume_keeps_finals_and_moves_the_clock():
         ("18:05:10", "antes"),
         ("18:30:04", "después"),
     ]
+    assert transcript.resume_marks("ellos") == [(1, "18:30")]
+    # Dos reanudaciones sin frases en medio dejan solo la última; reset las borra.
+    transcript.resume(datetime(2026, 10, 17, 18, 40, 0))
+    transcript.resume(datetime(2026, 10, 17, 18, 45, 0))
+    assert transcript.resume_marks("ellos") == [(1, "18:30"), (2, "18:45")]
+    assert transcript.resume_marks("tu") == [(0, "18:45")]
+    transcript.reset(datetime(2026, 10, 17, 19, 0, 0))
+    assert transcript.resume_marks("ellos") == []
 
 
 def test_latency_from_first_block_like_bench():
