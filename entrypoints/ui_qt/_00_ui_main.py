@@ -17,6 +17,7 @@ from collections.abc import Callable
 
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QStackedWidget, QWidget
 
+from app.wiring import build_live
 from entrypoints.ui_qt._00_ui_sidebar import COLLAPSED_WIDTH, NavSidebar
 from entrypoints.ui_qt.agent_page import AgentPage
 from entrypoints.ui_qt.blocks.icons import set_icon_font
@@ -210,7 +211,7 @@ def run_app() -> None:
         store, config.agent_profile, lambda name: remember("agent_profile", name)
     )
     context = AgentContext(config.agent_context, lambda name: remember("agent_context", name))
-    live = LiveCoordinator(closed_sources=config.closed_sources)
+    live = LiveCoordinator(build_live(config.closed_sources))
     agent = AgentCoordinator(
         live,
         ClaudeSettings(

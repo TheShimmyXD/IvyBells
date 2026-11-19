@@ -1,27 +1,22 @@
 """
-Coordinador de la escucha en vivo: une la máquina de estados, el worker y los servicios.
+Adaptador Qt de la escucha en vivo (`app.live.LiveListening`).
 
-La ventana solo habla con él: pide iniciar, detener y guardar, y escucha sus señales.
+La ventana solo habla con él: pide iniciar, detener y guardar, y escucha sus señales. La
+orquestación vive en `app/`; aquí solo se pasan los avisos del hilo de la escucha al hilo
+de la ventana y se convierten en señales.
 """
 
 from __future__ import annotations
 
-import logging
-import threading
-from datetime import datetime
+from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QThread, Signal, Slot
+from PySide6.QtCore import QObject, Signal, Slot
 
-from domain.transcription.engine import TranscriptEvent
+from app.live import LiveListeners, LiveListening
+from app.wiring import build_live
 from domain.transcription.live_state import LiveLogic
-from domain.transcription.live_view import SOURCES, LiveTranscript
-from entrypoints.ui_qt.workers.worker_live import EngineFactory, LiveWorker
-from entrypoints.ui_qt.workers.worker_runner import RequestSequence, start_worker, stop_thread
-from paths import TRANSCRIPTS_DIR
-from services.service_transcript import TranscriptWriter
-
-logger = logging.getLogger(__name__)
+from domain.transcription.live_view import LiveTranscript
 
 # (clave para el motor, nombre en el botón, ayuda)
 MODELS = (
@@ -29,17 +24,6 @@ MODELS = (
     ("medium", "medium", "Intermedio (mediana 1,3 s)"),
     ("large-v3-turbo", "turbo", "El elegido: mediana 1,8 s y el mejor texto"),
 )
-DEFAULT_MODEL = "large-v3-turbo"
-COMPUTE_TYPE = "int8"
-# Al cerrar, el worker cierra las frases abiertas (una llamada al modelo cada una).
-CLOSE_TIMEOUT_MS = 20_000
-
-
-def _default_engine_factory(on_event, model, compute_type):
-    # Import diferido: faster-whisper y CUDA solo se cargan al iniciar una escucha.
-    from services.service_streaming import create_whisper_engine
-
-    return create_whisper_engine(on_event, model, compute_type)
 
 
 class LiveCoordinator(QObject):
@@ -59,156 +43,70 @@ class LiveCoordinator(QObject):
     latency_changed = Signal(float, float)
     session_started = Signal()
     sources_changed = Signal()
+    # Tarea que llega del hilo de la escucha: Qt la pone en cola y la corre en este hilo.
+    _posted = Signal(object)
 
-    def __init__(
-        self,
-        engine_factory: EngineFactory = _default_engine_factory,
-        transcripts_dir: Path = TRANSCRIPTS_DIR,
-        closed_sources: list[str] | None = None,
-        parent: QObject | None = None,
-    ) -> None:
+    def __init__(self, listening: LiveListening | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self._engine_factory = engine_factory
-        self.logic = LiveLogic()
-        self.transcript = LiveTranscript()
-        # Un solo .md por apertura de la app; se crea en el primer Iniciar.
-        self.writer = TranscriptWriter(transcripts_dir)
-        self._requests = RequestSequence()
-        self._stop_event = threading.Event()
-        self._worker: LiveWorker | None = None
-        self._thread: QThread | None = None
-        # Canales cerrados: se capturan pero no llegan al motor. Siempre queda uno abierto.
-        self.closed_sources: set[str] = set()
-        for source in closed_sources or ():
-            self.set_source_open(source, False)
+        self.listening = listening if listening is not None else build_live()
+        self._posted.connect(self._run_posted)
+        self.listening.attach(
+            self._posted.emit,
+            LiveListeners(
+                state=self.state_changed.emit,
+                transcript=self.transcript_changed.emit,
+                latency=self.latency_changed.emit,
+                session_started=self.session_started.emit,
+                sources=self.sources_changed.emit,
+            ),
+        )
 
-    # -- Pedidos de la ventana ---------------------------------
+    # -- Lo que leen la ventana, el Agente y el chat ---------------
 
-    def is_open(self, source: str) -> bool:
-        return source not in self.closed_sources
+    @property
+    def logic(self) -> LiveLogic:
+        return self.listening.logic
 
-    def set_source_open(self, source: str, is_open: bool) -> bool:
-        """
-        Abre o cierra un canal, también con la escucha en marcha. Devuelve False si no
-        cambia nada o si se pide cerrar el único canal abierto.
-        """
-        if source not in SOURCES or self.is_open(source) == is_open:
-            return False
-        if not is_open and len(self.closed_sources) + 1 >= len(SOURCES):
-            return False
-        if is_open:
-            self.closed_sources.discard(source)
-        else:
-            self.closed_sources.add(source)
-        if self._worker is not None:
-            self._worker.set_source_open(source, is_open)
-        self.sources_changed.emit()
-        return True
+    @property
+    def transcript(self) -> LiveTranscript:
+        return self.listening.transcript
 
-    def read_sources(self):
-        """Fuentes de PipeWire por tipo y las elegidas por defecto (`SourceChoices`)."""
-        from services.service_pipewire import read_source_choices
-
-        return read_source_choices()
-
-    def start(self, model: str, devices: dict[str, str]) -> None:
-        if self._thread is not None:
-            logger.warning("La escucha anterior aún se está cerrando")
-            return
-        if not devices:
-            self._emit_state(self.logic.fail("No hay ninguna fuente de audio elegida"))
-            return
-        payload = self.logic.start(model)
-        if payload["ok"]:
-            self._launch(model, devices)
-        self._emit_state(payload)
-
-    def stop(self) -> None:
-        payload = self.logic.stop()
-        if payload["ok"]:
-            self._stop_event.set()
-        self._emit_state(payload)
+    @property
+    def closed_sources(self) -> set[str]:
+        return self.listening.closed_sources
 
     @property
     def last_path(self) -> Path | None:
         """El `.md` de esta apertura, o None si todavía no se inició ninguna escucha."""
-        return self.writer.path
+        return self.listening.last_path
+
+    # -- Pedidos de la ventana ---------------------------------
+
+    def is_open(self, source: str) -> bool:
+        return self.listening.is_open(source)
+
+    def set_source_open(self, source: str, is_open: bool) -> bool:
+        return self.listening.set_source_open(source, is_open)
+
+    def read_sources(self):
+        """Fuentes de PipeWire por tipo y las elegidas por defecto (`SourceChoices`)."""
+        return self.listening.read_sources()
+
+    def start(self, model: str, devices: dict[str, str]) -> None:
+        self.listening.start(model, devices)
+
+    def stop(self) -> None:
+        self.listening.stop()
 
     def save_copy(self, target: Path) -> bool:
-        """Copia a `target` todo lo transcrito desde que se abrió la app, aunque siga escuchando."""
-        try:
-            self.writer.copy_to(target)
-        except OSError as exc:
-            logger.error("No se pudo copiar la transcripción a %s: %s", target, exc)
-            return False
-        logger.info("Transcripción copiada a %s", target)
-        return True
+        return self.listening.save_copy(target)
 
     def close(self) -> None:
-        """Detiene la escucha y espera al worker; la ventana lo llama al cerrarse."""
-        self._stop_event.set()
-        stop_thread(self._thread, CLOSE_TIMEOUT_MS)
-        self.writer.close()
-
-    # -- Señales del worker (llegan en el hilo principal) ------
-
-    @Slot(object, bool)
-    def on_loaded(self, started: datetime, is_new: bool = True) -> None:
-        if is_new:
-            self.transcript.reset(started)
-            self.session_started.emit()
-        else:
-            self.transcript.resume(started)
-        for source in ("ellos", "tu"):
-            self.transcript_changed.emit(source)
-        self._emit_state(self.logic.loaded())
-
-    @Slot(object)
-    def on_event(self, event: TranscriptEvent) -> None:
-        self.transcript.apply(event)
-        self.transcript_changed.emit(event.source)
-
-    @Slot(float, float)
-    def on_latency(self, last: float, median: float) -> None:
-        self.latency_changed.emit(last, median)
-
-    @Slot(str)
-    def on_failed(self, message: str) -> None:
-        self._emit_state(self.logic.fail(message))
-
-    @Slot(dict)
-    def on_finished(self, payload: dict) -> None:
-        if not self._requests.is_current(payload):
-            return
-        if payload.get("path") is not None:
-            logger.info("%d frases guardadas en %s", payload["phrases"], payload["path"])
-        self._emit_state(self.logic.finished())
+        """Detiene la escucha y espera a su hilo; la ventana lo llama al cerrarse."""
+        self.listening.close()
 
     # -- Internos ----------------------------------------------
 
-    def _launch(self, model: str, devices: dict[str, str]) -> None:
-        self._stop_event = threading.Event()
-        worker = self._worker = LiveWorker(
-            engine_factory=self._engine_factory,
-            model=model,
-            compute_type=COMPUTE_TYPE,
-            devices=devices,
-            writer=self.writer,
-            stop_event=self._stop_event,
-            request_id=self._requests.next(),
-            closed=self.closed_sources,
-        )
-        worker.loaded.connect(self.on_loaded)
-        worker.event.connect(self.on_event)
-        worker.latency.connect(self.on_latency)
-        worker.failed.connect(self.on_failed)
-        self._thread = start_worker(
-            self, worker, on_done=self.on_finished, on_cleared=self._clear_refs
-        )
-
-    def _clear_refs(self) -> None:
-        self._worker = None
-        self._thread = None
-
-    def _emit_state(self, payload: dict) -> None:
-        self.state_changed.emit(payload)
+    @Slot(object)
+    def _run_posted(self, task: Callable[[], None]) -> None:
+        task()

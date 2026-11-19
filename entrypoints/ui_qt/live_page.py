@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.live import DEFAULT_MODEL
 from domain.transcription.live_state import LiveState
 from domain.transcription.live_view import (
     SOURCES,
@@ -38,7 +39,7 @@ from domain.transcription.live_view import (
 from entrypoints.ui_qt.blocks.icons import GlyphLabel
 from entrypoints.ui_qt.blocks.segmented import Segment, SegmentedButtons
 from entrypoints.ui_qt.blocks.status_line import StatusLine
-from entrypoints.ui_qt.coordinators.coordinator_live import DEFAULT_MODEL, MODELS, LiveCoordinator
+from entrypoints.ui_qt.coordinators.coordinator_live import MODELS, LiveCoordinator
 from entrypoints.ui_qt.live_column import TranscriptColumn
 from entrypoints.ui_qt.theme import ButtonRole, Tone, mono_font, set_role, set_tone
 

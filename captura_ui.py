@@ -15,6 +15,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from app.live import DEFAULT_MODEL, LiveListening
 from domain.agent.agent_ahead import AHEAD
 from domain.agent.agent_context import MAX_FILE_CHARS, ContextFile, build_context
 from domain.claude.claude_account import AccountStatus
@@ -23,7 +24,8 @@ from domain.claude.claude_stream import Usage
 from domain.transcription.engine import TranscriptEvent
 from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
 from entrypoints.ui_qt.coordinators.coordinator_chat import ChatCoordinator
-from entrypoints.ui_qt.coordinators.coordinator_live import DEFAULT_MODEL, LiveCoordinator
+from entrypoints.ui_qt.coordinators.coordinator_live import LiveCoordinator
+from paths import TRANSCRIPTS_DIR
 from services.service_contexts import ContextStore
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
@@ -111,14 +113,32 @@ SAMPLE_PROFILE = (
 )
 
 
-class PreviewCoordinator(LiveCoordinator):
-    """El coordinador real sin lanzar el worker ni consultar PipeWire."""
+def _no_engine(*_args):
+    raise RuntimeError("La captura de pantallas no carga el motor")
+
+
+class PreviewListening(LiveListening):
+    """La escucha real sin lanzar su hilo ni consultar PipeWire."""
+
+    def __init__(self) -> None:
+        super().__init__(_no_engine, TRANSCRIPTS_DIR)
 
     def read_sources(self) -> SourceChoices:
         return SourceChoices([MONITOR], [MICROPHONE], CaptureSources(MONITOR, MICROPHONE))
 
     def _launch(self, model: str, devices: dict[str, str]) -> None:
         pass
+
+
+class PreviewCoordinator(LiveCoordinator):
+    """El coordinador real sobre `PreviewListening`; los avisos se dan a mano."""
+
+    def __init__(self) -> None:
+        super().__init__(PreviewListening())
+        self.on_loaded = self.listening.on_loaded
+        self.on_event = self.listening.on_event
+        self.on_latency = self.listening.on_latency
+        self.on_failed = self.listening.on_failed
 
 
 class PreviewAgent(AgentCoordinator):
