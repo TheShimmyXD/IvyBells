@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from coordinator_context import AgentContext
+from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 from services.service_context import write_context
 from services.service_contexts import ContextStore
 
@@ -127,7 +127,7 @@ def test_writer_error_is_reported(qapp, tmp_path):
 
 
 def test_editor(qapp, context, monkeypatch):
-    import ui.context_editor as module
+    import entrypoints.ui_qt.context_editor as module
 
     opened = []
     monkeypatch.setattr(module, "open_folder", opened.append)

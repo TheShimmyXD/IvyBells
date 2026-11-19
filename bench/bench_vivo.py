@@ -20,8 +20,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from core.bench_metrics import median_s, percentile
-from core.engine import TranscriptEvent
+from domain.bench.bench_metrics import median_s, percentile
+from domain.transcription.engine import TranscriptEvent
 from logging_config import LOG_FORMAT
 from paths import BENCH_RESULTS_DIR, RECORDINGS_DIR, ROOT, TRANSCRIPTS_DIR
 

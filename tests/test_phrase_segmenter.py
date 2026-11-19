@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.phrase_segmenter import PhraseEvent, PhraseEventKind, PhraseSegmenter
+from domain.transcription.phrase_segmenter import PhraseEvent, PhraseEventKind, PhraseSegmenter
 
 START = PhraseEventKind.START
 END = PhraseEventKind.END

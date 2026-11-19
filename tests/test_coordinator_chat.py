@@ -6,8 +6,8 @@ from datetime import datetime
 import pytest
 from PySide6.QtCore import QObject, Signal
 
-from core.engine import TranscriptEvent
-from core.live_view import LiveTranscript
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import LiveTranscript
 from services.service_claude import ScriptedClaude
 
 
@@ -41,10 +41,10 @@ def _wait(qapp, condition, timeout_s=5.0):
 
 @pytest.fixture
 def make(qapp, tmp_path):
-    from coordinator_chat import ChatCoordinator
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from core.claude_model import ClaudeModelConfig
+    from domain.claude.claude_model import ClaudeModelConfig
+    from entrypoints.ui_qt.coordinators.coordinator_chat import ChatCoordinator
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 
     photo = tmp_path / "contexto.md"
     photo.write_text("La tabla se llama tasks.", encoding="utf-8")

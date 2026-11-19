@@ -31,10 +31,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from core.agent_profile import build_system_prompt
-from core.bench_context import synthetic_context
-from core.bench_metrics import median_s
-from core.claude_model import ClaudeModelConfig
+from domain.agent.agent_profile import build_system_prompt
+from domain.bench.bench_context import synthetic_context
+from domain.bench.bench_metrics import median_s
+from domain.claude.claude_model import ClaudeModelConfig
 from logging_config import LOG_FORMAT
 from paths import BENCH_RESULTS_DIR, ROOT
 

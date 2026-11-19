@@ -20,9 +20,9 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
-from core.agent_profile import build_system_prompt
-from core.claude_model import ClaudeModelConfig
-from core.claude_stream import Finished, TextDelta, Usage, parse_line
+from domain.agent.agent_profile import build_system_prompt
+from domain.claude.claude_model import ClaudeModelConfig
+from domain.claude.claude_stream import Finished, TextDelta, Usage, parse_line
 from paths import AGENT_WORKDIR
 from services.service_claude_account import claude_env, config_dir_for
 from services.service_profiles import write_if_changed

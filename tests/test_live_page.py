@@ -7,8 +7,8 @@ import pytest
 
 from captura_ui import PreviewCoordinator
 from config import AppConfig, load_app_config, save_app_config
-from core.engine import TranscriptEvent
-from core.live_view import resolve_device
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import resolve_device
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
 SPEAKERS = AudioSource(48, "alsa_output.pci-0000_0d_00.4.analog-stereo.monitor", "", "", "")
@@ -43,7 +43,7 @@ def make_page(qapp):
     """Páginas sueltas que se borran al terminar (antes de que se cierre la QApplication)."""
     from PySide6.QtCore import QCoreApplication, QEvent
 
-    from ui.live_page import LivePage
+    from entrypoints.ui_qt.live_page import LivePage
 
     pages = []
 

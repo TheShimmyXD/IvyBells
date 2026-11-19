@@ -4,8 +4,8 @@ import os
 import sys
 from pathlib import Path
 
-from core.claude_account import AccountStatus, account_slug, describe, parse_status
-from core.claude_model import ClaudeModelConfig, clean_account
+from domain.claude.claude_account import AccountStatus, account_slug, describe, parse_status
+from domain.claude.claude_model import ClaudeModelConfig, clean_account
 from services.service_claude_account import (
     claude_env,
     config_dir_for,

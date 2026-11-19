@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.agent_profile import (
+from domain.agent.agent_profile import (
     CLOSING_RULE,
     FIXED_RULES,
     ProfileError,

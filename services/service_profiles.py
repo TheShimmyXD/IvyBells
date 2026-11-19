@@ -12,7 +12,7 @@ import logging
 import os
 from pathlib import Path
 
-from core.agent_profile import EXAMPLE_NAME, ProfileError, clean_name, is_editable
+from domain.agent.agent_profile import EXAMPLE_NAME, ProfileError, clean_name, is_editable
 from paths import AGENT_PROFILES_DIR
 
 logger = logging.getLogger(__name__)

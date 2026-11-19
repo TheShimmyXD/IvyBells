@@ -4,10 +4,10 @@ import threading
 
 import numpy as np
 
-from coordinator_live import LiveCoordinator
-from core.engine import TranscriptEvent
+from domain.transcription.engine import TranscriptEvent
+from entrypoints.ui_qt.coordinators.coordinator_live import LiveCoordinator
+from entrypoints.ui_qt.workers.worker_live import LiveWorker
 from services.service_transcript import TranscriptWriter
-from workers.worker_live import LiveWorker
 
 BLOCK = np.zeros(1_600, dtype=np.float32)
 

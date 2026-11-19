@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from core.claude_model import ClaudeModelConfig
+from domain.claude.claude_model import ClaudeModelConfig
 from services.service_claude import ClaudeCancelled, ClaudeCli, ClaudeError, ScriptedClaude
 
 FIXTURE = Path(__file__).parent / "fixtures" / "claude" / "stream.jsonl"

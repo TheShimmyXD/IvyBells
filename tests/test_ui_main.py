@@ -4,7 +4,7 @@ from captura_ui import PreviewCoordinator
 
 
 def test_theme_button_saves_the_new_theme(qapp):
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
 
     saved = []
     window = MainWindow(PreviewCoordinator(), load_fonts(), "dark", lambda *kv: saved.append(kv))
@@ -15,7 +15,7 @@ def test_theme_button_saves_the_new_theme(qapp):
 
 
 def test_saved_preferences_are_applied_and_changes_remembered(qapp):
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
 
     saved = []
     prefs = {"live_model": "small", "speaker": "tu", "module": "agent", "devices": {}}
@@ -34,7 +34,7 @@ def test_saved_preferences_are_applied_and_changes_remembered(qapp):
 
 
 def test_chat_panel_replaces_the_agent_column_and_is_remembered(qapp):
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
 
     saved = []
     prefs = {"module": "agent", "agent_panel": "chat"}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.agent_prompt import Exchange, as_data, build_prompt
+from domain.agent.agent_prompt import Exchange, as_data, build_prompt
 
 
 def test_first_turn_has_no_history():

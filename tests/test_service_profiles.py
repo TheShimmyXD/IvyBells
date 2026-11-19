@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.agent_profile import ProfileError
+from domain.agent.agent_profile import ProfileError
 from paths import AGENT_PROFILES_DIR
 from services.service_profiles import ProfileStore, write_if_changed
 

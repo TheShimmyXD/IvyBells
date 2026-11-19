@@ -15,7 +15,7 @@ from collections.abc import Callable, Iterable
 
 import numpy as np
 
-from core.engine import TranscriptionEngine
+from domain.transcription.engine import TranscriptionEngine
 from services.service_capture import AudioCapture, BlockCallback
 
 logger = logging.getLogger(__name__)

@@ -15,15 +15,15 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from coordinator_agent import AgentCoordinator
-from coordinator_chat import ChatCoordinator
-from coordinator_live import DEFAULT_MODEL, LiveCoordinator
-from core.agent_ahead import AHEAD
-from core.agent_context import MAX_FILE_CHARS, ContextFile, build_context
-from core.claude_account import AccountStatus
-from core.claude_model import ClaudeModelConfig
-from core.claude_stream import Usage
-from core.engine import TranscriptEvent
+from domain.agent.agent_ahead import AHEAD
+from domain.agent.agent_context import MAX_FILE_CHARS, ContextFile, build_context
+from domain.claude.claude_account import AccountStatus
+from domain.claude.claude_model import ClaudeModelConfig
+from domain.claude.claude_stream import Usage
+from domain.transcription.engine import TranscriptEvent
+from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
+from entrypoints.ui_qt.coordinators.coordinator_chat import ChatCoordinator
+from entrypoints.ui_qt.coordinators.coordinator_live import DEFAULT_MODEL, LiveCoordinator
 from services.service_contexts import ContextStore
 from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
 
@@ -152,7 +152,7 @@ def capture_states(out_dir: Path) -> list[Path]:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -210,14 +210,14 @@ def capture_config(out_dir: Path) -> list[Path]:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from coordinator_profiles import AgentProfiles
+    from entrypoints.ui_qt._00_ui_main import load_fonts
+    from entrypoints.ui_qt.config_page import ClaudeConfigPage
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
+    from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
+    from entrypoints.ui_qt.theme import apply_theme, resolve_theme
     from paths import AGENT_PROFILES_DIR
     from services.service_profiles import ProfileStore
-    from ui._00_ui_main import load_fonts
-    from ui.config_page import ClaudeConfigPage
-    from ui.theme import apply_theme, resolve_theme
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -345,9 +345,9 @@ def capture_chat(out_dir: Path) -> list[Path]:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -383,9 +383,9 @@ def capture_agent(out_dir: Path) -> list[Path]:
     from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
 
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -446,12 +446,12 @@ def capture_budget(out_dir: Path) -> list[Path]:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from coordinator_profiles import AgentProfiles
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt.config_page import ClaudeConfigPage
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
+    from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
     from services.service_profiles import ProfileStore
-    from ui._00_ui_main import MainWindow, load_fonts
-    from ui.config_page import ClaudeConfigPage
 
     app = QApplication.instance() or QApplication([])
     out_dir.mkdir(parents=True, exist_ok=True)

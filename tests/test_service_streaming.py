@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from core.engine import TranscriptEvent
+from domain.transcription.engine import TranscriptEvent
 from services.service_streaming import SAMPLE_RATE, StreamingEngine
 from services.service_vad import VAD_WINDOW_SAMPLES
 

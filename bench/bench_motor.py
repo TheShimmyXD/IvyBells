@@ -21,7 +21,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from core.bench_metrics import (
+from domain.bench.bench_metrics import (
     format_table,
     median_s,
     peak_over_baseline,

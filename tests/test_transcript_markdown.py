@@ -4,9 +4,9 @@ from datetime import datetime
 
 import pytest
 
-from core.engine import TranscriptEvent
-from core.live_view import LatencySummary
-from core.transcript_markdown import (
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import LatencySummary
+from domain.transcription.transcript_markdown import (
     format_header,
     format_latency_footer,
     format_latency_line,

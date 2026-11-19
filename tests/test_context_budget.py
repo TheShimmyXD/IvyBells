@@ -5,10 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from core.agent_context import ContextFile, Omitted, build_context
-from core.agent_prompt import Exchange, build_prompt
-from core.claude_stream import Finished, Usage, parse_line, parse_usage
-from core.context_budget import (
+from domain.agent.agent_context import ContextFile, Omitted, build_context
+from domain.agent.agent_prompt import Exchange, build_prompt
+from domain.agent.context_budget import (
     CLI_OVERHEAD_TOKENS,
     MEASURED_WINDOWS,
     build_budget,
@@ -18,6 +17,7 @@ from core.context_budget import (
     path_weights,
     section_chars,
 )
+from domain.claude.claude_stream import Finished, Usage, parse_line, parse_usage
 
 ROOT = Path(__file__).parent.parent
 SAMPLE = ROOT / "tests" / "fixtures" / "claude" / "contexto" / "result.json"

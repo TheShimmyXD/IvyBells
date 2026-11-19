@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.live_state import CAPTURE_LOST, LiveLogic, LiveState
+from domain.transcription.live_state import CAPTURE_LOST, LiveLogic, LiveState
 
 
 def test_normal_cycle():

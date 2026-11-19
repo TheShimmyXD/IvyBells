@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from config import AppConfig, load_app_config, save_app_config
-from core.claude_model import ClaudeModelConfig, is_valid_model
+from domain.claude.claude_model import ClaudeModelConfig, is_valid_model
 
 
 def test_defaults_give_sonnet_without_extra_flags():

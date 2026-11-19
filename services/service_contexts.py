@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from core.agent_context import ContextError
-from core.agent_profile import ProfileError, clean_name
+from domain.agent.agent_context import ContextError
+from domain.agent.agent_profile import ProfileError, clean_name
 from paths import AGENT_CONTEXTS_DIR
 
 logger = logging.getLogger(__name__)

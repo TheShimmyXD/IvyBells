@@ -7,12 +7,12 @@ from datetime import datetime
 import pytest
 from PySide6.QtCore import QObject, Signal
 
-from core.agent_state import AgentState
-from core.claude_stream import Usage
-from core.engine import TranscriptEvent
-from core.live_view import LiveTranscript
+from domain.agent.agent_state import AgentState
+from domain.claude.claude_stream import Usage
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import LiveTranscript
+from entrypoints.ui_qt.workers.worker_agent import AgentWorker
 from services.service_claude import ScriptedClaude
-from workers.worker_agent import AgentWorker
 
 
 class _FakeLive(QObject):
@@ -49,7 +49,7 @@ def _wait(qapp, condition, timeout_s=5.0):
 
 @pytest.fixture
 def make(qapp):
-    from coordinator_agent import AgentCoordinator
+    from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
 
     made = []
 
@@ -181,10 +181,10 @@ def test_worker_reports_cancel_and_answer(qapp):
 
 
 def test_active_profile_reaches_the_service(qapp, tmp_path):
-    from coordinator_agent import AgentCoordinator
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from coordinator_profiles import AgentProfiles
+    from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
+    from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
     from services.service_profiles import ProfileStore
 
     folder = tmp_path / "perfiles"
@@ -215,10 +215,10 @@ def test_active_profile_reaches_the_service(qapp, tmp_path):
 
 
 def test_budget_learns_the_window_and_moves_the_fragment_to_history(qapp, tmp_path):
-    from coordinator_agent import AgentCoordinator
-    from coordinator_config import ClaudeSettings
-    from coordinator_context import AgentContext
-    from coordinator_profiles import AgentProfiles
+    from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
+    from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
     from services.service_profiles import ProfileStore
 
     folder = tmp_path / "perfiles"

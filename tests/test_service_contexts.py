@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.agent_context import ContextError
+from domain.agent.agent_context import ContextError
 from services.service_contexts import ContextStore
 
 

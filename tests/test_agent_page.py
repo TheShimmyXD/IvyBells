@@ -5,14 +5,14 @@ from PySide6.QtGui import QTextCursor
 from PySide6.QtTest import QTest
 
 from captura_ui import PreviewAgent, PreviewCoordinator, _play_agent
-from core.agent_selection import WordPos
-from core.agent_state import AgentState
-from ui.agent_view import LINE_SEPARATOR
+from domain.agent.agent_selection import WordPos
+from domain.agent.agent_state import AgentState
+from entrypoints.ui_qt.agent_view import LINE_SEPARATOR
 
 
 def _window(qapp):
-    from coordinator_config import ClaudeSettings
-    from ui._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt._00_ui_main import MainWindow, load_fonts
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
 
     coordinator = PreviewCoordinator()
     agent = PreviewAgent(coordinator, ClaudeSettings())

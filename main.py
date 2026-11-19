@@ -57,11 +57,11 @@ def main() -> None:
 
         sys.exit(run_api())
     if args.cli:
-        from cli_live import run_cli
+        from entrypoints.cli.live import run_cli
 
         sys.exit(run_cli(args.model, args.compute_type))
     # Import diferido: el logging queda configurado antes de cargar Qt y los módulos.
-    from ui._00_ui_main import run_app
+    from entrypoints.ui_qt._00_ui_main import run_app
 
     run_app()
 

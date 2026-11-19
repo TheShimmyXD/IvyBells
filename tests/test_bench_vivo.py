@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from bench.bench_vivo import _Recorder, _summarize
-from core.engine import TranscriptEvent
+from domain.transcription.engine import TranscriptEvent
 
 
 def _event(source: str, end_s: float, is_final: bool = True) -> TranscriptEvent:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from core.agent_selection import WordPos, select_phrases, select_range, word_at
-from core.live_view import Line
+from domain.agent.agent_selection import WordPos, select_phrases, select_range, word_at
+from domain.transcription.live_view import Line
 
 LINES = [
     Line("10:00:01", "buenas tardes con quién hablo"),

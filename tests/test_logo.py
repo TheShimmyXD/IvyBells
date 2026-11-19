@@ -5,7 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QColor, QImage, QPainter
 
-from ui.blocks.logo import OUTER_RADIUS, app_icon, paint_logo
+from entrypoints.ui_qt.blocks.logo import OUTER_RADIUS, app_icon, paint_logo
 
 INK, SEAL = QColor("#1F5266"), QColor("#A8802F")
 

@@ -14,9 +14,9 @@ from collections.abc import Callable
 
 import numpy as np
 
-from core.engine import EventCallback, TranscriptEvent
-from core.local_agreement import LocalAgreement
-from core.phrase_segmenter import PhraseEventKind, PhraseSegmenter
+from domain.transcription.engine import EventCallback, TranscriptEvent
+from domain.transcription.local_agreement import LocalAgreement
+from domain.transcription.phrase_segmenter import PhraseEventKind, PhraseSegmenter
 from services.service_vad import VAD_WINDOW_SAMPLES
 
 logger = logging.getLogger(__name__)

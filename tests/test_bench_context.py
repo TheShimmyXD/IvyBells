@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 
-from core.agent_context import MAX_FILE_CHARS
-from core.bench_context import CHARS_PER_TOKEN_GUESS, synthetic_context
+from domain.agent.agent_context import MAX_FILE_CHARS
+from domain.bench.bench_context import CHARS_PER_TOKEN_GUESS, synthetic_context
 
 
 def test_zero_is_empty():

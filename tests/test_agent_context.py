@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.agent_context import (
+from domain.agent.agent_context import (
     MAX_FILE_CHARS,
     REASON_DOCUMENT,
     REASON_HIDDEN,

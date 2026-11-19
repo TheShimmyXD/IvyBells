@@ -14,7 +14,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from core.claude_account import AccountStatus, account_slug, parse_status
+from domain.claude.claude_account import AccountStatus, account_slug, parse_status
 from paths import CLAUDE_ACCOUNTS_DIR
 
 logger = logging.getLogger(__name__)

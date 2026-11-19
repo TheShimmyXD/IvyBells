@@ -7,7 +7,7 @@ from docx import Document
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
-from core.agent_context import REASON_MEDIA, REASON_SECRET
+from domain.agent.agent_context import REASON_MEDIA, REASON_SECRET
 from services.service_context import collect, read_context, write_context
 
 _HELVETICA = DictionaryObject(

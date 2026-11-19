@@ -18,7 +18,7 @@ from docx import Document
 from docx.table import Table
 from pypdf import PdfReader
 
-from core.agent_context import (
+from domain.agent.agent_context import (
     EXTRACTED_SUFFIXES,
     MAX_FILE_CHARS,
     MAX_FILES,

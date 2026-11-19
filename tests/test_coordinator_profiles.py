@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from coordinator_profiles import AgentProfiles
-from core.agent_profile import FIXED_RULES
+from domain.agent.agent_profile import FIXED_RULES
+from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
 from services.service_profiles import ProfileStore
 
 

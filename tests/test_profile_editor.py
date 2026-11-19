@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from coordinator_profiles import AgentProfiles
+from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
 from services.service_profiles import ProfileStore
 
 
 @pytest.fixture
 def editor(qapp, tmp_path, monkeypatch):
-    import ui.profile_editor as module
+    import entrypoints.ui_qt.profile_editor as module
 
     folder = tmp_path / "perfiles"
     folder.mkdir()

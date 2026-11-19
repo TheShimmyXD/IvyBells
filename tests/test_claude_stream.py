@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from core.claude_stream import Finished, TextDelta, parse_line
+from domain.claude.claude_stream import Finished, TextDelta, parse_line
 
 FIXTURE = Path(__file__).parent / "fixtures" / "claude" / "stream.jsonl"
 

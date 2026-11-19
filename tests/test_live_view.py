@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from core.engine import TranscriptEvent
-from core.live_view import (
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import (
     LatencySummary,
     LatencyTracker,
     LiveTranscript,

@@ -4,7 +4,7 @@ from __future__ import annotations
 def test_floating_button_appears_away_from_the_end_and_follow_brings_it_back(qapp):
     from PySide6.QtWidgets import QTextBrowser
 
-    from ui.blocks.follow_button import MARGIN_PX, FollowButton, is_at_bottom
+    from entrypoints.ui_qt.blocks.follow_button import MARGIN_PX, FollowButton, is_at_bottom
 
     browser = QTextBrowser()
     browser.resize(400, 300)

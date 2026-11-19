@@ -5,10 +5,10 @@ import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from core.agent_ahead import AGENT_MODES, MANUAL
-from core.chat_prompt import DEFAULT_CHAT_EFFORT, DEFAULT_CHAT_MODEL
-from core.claude_model import EFFORT_LEVELS, ClaudeModelConfig, is_valid_model
-from core.live_view import SOURCES
+from domain.agent.agent_ahead import AGENT_MODES, MANUAL
+from domain.agent.chat_prompt import DEFAULT_CHAT_EFFORT, DEFAULT_CHAT_MODEL
+from domain.claude.claude_model import EFFORT_LEVELS, ClaudeModelConfig, is_valid_model
+from domain.transcription.live_view import SOURCES
 from paths import APP_SETTINGS_JSON, LOCAL_SETTINGS_JSON
 
 logger = logging.getLogger(__name__)

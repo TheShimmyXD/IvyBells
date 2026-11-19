@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.local_agreement import LocalAgreement, common_prefix_len, normalize_word
+from domain.transcription.local_agreement import LocalAgreement, common_prefix_len, normalize_word
 
 
 def test_normalize_word_ignores_case_punctuation_and_accents():

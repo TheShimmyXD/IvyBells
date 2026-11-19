@@ -9,9 +9,9 @@ from datetime import datetime
 import pytest
 from PySide6.QtCore import QObject, Signal
 
-from core.agent_state import AgentState
-from core.engine import TranscriptEvent
-from core.live_view import LiveTranscript
+from domain.agent.agent_state import AgentState
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_view import LiveTranscript
 from services.service_claude import ClaudeCancelled, Finished
 
 
@@ -66,7 +66,7 @@ def _wait(qapp, condition, timeout_s=5.0):
 
 @pytest.fixture
 def ahead(qapp):
-    from coordinator_agent import AHEAD, AgentCoordinator
+    from entrypoints.ui_qt.coordinators.coordinator_agent import AHEAD, AgentCoordinator
 
     made = []
 

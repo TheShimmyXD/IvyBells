@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import time
 
-from core.claude_account import AccountStatus
-from core.claude_model import ClaudeModelConfig
+from domain.claude.claude_account import AccountStatus
+from domain.claude.claude_model import ClaudeModelConfig
 
 
 def _wait(qapp, condition, timeout_s=5.0):
@@ -19,7 +19,7 @@ LOGGED_IN = AccountStatus(True, "persona@example.com", "pro")
 
 
 def _settings(tmp_path, status=LOGGED_IN, **kwargs):
-    from coordinator_config import ClaudeSettings
+    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
 
     saved: list[ClaudeModelConfig] = []
     calls: list[tuple] = []

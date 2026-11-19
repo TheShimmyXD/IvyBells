@@ -14,8 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from core.engine import TranscriptEvent
-from core.transcript_markdown import (
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.transcript_markdown import (
     format_header,
     format_phrase,
     format_resume,

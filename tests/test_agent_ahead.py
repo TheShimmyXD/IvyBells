@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.agent_ahead import (
+from domain.agent.agent_ahead import (
     Said,
     Speaker,
     TurnEvent,
@@ -9,8 +9,8 @@ from core.agent_ahead import (
     shown_answer,
     supersedes,
 )
-from core.agent_prompt import build_ahead_prompt
-from core.live_view import Line
+from domain.agent.agent_prompt import build_ahead_prompt
+from domain.transcription.live_view import Line
 
 
 def test_turn_is_due_after_the_silence():

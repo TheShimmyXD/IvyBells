@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.chat_prompt import (
+from domain.agent.chat_prompt import (
     CHAT_MIN_TIMEOUT_S,
     CHAT_RULES,
     DEFAULT_CHAT_EFFORT,
@@ -12,8 +12,8 @@ from core.chat_prompt import (
     chat_model_config,
     spoken_lines,
 )
-from core.claude_model import ClaudeModelConfig
-from core.live_view import Line
+from domain.claude.claude_model import ClaudeModelConfig
+from domain.transcription.live_view import Line
 
 
 def test_spoken_lines_mix_both_channels_by_clock():

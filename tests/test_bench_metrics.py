@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.bench_metrics import (
+from domain.bench.bench_metrics import (
     format_table,
     median_s,
     peak_over_baseline,

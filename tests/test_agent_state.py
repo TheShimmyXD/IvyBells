@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from core.agent_selection import WordPos
-from core.agent_state import AgentLogic, AgentState
+from domain.agent.agent_selection import WordPos
+from domain.agent.agent_state import AgentLogic, AgentState
 
 
 def test_full_turn():
