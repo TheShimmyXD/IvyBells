@@ -1,31 +1,10 @@
 # Copiado de vid2aud v1.1.1 (commit d03adf5, core/worker_runner.py).
+# RequestSequence vive ahora en app/claude_ask.py.
 from __future__ import annotations
 
 from collections.abc import Callable
 
 from PySide6.QtCore import QObject, Qt, QThread
-
-
-class RequestSequence:
-    """
-    Secuencia de solicitudes para descartar respuestas viejas.
-
-    Cada lanzamiento de un worker pide `next()` y lo pasa como `request_id`;
-    el worker lo devuelve en el payload como `_request_id`. Si mientras tanto se
-    lanzó otra solicitud, `is_current()` devuelve False y la respuesta se ignora.
-    """
-
-    def __init__(self) -> None:
-        self._current = 0
-
-    def next(self) -> int:
-        self._current += 1
-        return self._current
-
-    def is_current(self, payload: object) -> bool:
-        if not isinstance(payload, dict):
-            return False
-        return int(payload.get("_request_id", 0)) == self._current
 
 
 def start_worker(

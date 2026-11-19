@@ -7,11 +7,11 @@ from datetime import datetime
 import pytest
 from PySide6.QtCore import QObject, Signal
 
+from app.claude_ask import AskCallbacks, ClaudeAsk
 from domain.agent.agent_state import AgentState
 from domain.claude.claude_stream import Usage
 from domain.transcription.engine import TranscriptEvent
 from domain.transcription.live_view import LiveTranscript
-from entrypoints.ui_qt.workers.worker_agent import AgentWorker
 from services.service_claude import ScriptedClaude
 
 
@@ -62,7 +62,7 @@ def make(qapp):
     yield build
     for coordinator in made:
         coordinator.close()
-        _wait(qapp, lambda c=coordinator: c._thread is None)
+        _wait(qapp, lambda c=coordinator: not c.busy)
 
 
 def test_range_is_sent_and_answer_streams_in(qapp, make):
@@ -87,10 +87,10 @@ def test_second_turn_carries_the_history(qapp, make):
     _live, coordinator = make(service)
     coordinator.mark_start(0, 0)
     coordinator.mark_end(0, 99)
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     coordinator.mark_start(1, 0)
     coordinator.mark_end(1, 99)
-    _wait(qapp, lambda: len(service.prompts) == 2 and coordinator._thread is None)
+    _wait(qapp, lambda: len(service.prompts) == 2 and not coordinator.busy)
     assert "<respuesta>\nrespuesta uno\n</respuesta>" in service.prompts[1]
     assert coordinator.sent_ranges("ellos")[1][0].phrase == 1
 
@@ -103,7 +103,7 @@ def test_speaker_change_reads_the_other_source(qapp, make):
     assert coordinator.logic.state is AgentState.IDLE
     coordinator.mark_start(0, 0)
     coordinator.mark_end(0, 99)
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     assert coordinator.turns[0].selection.text() == "[10:00:00] hola con gusto"
 
 
@@ -126,10 +126,10 @@ def test_failure_marks_the_turn_and_the_state(qapp, make):
     _live, coordinator = make(ScriptedClaude(["a medias"], error="Límite de uso alcanzado"))
     coordinator.mark_start(0, 0)
     coordinator.mark_end(0, 5)
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     assert coordinator.logic.state is AgentState.ERROR
     assert coordinator.turns[0].error == "Límite de uso alcanzado"
-    assert coordinator._history == []
+    assert coordinator.history == []
 
 
 def test_cancel_while_sending(qapp, make):
@@ -137,17 +137,17 @@ def test_cancel_while_sending(qapp, make):
     coordinator.mark_start(0, 0)
     coordinator.mark_end(0, 5)
     coordinator.cancel()
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     assert coordinator.turns[0].cancelled
     assert coordinator.logic.state is AgentState.IDLE
-    assert coordinator._history == []
+    assert coordinator.history == []
 
 
 def test_new_session_forgets_turns(qapp, make):
     live, coordinator = make(ScriptedClaude(["ok"]))
     coordinator.mark_start(0, 0)
     coordinator.mark_end(0, 5)
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     live.session_started.emit()
     assert coordinator.turns == []
     assert coordinator.logic.state is AgentState.IDLE
@@ -161,16 +161,17 @@ def test_click_outside_the_phrases_does_nothing(qapp, make):
 
 def test_worker_reports_cancel_and_answer(qapp):
     cancel = threading.Event()
-    worker = AgentWorker(
+    got = {"text": [], "failed": [], "finished": []}
+    callbacks = AskCallbacks(
+        **{name: lambda *args, items=items: items.append(args) for name, items in got.items()}
+    )
+    ClaudeAsk(
         service=ScriptedClaude(["a", "b"], usage=Usage(10, 4, 1_000)),
         prompt="p",
         cancel_event=cancel,
         request_id=3,
-    )
-    got = {"text": [], "failed": [], "finished": []}
-    for name, items in got.items():
-        getattr(worker, name).connect(lambda *args, items=items: items.append(args))
-    worker.run()
+        callbacks=callbacks,
+    ).run()
     assert [args[0] for args in got["text"]] == ["a", "b"]
     assert got["finished"][0][0] == {
         "_request_id": 3,
@@ -208,7 +209,7 @@ def test_active_profile_reaches_the_service(qapp, tmp_path):
     coordinator.mark_end(0, 0)
     _wait(qapp, lambda: coordinator.logic.state is AgentState.ANSWERED)
     coordinator.close()
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     assert "Somos Acme." in system_prompts[0]
     assert system_prompts[0].startswith("Reglas de IvyBells")
     assert system_prompts[0].index("Somos Acme.") < system_prompts[0].index("Horario de 8 a 18.")
@@ -243,7 +244,7 @@ def test_budget_learns_the_window_and_moves_the_fragment_to_history(qapp, tmp_pa
     assert sending["fragment"].chars > before["fragment"].chars
     _wait(qapp, lambda: coordinator.logic.state is AgentState.ANSWERED)
     coordinator.close()
-    _wait(qapp, lambda: coordinator._thread is None)
+    _wait(qapp, lambda: not coordinator.busy)
     after = coordinator.budget
     parts = {part.key: part for part in after.parts}
     assert after.window == 200_000

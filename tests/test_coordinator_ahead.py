@@ -86,7 +86,7 @@ def ahead(qapp):
 
 
 def _idle(coordinator):
-    return coordinator._thread is None and coordinator.logic.state is not AgentState.SENDING
+    return not coordinator.busy and coordinator.logic.state is not AgentState.SENDING
 
 
 def _turn_part(prompt: str) -> str:
@@ -98,10 +98,10 @@ def test_waits_for_the_silence_then_sends_the_whole_conversation(qapp, ahead):
     live, coordinator, now = ahead(service)
     live.say("ellos", "¿cuánto es dos por dos?", 10.0)
     now[0] = 101.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     assert service.prompts == []
     now[0] = 101.6
-    coordinator._tick()
+    coordinator.assistant.tick()
     _wait(qapp, lambda: _idle(coordinator))
     prompt = service.prompts[0]
     assert "buenas tardes" in prompt.split("Su último turno:")[0]
@@ -116,13 +116,13 @@ def test_dash_is_hidden_and_the_next_turn_sees_the_shown_answer(qapp, ahead):
     for start_s, text in ((10.0, "hoy revisé los pedidos"), (20.0, "¿cuánto es dos por dos?")):
         live.say("ellos", text, start_s)
         now[0] += 10.0
-        coordinator._tick()
+        coordinator.assistant.tick()
         _wait(qapp, lambda: _idle(coordinator))
     assert not coordinator.turns[0].counts
-    assert coordinator._history[0].answer == "4."
+    assert coordinator.history[0].answer == "4."
     live.say("ellos", "¿y lo anterior más dos?", 30.0)
     now[0] += 10.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     _wait(qapp, lambda: _idle(coordinator))
     assert "(sugerencia) 4." in service.prompts[2]
     assert "dos por dos" in service.prompts[2]
@@ -134,14 +134,14 @@ def test_resuming_cancels_the_send_and_resends_the_whole_turn(qapp, ahead):
     live, coordinator, now = ahead(service)
     live.say("ellos", "quería saber el precio", 10.0)
     now[0] = 102.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     assert coordinator.logic.state is AgentState.SENDING
     live.speaking("ellos", "y también", 14.0)
     _wait(qapp, lambda: _idle(coordinator))
     assert coordinator.turns[0].superseded and not coordinator.turns[0].counts
     live.say("ellos", "y también el plan anual", 14.0)
     now[0] = 104.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     assert "quería saber" in _turn_part(service.prompts[1])
     assert "plan anual" in _turn_part(service.prompts[1])
 
@@ -151,20 +151,20 @@ def test_shown_answer_is_superseded_only_if_resumed_within_3_s(qapp, ahead):
     live, coordinator, now = ahead(service)
     live.say("ellos", "una cosa", 10.0)
     now[0] = 102.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     _wait(qapp, lambda: _idle(coordinator))
     now[0] = 103.5
     live.speaking("ellos", "y otra", 12.0)
     assert coordinator.turns[0].superseded
     live.say("ellos", "y otra más", 12.0)
     now[0] = 106.0
-    coordinator._tick()
+    coordinator.assistant.tick()
     _wait(qapp, lambda: _idle(coordinator))
     assert "una cosa" in _turn_part(service.prompts[1])
     now[0] = 110.0
     live.speaking("ellos", "gracias", 20.0)
     assert not coordinator.turns[1].superseded
-    assert [turn.answer for turn in coordinator._history] == ["segunda"]
+    assert [turn.answer for turn in coordinator.history] == ["segunda"]
 
 
 def test_other_channel_speaking_closes_the_turn_without_waiting(qapp, ahead):

@@ -14,12 +14,13 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
+from app.claude_ask import RequestSequence
 from domain.claude.claude_account import AccountStatus, describe
 from domain.claude.claude_model import ClaudeModelConfig, clean_account
 from entrypoints.ui_qt.coordinators.coordinator_context import AgentContext
 from entrypoints.ui_qt.coordinators.coordinator_profiles import AgentProfiles
 from entrypoints.ui_qt.workers.worker_account import AccountWorker, StatusReader
-from entrypoints.ui_qt.workers.worker_runner import RequestSequence, start_worker, stop_thread
+from entrypoints.ui_qt.workers.worker_runner import start_worker, stop_thread
 from paths import CLAUDE_ACCOUNTS_DIR
 from services.service_claude_account import (
     config_dir_for,

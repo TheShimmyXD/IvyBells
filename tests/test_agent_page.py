@@ -47,7 +47,7 @@ def test_left_click_marks_the_clicked_word_and_right_click_sends_whole_phrases(q
     sent = agent.turns[0].selection.text().splitlines()
     assert sent[0].endswith("] Sí, mire, contraté el plan empresarial la semana pasada")
     assert sent[1].endswith("] y todavía no me llega la factura al correo.")
-    agent.answer("Con gusto.")
+    agent.assistant.answer("Con gusto.")
     assert agent.logic.state is AgentState.ANSWERED
     assert "Con gusto." in window.agent_page.turns_view.toPlainText()
     window.close()

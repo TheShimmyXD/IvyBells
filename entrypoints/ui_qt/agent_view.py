@@ -15,10 +15,10 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QFrame, QTextBrowser, QWidget
 
+from app.agent import AgentTurn
 from domain.agent.agent_ahead import shown_answer
 from domain.agent.agent_selection import WordPos
 from domain.transcription.live_view import Line
-from entrypoints.ui_qt.coordinators.coordinator_agent import AgentTurn
 from entrypoints.ui_qt.theme import ColorTokens
 
 LINE_SEPARATOR = " "

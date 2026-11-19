@@ -15,16 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 DOORS = ("cli", "api", "ui_qt")
 GUI_AND_HTTP = ("PySide6", "fastapi", "uvicorn", "starlette")
 
-# Puertas que todavía crean o llaman servicios (FW.3, pasos 3 y 4).
+# Puertas que todavía crean o llaman servicios (FW.3, paso 4).
 PENDING_SERVICES = {
     "entrypoints/cli/live.py",
     "entrypoints/ui_qt/_00_ui_main.py",
-    "entrypoints/ui_qt/coordinators/coordinator_agent.py",
-    "entrypoints/ui_qt/coordinators/coordinator_chat.py",
     "entrypoints/ui_qt/coordinators/coordinator_config.py",
     "entrypoints/ui_qt/coordinators/coordinator_context.py",
     "entrypoints/ui_qt/coordinators/coordinator_profiles.py",
-    "entrypoints/ui_qt/workers/worker_agent.py",
     "entrypoints/ui_qt/workers/worker_context.py",
 }
 

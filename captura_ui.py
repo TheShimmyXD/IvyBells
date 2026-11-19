@@ -15,6 +15,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from app.agent import AgentAssistant
+from app.chat import ChatAssistant
 from app.live import DEFAULT_MODEL, LiveListening
 from domain.agent.agent_ahead import AHEAD
 from domain.agent.agent_context import MAX_FILE_CHARS, ContextFile, build_context
@@ -141,11 +143,11 @@ class PreviewCoordinator(LiveCoordinator):
         self.on_failed = self.listening.on_failed
 
 
-class PreviewAgent(AgentCoordinator):
-    """El coordinador real del Agente sin lanzar la CLI: las respuestas se dan a mano."""
+class PreviewAssistant(AgentAssistant):
+    """El Agente real sin lanzar la CLI: las respuestas se dan a mano."""
 
     def _launch(self, prompt: str) -> None:
-        self._requests.next()
+        pass
 
     def answer(
         self, text: str, done: bool = True, error: str = "", usage: Usage | None = None
@@ -155,8 +157,13 @@ class PreviewAgent(AgentCoordinator):
         if error:
             self.on_failed(error)
         if done or error:
-            payload = {"_request_id": self._requests._current, "answer": text, "usage": usage}
-            self.on_finished(payload)
+            self.on_finished({"answer": text, "usage": usage})
+
+
+class PreviewAgent(AgentCoordinator):
+    """El adaptador real del Agente sobre `PreviewAssistant`."""
+
+    assistant_class = PreviewAssistant
 
 
 def _play_listening(coordinator: PreviewCoordinator, devices: dict[str, str]) -> None:
@@ -280,8 +287,8 @@ def capture_config(out_dir: Path) -> list[Path]:
 
 def _close_turn(agent: PreviewAgent) -> None:
     """Da por vencido el silencio del turno sin esperarlo."""
-    agent._watcher.last_final -= 60.0
-    agent._tick()
+    agent.assistant._watcher.last_final -= 60.0
+    agent.assistant.tick()
 
 
 def _play_ahead(coordinator: PreviewCoordinator, agent: PreviewAgent) -> None:
@@ -289,16 +296,16 @@ def _play_ahead(coordinator: PreviewCoordinator, agent: PreviewAgent) -> None:
     phrases = [TranscriptEvent("ellos", True, text, s, s + 3.0) for s, text in AGENT_EVENTS]
     coordinator.on_event(phrases[0])
     _close_turn(agent)
-    agent.answer(AGENT_ANSWERS[0])
+    agent.assistant.answer(AGENT_ANSWERS[0])
     coordinator.on_event(phrases[1])
     _close_turn(agent)
-    agent.answer(AHEAD_SUPERSEDED)
+    agent.assistant.answer(AHEAD_SUPERSEDED)
     agent.turns[-1].superseded = True
     for event in phrases[2:]:
         coordinator.on_event(event)
     _close_turn(agent)
     agent.turns[-1].first_text_s = 2.1
-    agent.answer(AGENT_ANSWERS[1])
+    agent.assistant.answer(AGENT_ANSWERS[1])
 
 
 def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str) -> None:
@@ -320,16 +327,18 @@ def _play_agent(coordinator: PreviewCoordinator, agent: PreviewAgent, state: str
         return
     agent.mark_start(0, 0)
     agent.mark_end(0, 99)
-    agent.answer(AGENT_ANSWERS[0])
+    agent.assistant.answer(AGENT_ANSWERS[0])
     agent.mark_start(1, 4)  # "mire,"
     if state == "inicio":
         return
     agent.mark_end(3, 80)
-    agent.answer(AGENT_ANSWERS[1], done=False, error=AGENT_ERROR if state == "error" else "")
+    agent.assistant.answer(
+        AGENT_ANSWERS[1], done=False, error=AGENT_ERROR if state == "error" else ""
+    )
 
 
-class PreviewChat(ChatCoordinator):
-    """El coordinador real del chat sin lanzar la CLI: las respuestas se dan a mano."""
+class PreviewChatAssistant(ChatAssistant):
+    """El chat real sin lanzar la CLI: las respuestas se dan a mano."""
 
     busy = False
 
@@ -338,7 +347,6 @@ class PreviewChat(ChatCoordinator):
         return self.busy
 
     def _launch(self, config: ClaudeModelConfig, prompt: str) -> None:
-        self._requests.next()
         self.busy = True
 
     def answer(self, text: str, done: bool = True, first_text_s: float = 1.9) -> None:
@@ -346,9 +354,15 @@ class PreviewChat(ChatCoordinator):
         for chunk in text.split(" "):
             self.on_text(chunk + " ")
         if done:
-            self.on_finished({"_request_id": self._requests._current, "answer": text})
+            self.on_finished({"answer": text})
             self.busy = False
-            self.sending_changed.emit(False)
+            self.listeners.sending(False)
+
+
+class PreviewChat(ChatCoordinator):
+    """El adaptador real del chat sobre `PreviewChatAssistant`."""
+
+    assistant_class = PreviewChatAssistant
 
 
 def _play_chat(chat: PreviewChat, state: str) -> None:
@@ -357,7 +371,7 @@ def _play_chat(chat: PreviewChat, state: str) -> None:
     for index, (request, text) in enumerate(zip(CHAT_REQUESTS, CHAT_ANSWERS, strict=True)):
         chat.send(request)
         last = index == len(CHAT_REQUESTS) - 1
-        chat.answer(text, done=not (last and state == "escribiendo"))
+        chat.assistant.answer(text, done=not (last and state == "escribiendo"))
 
 
 def capture_chat(out_dir: Path) -> list[Path]:
@@ -498,9 +512,11 @@ def capture_budget(out_dir: Path) -> list[Path]:
                     agent.mark_start(0, 0)
                     agent.mark_end(0, 99)
                     tokens = agent.budget.estimated_tokens
-                    agent.on_text("")
+                    agent.assistant.on_text("")
                     agent.turns[-1].first_text_s = 9.7
-                    agent.answer(AGENT_ANSWERS[0], usage=Usage(tokens, tokens - 40, 1_000_000))
+                    agent.assistant.answer(
+                        AGENT_ANSWERS[0], usage=Usage(tokens, tokens - 40, 1_000_000)
+                    )
                 window.show()
                 app.processEvents()
                 path = out_dir / f"contexto_{state}_{theme}.png"

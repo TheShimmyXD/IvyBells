@@ -76,7 +76,7 @@ def make(qapp, tmp_path):
     yield build
     for chat in made:
         chat.close()
-        _wait(qapp, lambda c=chat: c._thread is None)
+        _wait(qapp, lambda c=chat: not c.sending)
 
 
 def test_request_carries_both_channels_and_context_without_profile(qapp, make):
