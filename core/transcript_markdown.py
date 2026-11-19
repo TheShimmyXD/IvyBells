@@ -27,6 +27,30 @@ def format_header(started: datetime, model: str, devices: dict[str, str]) -> str
     return "\n".join(lines) + "\n\n"
 
 
+def format_resume(
+    started: datetime,
+    model: str,
+    devices: dict[str, str],
+    previous_model: str,
+    previous_devices: dict[str, str],
+) -> str:
+    """
+    Encabezado de un tramo reanudado en el mismo .md: la hora y, solo si cambiaron,
+    el modelo o la fuente de cada voz.
+    """
+    lines = [f"\n## Reanudada {started:%H:%M:%S}", ""]
+    if model != previous_model:
+        lines.append(f"- Modelo: {model}")
+    lines += [
+        f"- {source_label(source)}: `{device}`"
+        for source, device in devices.items()
+        if previous_devices.get(source) != device
+    ]
+    if len(lines) > 2:
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def format_phrase(event: TranscriptEvent, started: datetime) -> str:
     """
     Una frase como línea de lista con la hora de pared en que empezó.

@@ -11,7 +11,6 @@ import threading
 import time
 from collections.abc import Callable, Iterable
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 from PySide6.QtCore import QObject, Signal
@@ -32,14 +31,16 @@ class LiveWorker(QObject):
     """
     Signals
     -------
-    loaded(datetime)       -> modelo listo; hora de inicio del `.md`.
+    loaded(datetime, bool) -> modelo listo; hora de inicio del tramo y si es el primero
+                              del `.md` (los siguientes se reanudan en el mismo).
     event(TranscriptEvent) -> texto provisional o final de una fuente.
     latency(float, float)  -> última latencia final y su mediana, en segundos.
     failed(str)            -> motivo de la falla, en una línea.
-    finished(dict)         -> siempre al final: `_request_id`, `path` (o None) y `phrases`.
+    finished(dict)         -> siempre al final: `_request_id`, `path` (o None) y `phrases`
+                              (las de toda la apertura).
     """
 
-    loaded = Signal(object)
+    loaded = Signal(object, bool)
     event = Signal(object)
     latency = Signal(float, float)
     failed = Signal(str)
@@ -52,7 +53,7 @@ class LiveWorker(QObject):
         model: str,
         compute_type: str,
         devices: dict[str, str],
-        transcripts_dir: Path,
+        writer: TranscriptWriter,
         stop_event: threading.Event,
         request_id: int,
         capture_factory: CaptureFactory = AudioCapture,
@@ -63,7 +64,7 @@ class LiveWorker(QObject):
         self._model = model
         self._compute_type = compute_type
         self._devices = devices
-        self._transcripts_dir = transcripts_dir
+        self._writer = writer
         self._stop_event = stop_event
         self._request_id = request_id
         self._capture_factory = capture_factory
@@ -85,7 +86,8 @@ class LiveWorker(QObject):
                 self._session.set_source_open(source, is_open)
 
     def run(self) -> None:
-        writer: TranscriptWriter | None = None
+        writer = self._writer
+        began = False
         try:
             handlers: list[EventCallback] = []
 
@@ -99,11 +101,10 @@ class LiveWorker(QObject):
             if self._stop_event.is_set():
                 return
             started = datetime.now()
-            writer = TranscriptWriter(
-                self._transcripts_dir, started, f"{self._model} {self._compute_type}", self._devices
-            )
+            is_new = writer.begin(started, f"{self._model} {self._compute_type}", self._devices)
+            began = True
             handlers += [writer.add, self._emit_event]
-            self.loaded.emit(started)
+            self.loaded.emit(started, is_new)
             with self._lock:
                 session = self._session = LiveSession(
                     engine, self._devices, self._timed_capture, closed=self._closed
@@ -114,14 +115,10 @@ class LiveWorker(QObject):
             logger.exception("La escucha en vivo falló")
             self.failed.emit(str(exc) or type(exc).__name__)
         finally:
-            if writer is not None:
-                writer.close(self._latency_footer())
+            if began:
+                writer.end_segment(self._latency_footer())
             self.finished.emit(
-                {
-                    "_request_id": self._request_id,
-                    "path": writer.path if writer else None,
-                    "phrases": writer.phrases if writer else 0,
-                }
+                {"_request_id": self._request_id, "path": writer.path, "phrases": writer.phrases}
             )
 
     def _emit_event(self, event: TranscriptEvent) -> None:
@@ -136,7 +133,7 @@ class LiveWorker(QObject):
         summaries = self._tracker.summary()
         if summaries:
             lines = [format_latency_line(source, item) for source, item in summaries.items()]
-            logger.info("Latencia final de la sesión: %s", "; ".join(lines))
+            logger.info("Latencia final del tramo: %s", "; ".join(lines))
         return format_latency_footer(summaries)
 
     def _timed_capture(self, source: str, device: str, on_block: BlockCallback) -> AudioCapture:

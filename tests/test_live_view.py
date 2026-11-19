@@ -41,6 +41,21 @@ def test_empty_final_is_dropped_and_reset_clears():
     assert transcript.finals("ellos") == []
 
 
+def test_resume_keeps_finals_and_moves_the_clock():
+    transcript = LiveTranscript()
+    transcript.reset(datetime(2026, 10, 17, 18, 5, 0))
+    transcript.apply(_event("ellos", "antes", True, start_s=10.0))
+    transcript.apply(_event("ellos", "a medias", False))
+    transcript.resume(datetime(2026, 10, 17, 18, 30, 0))
+    assert transcript.partial("ellos") is None
+    transcript.apply(_event("ellos", "después", True, start_s=4.0))
+    lines = transcript.finals("ellos")
+    assert [(line.clock, line.text) for line in lines] == [
+        ("18:05:10", "antes"),
+        ("18:30:04", "después"),
+    ]
+
+
 def test_latency_from_first_block_like_bench():
     tracker = LatencyTracker(sample_rate=16_000)
     assert tracker.add_final(1.0, now=5.0) is None

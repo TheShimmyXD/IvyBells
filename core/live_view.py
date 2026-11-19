@@ -48,6 +48,15 @@ class LiveTranscript:
             self._finals[source] = []
             self._partials[source] = None
 
+    def resume(self, started: datetime) -> None:
+        """
+        Tramo nuevo de la misma apertura: las frases se quedan; solo cambia la hora
+        base, porque el motor vuelve a contar desde cero.
+        """
+        self._started = started
+        for source in SOURCES:
+            self._partials[source] = None
+
     def apply(self, event: TranscriptEvent) -> None:
         text = event.text.strip()
         line = Line(self._clock(event.start_s), text)

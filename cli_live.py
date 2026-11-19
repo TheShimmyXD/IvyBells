@@ -86,7 +86,8 @@ def run_cli(model: str, compute_type: str) -> int:
     engine.start()
 
     started = datetime.now()
-    writer = TranscriptWriter(TRANSCRIPTS_DIR, started, f"{model} {compute_type}", devices)
+    writer = TranscriptWriter(TRANSCRIPTS_DIR)
+    writer.begin(started, f"{model} {compute_type}", devices)
     handlers += [_ConsolePrinter(started), writer.add]
 
     stop = threading.Event()

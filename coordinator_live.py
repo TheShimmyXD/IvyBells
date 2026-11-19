@@ -7,7 +7,6 @@ La ventana solo habla con él: pide iniciar, detener y guardar, y escucha sus se
 from __future__ import annotations
 
 import logging
-import shutil
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +17,7 @@ from core.engine import TranscriptEvent
 from core.live_state import LiveLogic
 from core.live_view import SOURCES, LiveTranscript
 from paths import TRANSCRIPTS_DIR
+from services.service_transcript import TranscriptWriter
 from workers.worker_live import EngineFactory, LiveWorker
 from workers.worker_runner import RequestSequence, start_worker, stop_thread
 
@@ -49,7 +49,8 @@ class LiveCoordinator(QObject):
     state_changed(dict)          -> payload de la máquina de estados (`state`, `status`, ...).
     transcript_changed(str)      -> la fuente cuyo texto cambió.
     latency_changed(float, float) -> última latencia final y mediana.
-    session_started()            -> empezó una escucha nueva (el texto anterior se borró).
+    session_started()            -> primera escucha de la apertura (texto vacío); las
+                                    siguientes se reanudan sin borrar nada.
     sources_changed()            -> se abrió o cerró un canal (`closed_sources`).
     """
 
@@ -68,10 +69,10 @@ class LiveCoordinator(QObject):
     ) -> None:
         super().__init__(parent)
         self._engine_factory = engine_factory
-        self._transcripts_dir = transcripts_dir
         self.logic = LiveLogic()
         self.transcript = LiveTranscript()
-        self.last_path: Path | None = None
+        # Un solo .md por apertura de la app; se crea en el primer Iniciar.
+        self.writer = TranscriptWriter(transcripts_dir)
         self._requests = RequestSequence()
         self._stop_event = threading.Event()
         self._worker: LiveWorker | None = None
@@ -128,12 +129,15 @@ class LiveCoordinator(QObject):
             self._stop_event.set()
         self._emit_state(payload)
 
+    @property
+    def last_path(self) -> Path | None:
+        """El `.md` de esta apertura, o None si todavía no se inició ninguna escucha."""
+        return self.writer.path
+
     def save_copy(self, target: Path) -> bool:
-        """Copia el `.md` de la última escucha (se escribe frase a frase) a `target`."""
-        if self.last_path is None or not self.last_path.exists():
-            return False
+        """Copia a `target` todo lo transcrito desde que se abrió la app, aunque siga escuchando."""
         try:
-            shutil.copyfile(self.last_path, target)
+            self.writer.copy_to(target)
         except OSError as exc:
             logger.error("No se pudo copiar la transcripción a %s: %s", target, exc)
             return False
@@ -144,13 +148,17 @@ class LiveCoordinator(QObject):
         """Detiene la escucha y espera al worker; la ventana lo llama al cerrarse."""
         self._stop_event.set()
         stop_thread(self._thread, CLOSE_TIMEOUT_MS)
+        self.writer.close()
 
     # -- Señales del worker (llegan en el hilo principal) ------
 
-    @Slot(object)
-    def on_loaded(self, started: datetime) -> None:
-        self.transcript.reset(started)
-        self.session_started.emit()
+    @Slot(object, bool)
+    def on_loaded(self, started: datetime, is_new: bool = True) -> None:
+        if is_new:
+            self.transcript.reset(started)
+            self.session_started.emit()
+        else:
+            self.transcript.resume(started)
         for source in ("ellos", "tu"):
             self.transcript_changed.emit(source)
         self._emit_state(self.logic.loaded())
@@ -173,8 +181,7 @@ class LiveCoordinator(QObject):
         if not self._requests.is_current(payload):
             return
         if payload.get("path") is not None:
-            self.last_path = payload["path"]
-            logger.info("%d frases guardadas en %s", payload["phrases"], self.last_path)
+            logger.info("%d frases guardadas en %s", payload["phrases"], payload["path"])
         self._emit_state(self.logic.finished())
 
     # -- Internos ----------------------------------------------
@@ -186,7 +193,7 @@ class LiveCoordinator(QObject):
             model=model,
             compute_type=COMPUTE_TYPE,
             devices=devices,
-            transcripts_dir=self._transcripts_dir,
+            writer=self.writer,
             stop_event=self._stop_event,
             request_id=self._requests.next(),
             closed=self.closed_sources,
