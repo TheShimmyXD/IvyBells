@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Solo la maquina local, igual que la API de IvyBells (D-37).
+    // Solo la maquina local, igual que la API de IvyBells.
     host: "127.0.0.1",
     port: 5174,
     strictPort: true,
