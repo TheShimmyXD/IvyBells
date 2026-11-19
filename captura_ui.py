@@ -128,7 +128,7 @@ class PreviewListening(LiveListening):
     def read_sources(self) -> SourceChoices:
         return SourceChoices([MONITOR], [MICROPHONE], CaptureSources(MONITOR, MICROPHONE))
 
-    def _launch(self, model: str, devices: dict[str, str]) -> None:
+    def _launch(self, model: str, devices: dict[str, str], compute_type: str) -> None:
         pass
 
 

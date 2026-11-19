@@ -244,3 +244,36 @@ def test_coordinator_delivers_listening_in_the_window_thread(qapp, tmp_path):
         LiveState.STOPPED,
     ]
     assert "tu" in seen["sources"]
+
+
+def test_console_prints_finals_and_saves_markdown(tmp_path):
+    """La consola usa la misma escucha: imprime el final con su hora y deja el `.md`."""
+    from entrypoints.cli.live import ConsolePrinter, run_listening
+
+    listening = LiveListening(
+        lambda on_event, *_: _FakeEngine(on_event), tmp_path, capture_factory=_OpenCapture
+    )
+    out = []
+    ctrl_c = threading.Event()
+
+    def write(text):
+        out.append(text)
+        ctrl_c.set()
+
+    printer = ConsolePrinter(listening.transcript.clock, write, interactive=False)
+    code = run_listening(listening, "small", "int8", {"tu": "mic"}, ctrl_c, printer)
+
+    assert code == 0
+    assert len(out) == 1 and out[0].endswith("] Tú: Hola a todos.\n")
+    assert "Hola a todos." in listening.last_path.read_text(encoding="utf-8")
+
+
+def test_console_returns_one_when_the_listening_fails(tmp_path):
+    from entrypoints.cli.live import ConsolePrinter, run_listening
+
+    def factory(*_):
+        raise RuntimeError("sin GPU")
+
+    listening = LiveListening(factory, tmp_path, capture_factory=_FakeCapture)
+    printer = ConsolePrinter(listening.transcript.clock, lambda _text: None, interactive=False)
+    assert run_listening(listening, "small", "int8", {"tu": "mic"}, threading.Event(), printer) == 1

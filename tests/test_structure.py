@@ -17,11 +17,9 @@ GUI_AND_HTTP = ("PySide6", "fastapi", "uvicorn", "starlette")
 
 # Puertas que todavía crean o llaman servicios (FW.3, paso 4).
 PENDING_SERVICES = {
-    "entrypoints/cli/live.py",
     "entrypoints/ui_qt/_00_ui_main.py",
     "entrypoints/ui_qt/coordinators/coordinator_config.py",
     "entrypoints/ui_qt/coordinators/coordinator_context.py",
-    "entrypoints/ui_qt/coordinators/coordinator_profiles.py",
     "entrypoints/ui_qt/workers/worker_context.py",
 }
 

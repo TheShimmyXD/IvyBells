@@ -3,25 +3,32 @@ Modo consola: transcribe en vivo lo que suena ("Ellos") y el micrófono ("Tú").
 
 Las frases finales se imprimen con su hora y se guardan en `transcripciones/<fecha>.md`;
 el texto provisional se reescribe en la última línea de la terminal. Ctrl+C termina.
+La escucha es la misma de la ventana (`app.live.LiveListening`); el hilo principal de la
+consola es su hilo dueño y corre los avisos que llegan a una cola.
 """
 
 from __future__ import annotations
 
 import logging
+import queue
 import shutil
 import signal
 import sys
 import threading
-from datetime import datetime
+from collections.abc import Callable
 
-from domain.transcription.engine import EventCallback, TranscriptEvent
+from app.live import LiveListeners, LiveListening
+from app.wiring import build_live
+from domain.transcription.engine import TranscriptEvent
+from domain.transcription.live_state import LiveState
 from domain.transcription.transcript_markdown import source_label
-from paths import ROOT, TRANSCRIPTS_DIR
 
 logger = logging.getLogger(__name__)
 
 # Borra la línea actual de la terminal (el provisional anterior).
 CLEAR_LINE = "\r\x1b[2K"
+# Cada cuánto se mira Ctrl+C mientras no llega ningún aviso.
+POLL_S = 0.1
 
 
 def _write(text: str) -> None:
@@ -30,37 +37,84 @@ def _write(text: str) -> None:
     sys.stdout.flush()
 
 
-class _ConsolePrinter:
+class ConsolePrinter:
     """Imprime los finales como líneas y el provisional en una línea que se reescribe."""
 
-    def __init__(self, started: datetime) -> None:
-        self._started = started
-        self._interactive = sys.stdout.isatty()
+    def __init__(
+        self,
+        clock: Callable[[float], str],
+        write: Callable[[str], None] = _write,
+        interactive: bool | None = None,
+    ) -> None:
+        self._clock = clock
+        self._write = write
+        self._interactive = sys.stdout.isatty() if interactive is None else interactive
 
     def __call__(self, event: TranscriptEvent) -> None:
         label = source_label(event.source)
         if event.is_final:
-            stamp = self._started.timestamp() + event.start_s
-            clock = datetime.fromtimestamp(stamp).strftime("%H:%M:%S")
             prefix = CLEAR_LINE if self._interactive else ""
-            _write(f"{prefix}[{clock}] {label}: {event.text.strip()}\n")
+            self._write(f"{prefix}[{self._clock(event.start_s)}] {label}: {event.text.strip()}\n")
         elif self._interactive:
             width = shutil.get_terminal_size().columns
             line = f"  ... {label}: {event.text.strip()}"
             # Solo los últimos caracteres: lo nuevo está al final de la hipótesis.
             if len(line) > width - 1:
                 line = "  ..." + line[-(width - 6) :]
-            _write(f"{CLEAR_LINE}{line}")
+            self._write(f"{CLEAR_LINE}{line}")
+
+    def clear(self) -> None:
+        if self._interactive:
+            self._write(CLEAR_LINE)
+
+
+def run_listening(
+    listening: LiveListening,
+    model: str,
+    compute_type: str,
+    devices: dict[str, str],
+    stop: threading.Event,
+    printer: ConsolePrinter | None = None,
+) -> int:
+    """
+    Corre una escucha hasta que `stop` se activa o la escucha falla.
+
+    Devuelve 0 si terminó bien y 1 si se detuvo por una falla.
+    """
+    tasks: queue.Queue[Callable[[], None]] = queue.Queue()
+    printer = printer or ConsolePrinter(listening.transcript.clock)
+    failed: list[str] = []
+
+    def on_state(payload: dict) -> None:
+        if payload.get("state") is LiveState.ERROR:
+            failed.append(payload.get("message", ""))
+
+    listening.attach(tasks.put, LiveListeners(state=on_state, event=printer))
+    listening.start(model, devices, compute_type)
+    stopping = False
+    try:
+        while True:
+            if stop.is_set() and not stopping:
+                stopping = True
+                listening.stop()
+            try:
+                tasks.get(timeout=POLL_S)()
+            except queue.Empty:
+                # Los avisos se ponen en la cola antes de que el hilo termine.
+                if listening.wait(0) and tasks.empty():
+                    break
+    finally:
+        listening.close()
+        printer.clear()
+    for message in failed:
+        logger.error("La escucha se detuvo: %s", message)
+    return 1 if failed else 0
 
 
 def run_cli(model: str, compute_type: str) -> int:
     """Corre la sesión hasta Ctrl+C; devuelve el código de salida del proceso."""
-    from services.service_live import LiveSession
-    from services.service_pipewire import read_capture_sources
-    from services.service_streaming import create_whisper_engine
-    from services.service_transcript import TranscriptWriter
-
-    capture = read_capture_sources()
+    listening = build_live()
+    capture = listening.read_sources().selected
     devices = {}
     if capture.monitor:
         devices["ellos"] = capture.monitor.name
@@ -72,31 +126,9 @@ def run_cli(model: str, compute_type: str) -> int:
     for source, device in devices.items():
         logger.info("%s: %s", source_label(source), device)
 
-    # El motor se crea antes que el escritor (la hora de inicio es tras cargar el modelo).
-    handlers: list[EventCallback] = []
-
-    def dispatch(event: TranscriptEvent) -> None:
-        for handler in handlers:
-            handler(event)
-
-    engine = create_whisper_engine(dispatch, model, compute_type)
     # faster-whisper anota cada llamada al modelo: en la consola solo estorba.
     logging.getLogger("faster_whisper").setLevel(logging.WARNING)
-    logger.info("Cargando %s %s en la GPU...", model, compute_type)
-    engine.start()
-
-    started = datetime.now()
-    writer = TranscriptWriter(TRANSCRIPTS_DIR)
-    writer.begin(started, f"{model} {compute_type}", devices)
-    handlers += [_ConsolePrinter(started), writer.add]
-
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda _signum, _frame: stop.set())
     logger.info("Transcribiendo en vivo; Ctrl+C para terminar")
-    try:
-        LiveSession(engine, devices).run(stop)
-    finally:
-        writer.close()
-        _write(CLEAR_LINE if sys.stdout.isatty() else "")
-        logger.info("%d frases guardadas en %s", writer.phrases, writer.path.relative_to(ROOT))
-    return 0
+    return run_listening(listening, model, compute_type, devices, stop)

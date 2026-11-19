@@ -59,6 +59,8 @@ class LiveListeners:
     session_started()          -> primera escucha de la apertura (texto vacío); las
                                   siguientes se reanudan sin borrar nada.
     sources()                  -> se abrió o cerró un canal (`closed_sources`).
+    event(TranscriptEvent)     -> el texto provisional o final tal como llegó (la consola
+                                  lo imprime; la ventana lee `transcript`).
     """
 
     state: Callable[[dict], None] = _ignore
@@ -66,6 +68,7 @@ class LiveListeners:
     latency: Callable[[float, float], None] = _ignore
     session_started: Callable[[], None] = _ignore
     sources: Callable[[], None] = _ignore
+    event: Callable[[TranscriptEvent], None] = _ignore
 
 
 @dataclass(frozen=True)
@@ -260,7 +263,7 @@ class LiveListening:
 
         return read_source_choices()
 
-    def start(self, model: str, devices: dict[str, str]) -> None:
+    def start(self, model: str, devices: dict[str, str], compute_type: str = COMPUTE_TYPE) -> None:
         if self._thread is not None and self._thread.is_alive():
             logger.warning("La escucha anterior aún se está cerrando")
             return
@@ -269,7 +272,7 @@ class LiveListening:
             return
         payload = self.logic.start(model)
         if payload["ok"]:
-            self._launch(model, devices)
+            self._launch(model, devices, compute_type)
         self.listeners.state(payload)
 
     def stop(self) -> None:
@@ -323,6 +326,7 @@ class LiveListening:
     def on_event(self, event: TranscriptEvent) -> None:
         self.transcript.apply(event)
         self.listeners.transcript(event.source)
+        self.listeners.event(event)
 
     def on_latency(self, last: float, median: float) -> None:
         self.listeners.latency(last, median)
@@ -345,7 +349,7 @@ class LiveListening:
         post = self._post
         return lambda *args: post(lambda: handler(*args))
 
-    def _launch(self, model: str, devices: dict[str, str]) -> None:
+    def _launch(self, model: str, devices: dict[str, str], compute_type: str) -> None:
         self._request_id += 1
         self._stop_event = threading.Event()
         callbacks = RunCallbacks(
@@ -358,7 +362,7 @@ class LiveListening:
         run = self._run = ListeningRun(
             engine_factory=self._engine_factory,
             model=model,
-            compute_type=COMPUTE_TYPE,
+            compute_type=compute_type,
             devices=devices,
             writer=self.writer,
             stop_event=self._stop_event,

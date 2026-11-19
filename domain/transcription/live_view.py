@@ -69,7 +69,7 @@ class LiveTranscript:
 
     def apply(self, event: TranscriptEvent) -> None:
         text = event.text.strip()
-        line = Line(self._clock(event.start_s), text)
+        line = Line(self.clock(event.start_s), text)
         if event.is_final:
             self._partials[event.source] = None
             if text:
@@ -87,7 +87,7 @@ class LiveTranscript:
         """Dónde se reanudó la escucha: antes de qué frase final y a qué hora."""
         return list(self._resumes.get(source, []))
 
-    def _clock(self, start_s: float) -> str:
+    def clock(self, start_s: float) -> str:
         if self._started is None:
             return ""
         return f"{self._started + timedelta(seconds=start_s):%H:%M:%S}"
