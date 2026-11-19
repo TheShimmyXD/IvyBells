@@ -15,10 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DOORS = ("cli", "api", "ui_qt")
 GUI_AND_HTTP = ("PySide6", "fastapi", "uvicorn", "starlette")
 
-# Puertas que todavía crean o llaman servicios (FW.3, paso 4).
-PENDING_SERVICES = {
-    "entrypoints/ui_qt/workers/worker_context.py",
-}
+# Puertas que todavía crean o llaman servicios: ninguna desde FW.3 (las puertas usan app/).
+PENDING_SERVICES: set[str] = set()
 
 
 def _modules(path: Path) -> set[str]:
