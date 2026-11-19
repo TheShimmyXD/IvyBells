@@ -2,6 +2,7 @@
 Una columna de la ventana: el título de la voz y su texto, el provisional en gris y cursiva.
 
 El icono del título abre o cierra el canal; cerrado, todo se ve en gris.
+Avisa cuando el lector se aleja del final o vuelve a él, para el botón "Seguir en vivo".
 """
 
 from __future__ import annotations
@@ -27,6 +28,8 @@ from ui.theme import (
 )
 
 TITLE_ICON_SIZE = 16
+# Píxeles de holgura para contar al lector como "abajo".
+BOTTOM_SLACK_PX = 4
 
 
 def _resume_row(clock: str, colors: ColorTokens, mono: str) -> str:
@@ -78,9 +81,11 @@ class TranscriptColumn(QFrame):
     Signals
     -------
     channel_clicked() -> clic en el icono del título (abrir o cerrar el canal).
+    follow_changed()  -> el lector se alejó del final o volvió a él (ver `at_bottom`).
     """
 
     channel_clicked = Signal()
+    follow_changed = Signal()
 
     def __init__(
         self, title: str, glyph: str, closed_glyph: str, parent: QWidget | None = None
@@ -89,6 +94,7 @@ class TranscriptColumn(QFrame):
         self._title = title
         self._glyphs = (glyph, closed_glyph)
         self.is_open = True
+        self._repainting = False
         set_kind(self, Kind.PANEL)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 10, 14, 10)
@@ -113,6 +119,9 @@ class TranscriptColumn(QFrame):
         self.browser.setFrameShape(QFrame.Shape.NoFrame)
         self.browser.setAccessibleName(title)
         layout.addWidget(self.browser, 1)
+        bar = self.browser.verticalScrollBar()
+        bar.valueChanged.connect(self._on_scrolled)
+        bar.rangeChanged.connect(self._on_scrolled)
         self.set_open(True)
 
     def set_open(self, is_open: bool) -> None:
@@ -134,9 +143,31 @@ class TranscriptColumn(QFrame):
     ) -> None:
         """Repinta el texto y baja al final solo si el lector ya estaba abajo."""
         bar = self.browser.verticalScrollBar()
-        at_bottom = bar.value() >= bar.maximum() - 4
+        at_bottom = self.at_bottom()
         previous = bar.value()
-        self.browser.setHtml(
-            column_html(finals, partial, tokens(), mono_font().family(), not self.is_open, resumes)
-        )
-        bar.setValue(bar.maximum() if at_bottom else previous)
+        # setHtml mueve la barra a medias: se avisa una sola vez, ya en su sitio.
+        self._repainting = True
+        try:
+            self.browser.setHtml(
+                column_html(
+                    finals, partial, tokens(), mono_font().family(), not self.is_open, resumes
+                )
+            )
+            bar.setValue(bar.maximum() if at_bottom else previous)
+        finally:
+            self._repainting = False
+        self.follow_changed.emit()
+
+    def at_bottom(self) -> bool:
+        """True si el lector está al final del texto (o el texto cabe entero)."""
+        bar = self.browser.verticalScrollBar()
+        return bar.value() >= bar.maximum() - BOTTOM_SLACK_PX
+
+    def scroll_to_end(self) -> None:
+        """Baja al final; desde ahí `show_lines` vuelve a seguir el texto nuevo."""
+        bar = self.browser.verticalScrollBar()
+        bar.setValue(bar.maximum())
+
+    def _on_scrolled(self, *_args: int) -> None:
+        if not self._repainting:
+            self.follow_changed.emit()

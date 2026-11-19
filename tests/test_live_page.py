@@ -179,3 +179,31 @@ def test_resume_keeps_the_text_and_shows_the_mark_in_each_column(make_page):
     )
     # En "Tú" no hubo frases: la marca queda sola al final.
     assert "Reanudada 09:20" in page.columns["tu"].browser.toPlainText()
+
+
+def test_follow_live_appears_when_a_column_scrolls_up_and_brings_both_down(make_page, qapp):
+    coordinator, page, _chosen = make_page()
+    page.resize(900, 500)
+    page.show()
+    coordinator.on_loaded(datetime(2026, 11, 19, 9, 0, 0))
+    for index in range(40):
+        for source in ("ellos", "tu"):
+            text = f"Frase de ejemplo número {index} para llenar la columna."
+            coordinator.on_event(TranscriptEvent(source, True, text, index * 3.0, index * 3.0 + 2))
+    qapp.processEvents()
+    assert all(column.at_bottom() for column in page.columns.values())
+    assert page.follow_button.isHidden()
+    page.columns["tu"].browser.verticalScrollBar().setValue(0)
+    assert not page.follow_button.isHidden()
+    # Lo nuevo no baja una columna alejada del final.
+    coordinator.on_event(TranscriptEvent("tu", True, "Una más.", 200.0, 202.0))
+    assert not page.columns["tu"].at_bottom()
+    assert not page.follow_button.isHidden()
+    page.follow_button.click()
+    assert all(column.at_bottom() for column in page.columns.values())
+    assert page.follow_button.isHidden()
+    # Ya abajo, el texto nuevo se sigue solo.
+    coordinator.on_event(TranscriptEvent("tu", True, "Y otra más.", 210.0, 212.0))
+    assert page.columns["tu"].at_bottom()
+    assert page.follow_button.isHidden()
+    page.close()

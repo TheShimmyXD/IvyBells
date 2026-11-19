@@ -41,7 +41,13 @@ SAMPLE_EVENTS = (
 )
 SAMPLE_LATENCY = (1.62, 1.78)
 SAMPLE_ERROR = "No se pudo abrir la fuente analog-stereo.monitor"
-STATES = ("detenido", "escuchando", "canal_cerrado", "error")
+STATES = ("detenido", "escuchando", "canal_cerrado", "error", "lejos_del_final")
+# Frases de relleno para "lejos_del_final": la columna necesita texto para subir.
+FILLER_TEXTS = (
+    "Repasamos los pendientes de la semana pasada.",
+    "El informe de avance queda para el jueves.",
+    "Falta confirmar la fecha de la visita a planta.",
+)
 THEMES = ("light", "dark")
 # Módulo Agente: lo que dice un cliente de ejemplo ("ellos") y las respuestas de ejemplo.
 AGENT_EVENTS = (
@@ -148,7 +154,7 @@ def capture_states(out_dir: Path) -> list[Path]:
         for state in STATES:
             coordinator = PreviewCoordinator()
             window = MainWindow(coordinator, fonts, theme)
-            if state in ("escuchando", "canal_cerrado", "error"):
+            if state in ("escuchando", "canal_cerrado", "error", "lejos_del_final"):
                 _play_listening(coordinator, window.selected_devices())
             if state == "canal_cerrado":
                 coordinator.set_source_open("tu", False)
@@ -159,8 +165,17 @@ def capture_states(out_dir: Path) -> list[Path]:
                 coordinator.on_event(TranscriptEvent(source, True, text, start_s, start_s + 3.0))
             if state == "error":
                 coordinator.on_failed(SAMPLE_ERROR)
+            if state == "lejos_del_final":
+                for index in range(12):
+                    text = FILLER_TEXTS[index % len(FILLER_TEXTS)]
+                    start_s = 80.0 + index * 6.0
+                    coordinator.on_event(TranscriptEvent("ellos", True, text, start_s, start_s + 4))
             window.show()
             app.processEvents()
+            if state == "lejos_del_final":
+                # El lector subió en "Ellos" para releer: aparece "Seguir en vivo".
+                window.live_page.columns["ellos"].browser.verticalScrollBar().setValue(0)
+                app.processEvents()
             path = out_dir / f"ventana_{state}_{theme}.png"
             window.grab().save(str(path))
             paths.append(path)
