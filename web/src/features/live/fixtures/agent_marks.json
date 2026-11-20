@@ -1,0 +1,47 @@
+{
+  "about": "Conversacion inventada. Los clics del autor sobre las burbujas, lo que la web manda a la API por ellos y los mismos clics en la vista de Qt (frase y caracter). tests/test_agent_prompt_parity.py comprueba que los dos caminos arman el mismo prompt; agentMarks.test.ts, que la web manda exactamente esto.",
+  "speaker": "ellos",
+  "finals": {
+    "ellos": [
+      { "clock": "10:00:00", "at_s": 0.0, "text": "Buenas tardes." },
+      { "clock": "10:00:08", "at_s": 8.0, "text": "Quería saber el precio del plan anual." },
+      { "clock": "10:00:16", "at_s": 16.0, "text": "¿Y tiene permanencia mínima?" }
+    ],
+    "tu": [
+      { "clock": "10:00:04", "at_s": 4.0, "text": "Hola, con gusto le ayudo." },
+      { "clock": "10:00:12", "at_s": 12.0, "text": "Claro, le cuento." }
+    ]
+  },
+  "sends": [
+    {
+      "clicks": [
+        { "bubble": "tu-0", "button": "left" },
+        { "bubble": "ellos-1", "button": "left" },
+        { "bubble": "ellos-0", "button": "right" }
+      ],
+      "requests": [
+        { "path": "/api/agent/mark_start", "body": { "phrase": 1, "offset": 0 } },
+        { "path": "/api/agent/mark_end", "body": { "phrase": 0, "offset": 0 } }
+      ],
+      "qt": [
+        { "phrase": 1, "offset": 9, "is_end": false },
+        { "phrase": 0, "offset": 3, "is_end": true }
+      ]
+    },
+    {
+      "clicks": [
+        { "bubble": "ellos-2", "button": "left" },
+        { "bubble": "tu-1", "button": "right" },
+        { "bubble": "ellos-2", "button": "right" }
+      ],
+      "requests": [
+        { "path": "/api/agent/mark_start", "body": { "phrase": 2, "offset": 0 } },
+        { "path": "/api/agent/mark_end", "body": { "phrase": 2, "offset": 0 } }
+      ],
+      "qt": [
+        { "phrase": 2, "offset": 4, "is_end": false },
+        { "phrase": 2, "offset": 20, "is_end": true }
+      ]
+    }
+  ]
+}

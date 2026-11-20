@@ -113,3 +113,14 @@ export type ListeningEvent =
     }
   | { kind: "sources"; data: { closed: SourceId[] } }
   | { kind: "saved"; data: { path: string } };
+
+// -- Agente ----------------------------------------------------------------------------
+
+/** Un clic sobre una frase final del interlocutor: inicio o final del rango. */
+export interface AgentMark {
+  end: boolean;
+  /** Posicion de la frase entre las finales del interlocutor. */
+  phrase: number;
+  /** Caracter dentro de la frase; el rango va por frases completas, asi que basta 0. */
+  offset: number;
+}

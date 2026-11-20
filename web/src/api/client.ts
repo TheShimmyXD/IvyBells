@@ -1,6 +1,7 @@
 // El unico lugar que habla con el Python (web_frontend.md, seccion 5).
 import { SseReader } from "./sse";
 import type {
+  AgentMark,
   ApiSession,
   ListeningEvent,
   ListeningSnapshot,
@@ -98,6 +99,21 @@ export const listeningApi = {
   },
   save(session: ApiSession, path: string): Promise<{ path: string }> {
     return postJson(session, "/api/listening/save", { path });
+  },
+};
+
+// -- Agente ------------------------------------------------------------------------------
+
+/** La ruta y el cuerpo de una marca; aparte para probar que la web manda lo mismo que Qt. */
+export function markRequest(mark: AgentMark): { path: string; body: Omit<AgentMark, "end"> } {
+  const path = mark.end ? "/api/agent/mark_end" : "/api/agent/mark_start";
+  return { path, body: { phrase: mark.phrase, offset: mark.offset } };
+}
+
+export const agentApi = {
+  mark(session: ApiSession, mark: AgentMark): Promise<unknown> {
+    const { path, body } = markRequest(mark);
+    return postJson(session, path, body);
   },
 };
 

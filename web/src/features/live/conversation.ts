@@ -31,7 +31,16 @@ export interface LiveView {
 }
 
 export type Bubble =
-  | { kind: "phrase"; key: string; source: SourceId; clock: string; text: string; final: boolean }
+  | {
+      kind: "phrase";
+      key: string;
+      source: SourceId;
+      /** Posicion entre las finales de su canal (la que pide el Agente); null si es provisional. */
+      index: number | null;
+      clock: string;
+      text: string;
+      final: boolean;
+    }
   | { kind: "resumed"; key: string; clock: string };
 
 const NO_LATENCY: LatencyPayload = { last_s: null, median_s: null };
@@ -173,6 +182,7 @@ export function conversation(view: LiveView): Bubble[] {
       kind: "phrase",
       key: `${item.source}-${item.index}`,
       source: item.source,
+      index: item.index,
       clock: item.line.clock,
       text: item.line.text,
       final: true,
@@ -182,7 +192,14 @@ export function conversation(view: LiveView): Bubble[] {
   for (const source of SOURCE_IDS) {
     const partial = view.partials[source];
     if (partial !== null) {
-      bubbles.push({ kind: "phrase", key: `${source}-partial`, source, ...partial, final: false });
+      bubbles.push({
+        kind: "phrase",
+        key: `${source}-partial`,
+        source,
+        index: null,
+        ...partial,
+        final: false,
+      });
     }
   }
   return bubbles;
