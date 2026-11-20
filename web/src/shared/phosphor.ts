@@ -22,6 +22,10 @@ export const PHOSPHOR = {
   quotes: 0xe660,
   "caret-down": 0xe136,
   check: 0xe182,
+  "caret-up": 0xe13c,
+  sparkle: 0xe6a2,
+  "arrow-up": 0xe08e,
+  trash: 0xe4a6,
 } as const;
 
 export type IconName = keyof typeof PHOSPHOR;

@@ -1,8 +1,10 @@
 // Panel del Agente: pestanas Agente | Chat, el interruptor Manual/Anticipado, como va el envio
-// con Cancelar y la respuesta grande. Sin respuestas todavia, las teclas para marcar.
+// con Cancelar, la respuesta grande y al pie la barra de contexto. Sin respuestas todavia,
+// las teclas para marcar.
 import type { AgentMode, AgentStateName } from "../../api/types";
 import Icon from "../../shared/Icon";
 import AgentAnswer from "./AgentAnswer";
+import ContextBar from "./ContextBar";
 import { agentHelp, answerBoard, canCancel, type AgentView } from "./agentView";
 
 export type AgentTab = "agent" | "chat";
@@ -16,6 +18,8 @@ interface AgentPanelProps {
   error: string | null;
   onCancel: () => void;
   onMode: (mode: AgentMode) => void;
+  /** El desglose de la barra de contexto abierto al montar (demo). */
+  contextOpen?: boolean;
 }
 
 const TONES: Record<AgentStateName, string> = {
@@ -35,6 +39,7 @@ export default function AgentPanel({
   error,
   onCancel,
   onMode,
+  contextOpen = false,
 }: AgentPanelProps) {
   const board = agent === null ? null : answerBoard(agent);
   const help = agentHelp(agent);
@@ -114,6 +119,9 @@ export default function AgentPanel({
         <div className="live-agent-body" role="tabpanel" aria-label="Chat">
           <p className="live-agent-lead">Pregunta sobre lo dicho: el chat llega con el Agente.</p>
         </div>
+      )}
+      {tab === "agent" && agent?.budget && (
+        <ContextBar budget={agent.budget} initiallyOpen={contextOpen} />
       )}
     </aside>
   );

@@ -6,7 +6,7 @@ import type { ApiSession } from "./api/types";
 import type { AgentTab } from "./features/live/AgentPanel";
 import LiveModule from "./features/live/LiveModule";
 import { chooseSavePath } from "./features/live/savePath";
-import { demoAgent, demoView } from "./features/live/demo";
+import { demoAgent, demoContextOpen, demoView } from "./features/live/demo";
 import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
 import { MODULES, wantsDemo } from "./shell/modules";
@@ -64,6 +64,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
             onAgentTab={chooseTab}
             choosePath={desktop ? chooseSavePath : undefined}
             waiting={waiting}
+            contextOpen={seed !== null && demoContextOpen(window.location.search)}
           />
         ) : (
           <>

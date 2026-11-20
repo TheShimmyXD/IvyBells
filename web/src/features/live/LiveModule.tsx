@@ -12,6 +12,7 @@ import { canCancel, phraseMarks } from "./agentView";
 import { conversation } from "./conversation";
 import "./live.css";
 import "./agent.css";
+import "./contextBar.css";
 
 interface LiveModuleProps {
   live: LiveListening;
@@ -22,6 +23,8 @@ interface LiveModuleProps {
   choosePath?: (lastPath: string | null) => Promise<string | null>;
   /** Que decir mientras no hay vista (sin API); por defecto, que se esta conectando. */
   waiting?: string;
+  /** Demo: el desglose de la barra de contexto abierto. */
+  contextOpen?: boolean;
 }
 
 export default function LiveModule(props: LiveModuleProps) {
@@ -102,6 +105,7 @@ export default function LiveModule(props: LiveModuleProps) {
               error={agent.error}
               onCancel={cancel}
               onMode={agent.setMode}
+              contextOpen={props.contextOpen}
             />
           </div>
           <LiveFooter

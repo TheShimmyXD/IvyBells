@@ -174,10 +174,25 @@ export interface BudgetPart {
   limit_chars: number | null;
 }
 
+export type BudgetLevel = "ok" | "warning" | "error";
+
+/** Lo que cobro de verdad el ultimo envio respondido. */
+export interface BudgetUsage {
+  input_tokens: number;
+  cached_tokens: number;
+  context_window: number | null;
+}
+
+/** Los textos salen del dominio (los mismos de la barra de Qt). */
 export interface AgentBudget {
   parts: BudgetPart[];
   estimated_tokens: number;
   window: number | null;
+  level: BudgetLevel;
+  summary: string;
+  short_summary: string;
+  last_summary: string;
+  last: BudgetUsage | null;
   first_text_s: number | null;
 }
 

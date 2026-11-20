@@ -17,8 +17,10 @@ from app.agent import AgentAssistant  # noqa: E402
 from app.chat import ChatAssistant  # noqa: E402
 from app.live import LiveListening  # noqa: E402
 from domain.agent.agent_ahead import TURN_SILENCE_S  # noqa: E402
+from domain.agent.context_budget import build_budget  # noqa: E402
 from domain.claude.claude_model import ClaudeModelConfig  # noqa: E402
 from domain.transcription.engine import TranscriptEvent  # noqa: E402
+from entrypoints.api.agent import budget_data  # noqa: E402
 from entrypoints.api.run import create_api  # noqa: E402
 from services.service_claude import ScriptedClaude  # noqa: E402
 
@@ -218,3 +220,20 @@ def test_chat_answers_and_reports_sending(parts) -> None:
     assert state["turns"][-1]["request"] == "¿Qué dijeron?"
     sending = [data["sending"] for kind, data in _kinds(stream) if kind == "sending"]
     assert sending == [True, False]
+
+
+def test_budget_data_carries_the_texts_of_the_qt_bar() -> None:
+    """La web pinta los mismos textos que la barra de Qt: salen del dominio, no de TS."""
+    unmeasured = budget_data(build_budget("r" * 1253, "r" * 1253, [], "Hola.", None))
+    assert unmeasured["level"] == "ok"
+    assert unmeasured["short_summary"].endswith("(ventana sin medir)")
+    assert unmeasured["summary"].endswith("se mide en el primer envío)")
+    assert unmeasured["last_summary"] == ""
+    measured = budget_data(build_budget("r" * 1253, "r" * 1253, [], "Hola.", 1_000_000))
+    assert measured["short_summary"] == "~1,1 k de 1 M (<1 %)"
+    assert [part["key"] for part in measured["parts"]] == [
+        "rules",
+        "context",
+        "history",
+        "fragment",
+    ]

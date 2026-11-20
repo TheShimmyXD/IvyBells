@@ -1,7 +1,7 @@
 // La vista En vivo sin API (npm run dev con ?demo=1): los eventos reales que mando la API
 // sobre la llamada inventada de captura_ui.py (FW.6), para las capturas de la web.
 import { toListeningEvent } from "../../api/client";
-import type { AgentSnapshot, AgentTurn, ListeningSnapshot } from "../../api/types";
+import type { AgentBudget, AgentSnapshot, AgentTurn, ListeningSnapshot } from "../../api/types";
 import { fromAgentSnapshot, type AgentView } from "./agentView";
 import { applyEvent, fromSnapshot, type LiveView } from "./conversation";
 import sample from "./fixtures/sse_listening.json";
@@ -127,6 +127,29 @@ const STAGES: Record<AgentStage, Partial<AgentSnapshot>> = {
   },
 };
 
+// Lo que devuelve budget_data (entrypoints/api/agent.py) para un envio de ejemplo con haiku.
+const DEMO_BUDGET: AgentBudget = {
+  parts: [
+    { key: "rules", label: "Reglas y perfil", chars: 2400, tokens: 1558, limit_chars: null },
+    { key: "context", label: "Contexto", chars: 488, tokens: 209, limit_chars: null },
+    { key: "history", label: "Historial", chars: 162, tokens: 69, limit_chars: 12000 },
+    { key: "fragment", label: "Fragmento", chars: 171, tokens: 73, limit_chars: null },
+  ],
+  estimated_tokens: 1909,
+  window: 1000000,
+  level: "ok",
+  summary: "~1,9 k de 1 M tokens (<1 %)",
+  short_summary: "~1,9 k de 1 M (<1 %)",
+  last_summary: "Último envío: 1,6 k tokens, primer texto 3,4 s, 80 % de caché",
+  last: { input_tokens: 1612, cached_tokens: 1290, context_window: 1000000 },
+  first_text_s: 3.4,
+};
+
+/** Demo con &ctx=open: el desglose de la barra de contexto abierto para la captura. */
+export function demoContextOpen(search: string): boolean {
+  return new URLSearchParams(search).get("ctx") === "open";
+}
+
 function isStage(value: string | null): value is AgentStage {
   return AGENT_STAGES.some((stage) => stage === value);
 }
@@ -153,7 +176,7 @@ export function demoAgent(search: string): AgentView | null {
       ],
       tu: [],
     },
-    budget: null,
+    budget: DEMO_BUDGET,
     turns: [demoTurn({})],
     turn_silence_s: 1.5,
     last_event: 0,

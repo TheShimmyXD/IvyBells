@@ -1,0 +1,134 @@
+/* Barra de contexto al pie del panel del Agente y su desglose. */
+
+.ctx {
+  position: relative;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.ctx-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: 11px var(--font-mono);
+  cursor: pointer;
+}
+
+.ctx-toggle > .ctx-strip {
+  width: 72px;
+  flex: none;
+}
+
+.ctx-toggle > :last-child {
+  margin-left: auto;
+}
+
+.ctx-summary[data-level="warning"] {
+  color: var(--color-warning);
+}
+
+.ctx-summary[data-level="error"] {
+  color: var(--color-error);
+}
+
+.ctx-strip {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+}
+
+.ctx-detail .ctx-strip {
+  height: 8px;
+  margin: var(--space-2) 0;
+}
+
+.ctx-segment {
+  min-width: 2px;
+}
+
+.ctx-strip[data-measured="false"] .ctx-segment {
+  opacity: 0.45;
+}
+
+[data-part="rules"] {
+  background: var(--color-brand);
+}
+
+[data-part="context"] {
+  background: var(--color-ok);
+}
+
+[data-part="history"] {
+  background: var(--color-warning);
+}
+
+[data-part="fragment"] {
+  background: var(--color-text-muted);
+}
+
+.ctx-detail {
+  position: absolute;
+  right: var(--space-3);
+  bottom: calc(100% + 4px);
+  left: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px var(--color-shadow);
+  font-size: 12px;
+}
+
+.ctx-detail > header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ctx-detail > header > span,
+.ctx-figure {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.ctx-detail ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ctx-detail li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ctx-figure {
+  margin-left: auto;
+}
+
+.ctx-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.ctx-detail > p {
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-soft);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}

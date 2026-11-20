@@ -74,12 +74,17 @@ def turn_data(turn: AgentTurn) -> dict:
 
 
 def budget_data(budget: ContextBudget | None) -> dict | None:
+    """Las cifras y los textos que muestra la barra de Qt, para que la web no los repita."""
     if budget is None:
         return None
     return {
         "parts": [asdict(part) for part in budget.parts],
         "estimated_tokens": budget.estimated_tokens,
         "window": budget.window,
+        "level": budget.level,
+        "summary": budget.summary(),
+        "short_summary": budget.summary(short=True),
+        "last_summary": budget.last_summary(),
         "last": None if budget.last is None else asdict(budget.last),
         "first_text_s": _seconds(budget.first_text_s),
     }
