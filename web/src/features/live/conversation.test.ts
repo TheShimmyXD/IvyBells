@@ -9,6 +9,8 @@ const EMPTY: ListeningSnapshot = {
   status: "Detenido",
   message: "",
   model: "large-v3-turbo",
+  models: [],
+  devices: {},
   closed_sources: [],
   path: null,
   transcript: { ellos: { finals: [], partial: null }, tu: { finals: [], partial: null } },

@@ -73,7 +73,14 @@ def create_api(
         return await call_next(request)
 
     followers = live_followers(agent) if agent is not None else None
-    router, channel = listening_router(listening, owner, keepalive, followers, prefs.save)
+
+    def recorded_devices() -> dict[str, str]:
+        devices = prefs.get("devices")
+        return {str(k): str(v) for k, v in devices.items()} if isinstance(devices, dict) else {}
+
+    router, channel = listening_router(
+        listening, owner, keepalive, followers, prefs.save, recorded_devices
+    )
     api.include_router(router)
     api.state.listening_channel = channel
     api.include_router(prefs_router(prefs))

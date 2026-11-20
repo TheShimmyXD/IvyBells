@@ -219,3 +219,31 @@ def test_second_start_resumes_and_marks_where(listening) -> None:
     assert state["resumes"]["ellos"] == [{"before": 0, "clock": marks[0]["clock"]}]
     sessions = [data for _, kind, data in _frames(stream.text) if kind == "session"]
     assert sessions == [{"new": True}, {"new": False, "resumes": state["resumes"]}]
+
+
+def test_start_without_devices_uses_the_recorded_ones(listening) -> None:
+    """Iniciar desde la web no manda dispositivos: valen los recordados si están conectados."""
+    from entrypoints.api.prefs import Prefs
+
+    asked = []
+
+    def chosen(preferred):
+        asked.append(preferred)
+        return {"tu": preferred["tu"]}
+
+    listening.chosen_devices = chosen
+    token = new_token()
+    headers = _auth(token)
+    prefs = Prefs({"devices": {"tu": "mic.sintetico"}})
+    api = create_api(token, listening, keepalive=0.05, prefs=prefs)
+    with TestClient(api, base_url="http://127.0.0.1") as client:
+        before = client.get("/api/listening", headers=headers).json()
+        started = client.post("/api/listening/start", headers=headers, json={}).json()
+        client.post("/api/listening/stop", headers=headers)
+
+    assert asked == [{"tu": "mic.sintetico"}]
+    assert before["devices"] == {}
+    assert [model["key"] for model in before["models"]] == ["small", "medium", "large-v3-turbo"]
+    assert started["devices"] == {"tu": {"name": "mic.sintetico", "label": "mic.sintetico"}}
+    # Lo recordado no se reescribe: solo se guarda lo que se manda.
+    assert prefs.get("devices") == {"tu": "mic.sintetico"}

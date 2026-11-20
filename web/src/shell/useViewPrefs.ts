@@ -3,14 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPrefs, savePref } from "../api/client";
 import { runsInDesktop, waitForSession } from "../api/session";
-import type { ApiSession, ModuleId, ViewPrefKey } from "../api/types";
+import type { ApiSession, ModuleId, Prefs, ViewPrefKey } from "../api/types";
 import { nextTheme, viewFromPrefs, viewFromQuery, type ViewState } from "./modules";
 
 export interface ViewPrefs extends ViewState {
   /** Por que la API no respondio; null si todo va bien. */
   error: string | null;
+  /** La API abierta (null fuera de Tauri o hasta que anuncie su puerto). */
+  session: ApiSession | null;
+  /** Todo lo recordado que entrego GET /api/prefs ({} sin API). */
+  prefs: Prefs;
   chooseModule: (module: ModuleId) => void;
   cycleTheme: () => void;
+  remember: (key: ViewPrefKey, value: string) => void;
 }
 
 function message(reason: unknown): string {
@@ -24,6 +29,8 @@ export function useViewPrefs(
   const [view, setView] = useState<ViewState>(() => viewFromQuery(window.location.search));
   const [error, setError] = useState<string | null>(null);
   const session = useRef<ApiSession | null>(null);
+  const [opened, setOpened] = useState<ApiSession | null>(null);
+  const [prefs, setPrefs] = useState<Prefs>({});
 
   useEffect(() => {
     if (!desktop) {
@@ -39,6 +46,8 @@ export function useViewPrefs(
         const prefs = await getPrefs(opened);
         if (alive) {
           setView((current) => viewFromPrefs(prefs, current));
+          setPrefs(prefs);
+          setOpened(opened);
         }
       })
       .catch((reason: unknown) => {
@@ -76,5 +85,5 @@ export function useViewPrefs(
     remember("theme", theme);
   }, [remember, view.theme]);
 
-  return { ...view, error, chooseModule, cycleTheme };
+  return { ...view, error, session: opened, prefs, chooseModule, cycleTheme, remember };
 }

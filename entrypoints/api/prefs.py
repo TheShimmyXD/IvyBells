@@ -3,7 +3,7 @@ Lo que la API recuerda en `app_settings.json`, como la ventana.
 
 Las rutas de la escucha y del Agente guardan lo que el autor elige (modelo y dispositivos al
 empezar, canales cerrados, interlocutor y modo); las preferencias de la vista (tema, módulo
-y panel del Agente) las guarda la interfaz con `POST /api/prefs`. Nada de esto se guarda
+panel del Agente y modelo elegido) las guarda la interfaz con `POST /api/prefs`. Nada de esto se guarda
 cuando cambia solo (por ejemplo, el interlocutor que pasa al otro canal al cerrarse el suyo).
 """
 
@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from config import AGENT_PANELS, MODULE_NAMES, THEME_NAMES, AppConfig
+from domain.transcription.live_view import LIVE_MODELS
 
 Remember = Callable[[str, object], object]
 
@@ -23,6 +24,7 @@ VIEW_PREFS: dict[str, tuple[str, ...]] = {
     "theme": THEME_NAMES,
     "module": MODULE_NAMES,
     "agent_panel": AGENT_PANELS,
+    "live_model": tuple(key for key, _, _ in LIVE_MODELS),
 }
 # Lo que lee la interfaz al abrirse.
 SHOWN = ("theme", "module", "agent_panel", "live_model", "devices", "speaker", "agent_mode")

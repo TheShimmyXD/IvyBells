@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import fields
 from pathlib import Path
 
@@ -27,7 +28,13 @@ from pydantic import BaseModel
 
 from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
 from domain.transcription.engine import TranscriptEvent
-from domain.transcription.live_view import SOURCES, Line, LiveTranscript
+from domain.transcription.live_view import (
+    LIVE_MODELS,
+    SOURCES,
+    Line,
+    LiveTranscript,
+    short_device_name,
+)
 from entrypoints.api.owner import LoopOwner
 from entrypoints.api.prefs import Remember
 
@@ -39,7 +46,8 @@ NO_TRANSCRIPT_MESSAGE = "Todavía no hay transcripción que guardar."
 class StartRequest(BaseModel):
     model: str = DEFAULT_MODEL
     compute_type: str = COMPUTE_TYPE
-    # Fuente -> dispositivo de PipeWire; sin ellas, las que PipeWire da por defecto.
+    # Fuente -> dispositivo de PipeWire; sin ellas, las recordadas si están conectadas y si
+    # no las predeterminadas (como la ventana).
     devices: dict[str, str] | None = None
 
 
@@ -124,6 +132,13 @@ def channel_listeners(listening: LiveListening, channel: EventChannel) -> LiveLi
     )
 
 
+def devices_data(devices: dict[str, str]) -> dict:
+    """Fuente -> nombre completo y corto del dispositivo (el corto va en la cabecera)."""
+    return {
+        source: {"name": name, "label": short_device_name(name)} for source, name in devices.items()
+    }
+
+
 def snapshot(listening: LiveListening, channel: EventChannel) -> dict:
     """Todo lo que la interfaz necesita al abrirse; `last_event` es su `Last-Event-ID`."""
     logic = listening.logic
@@ -135,6 +150,8 @@ def snapshot(listening: LiveListening, channel: EventChannel) -> dict:
         "status": logic.status,
         "message": logic.message,
         "model": logic.model,
+        "models": [{"key": k, "label": label, "help": tip} for k, label, tip in LIVE_MODELS],
+        "devices": devices_data(listening.devices),
         "closed_sources": sorted(listening.closed_sources),
         "path": None if path is None else str(path),
         "transcript": {
@@ -161,11 +178,13 @@ def listening_router(
     keepalive: float = KEEPALIVE_SECONDS,
     followers: LiveListeners | None = None,
     remember: Remember | None = None,
+    preferred: Callable[[], dict[str, str]] | None = None,
 ) -> tuple[APIRouter, EventChannel]:
     """
     Rutas de la escucha y el canal de esta apertura (una sola `LiveListening` por proceso).
     `followers` recibe los mismos avisos después del canal (el Agente); `remember` guarda el
-    modelo, los dispositivos elegidos y los canales cerrados.
+    modelo, los dispositivos elegidos y los canales cerrados; `preferred` da los dispositivos
+    recordados, que se usan al iniciar sin dispositivos si siguen conectados.
     """
     keep = remember or _ignore
     router = APIRouter()
@@ -184,7 +203,8 @@ def listening_router(
         devices = body.devices
         if devices is None:
             # pactl es un proceso aparte: fuera del bucle.
-            devices = await asyncio.to_thread(listening.default_devices)
+            wanted = preferred() if preferred is not None else {}
+            devices = await asyncio.to_thread(listening.chosen_devices, wanted)
         unknown = set(devices) - set(SOURCES)
         if unknown:
             raise HTTPException(422, f"Fuentes desconocidas: {', '.join(sorted(unknown))}.")
@@ -192,7 +212,7 @@ def listening_router(
         keep("live_model", body.model)
         if body.devices is not None:
             keep("devices", dict(body.devices))
-        return _last_state(channel)
+        return {**_last_state(channel), "devices": devices_data(listening.devices)}
 
     @router.post("/api/listening/stop")
     async def stop() -> dict:

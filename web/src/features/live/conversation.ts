@@ -6,7 +6,9 @@ import {
   type ListeningEvent,
   type ListeningSnapshot,
   type ListeningStateName,
+  type LiveModel,
   type ResumeMarks,
+  type SourceDevices,
   type SourceId,
   type TranscriptLine,
 } from "../../api/types";
@@ -16,6 +18,8 @@ export interface LiveView {
   status: string;
   message: string;
   model: string;
+  models: LiveModel[];
+  devices: SourceDevices;
   closed: SourceId[];
   path: string | null;
   savedCopy: string | null;
@@ -42,6 +46,8 @@ export function fromSnapshot(snapshot: ListeningSnapshot): LiveView {
     status: snapshot.status,
     message: snapshot.message,
     model: snapshot.model,
+    models: [...snapshot.models],
+    devices: { ...snapshot.devices },
     closed: [...snapshot.closed_sources],
     path: snapshot.path,
     savedCopy: null,

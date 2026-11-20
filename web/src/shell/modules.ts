@@ -1,5 +1,6 @@
-// Los modulos de la barra y el tema, con la misma lista que la ventana de Qt
-// (MODULES y THEME_TIPS en entrypoints/ui_qt/_00_ui_main.py). Logica pura, sin React.
+// Los modulos de la barra y el tema. La web tiene dos (el Agente vive dentro de En
+// vivo); los textos del tema son los de Qt (THEME_TIPS en entrypoints/ui_qt/_00_ui_main.py).
+// Logica pura, sin React.
 import type { ModuleId, Prefs, ThemeName } from "../api/types";
 import type { IconName } from "../shared/phosphor";
 
@@ -11,12 +12,11 @@ export interface ModuleEntry {
 }
 
 export const MODULES: readonly ModuleEntry[] = [
-  { id: "live", label: "Transcripción", icon: "waveform", tip: "Ellos y Tú en vivo" },
   {
-    id: "agent",
-    label: "Agente",
-    icon: "robot",
-    tip: "Marca lo que dijo el cliente y responde Claude",
+    id: "live",
+    label: "En vivo",
+    icon: "waveform",
+    tip: "Ellos y Tú en vivo, con el Agente al lado",
   },
   {
     id: "config",
@@ -47,6 +47,11 @@ function isModule(value: unknown): value is ModuleId {
   return MODULES.some((entry) => entry.id === value);
 }
 
+/** ?demo=1: En vivo con la llamada de ejemplo, sin API (capturas). */
+export function wantsDemo(search: string): boolean {
+  return new URLSearchParams(search).has("demo");
+}
+
 export function nextTheme(theme: ThemeName): ThemeName {
   return theme === "light" ? "dark" : "light";
 }
@@ -59,7 +64,7 @@ export function viewFromPrefs(prefs: Prefs, base: ViewState = DEFAULT_VIEW): Vie
   };
 }
 
-/** Fuera de Tauri no hay API: ?theme=dark&module=agent sirve para las capturas. */
+/** Fuera de Tauri no hay API: ?theme=dark&module=config sirve para las capturas. */
 export function viewFromQuery(search: string): ViewState {
   const params = new URLSearchParams(search);
   return viewFromPrefs({

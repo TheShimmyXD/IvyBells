@@ -6,6 +6,7 @@ import type {
   ListeningSnapshot,
   Prefs,
   SourceId,
+  StartAnswer,
   StatePayload,
   ViewPrefKey,
 } from "./types";
@@ -81,8 +82,9 @@ export const listeningApi = {
   snapshot(session: ApiSession): Promise<ListeningSnapshot> {
     return request<ListeningSnapshot>(session, "/api/listening");
   },
-  start(session: ApiSession, model: string): Promise<StatePayload> {
-    return postJson<StatePayload>(session, "/api/listening/start", { model });
+  /** Sin dispositivos: la API usa los recordados si siguen conectados (como Qt). */
+  start(session: ApiSession, model: string): Promise<StartAnswer> {
+    return postJson<StartAnswer>(session, "/api/listening/start", { model });
   },
   stop(session: ApiSession): Promise<StatePayload> {
     return postJson<StatePayload>(session, "/api/listening/stop", {});

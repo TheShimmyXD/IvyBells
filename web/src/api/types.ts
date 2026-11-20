@@ -8,7 +8,8 @@ export interface ApiSession {
 }
 
 export type ThemeName = "light" | "dark";
-export type ModuleId = "live" | "agent" | "config";
+/** Modulos de la barra de la web (el Agente vive dentro de En vivo). */
+export type ModuleId = "live" | "config";
 
 /** Lo que la interfaz lee al abrirse (GET /api/prefs; SHOWN en entrypoints/api/prefs.py). */
 export interface Prefs {
@@ -18,7 +19,7 @@ export interface Prefs {
 }
 
 /** Las claves que la vista guarda con POST /api/prefs (VIEW_PREFS). */
-export type ViewPrefKey = "theme" | "module" | "agent_panel";
+export type ViewPrefKey = "theme" | "module" | "agent_panel" | "live_model";
 
 // -- Escucha en vivo (entrypoints/api/listening.py) -----------------------------------
 
@@ -46,12 +47,29 @@ export interface ResumeMark {
 
 export type ResumeMarks = Record<SourceId, ResumeMark[]>;
 
+/** Un modelo de la escucha (LIVE_MODELS en domain/transcription/live_view.py). */
+export interface LiveModel {
+  key: string;
+  label: string;
+  help: string;
+}
+
+/** Dispositivo de una fuente: el nombre de PipeWire y el corto de la cabecera. */
+export interface DeviceLabel {
+  name: string;
+  label: string;
+}
+
+export type SourceDevices = Partial<Record<SourceId, DeviceLabel>>;
+
 /** GET /api/listening: todo lo que la vista necesita al abrirse. */
 export interface ListeningSnapshot {
   state: ListeningStateName;
   status: string;
   message: string;
   model: string;
+  models: LiveModel[];
+  devices: SourceDevices;
   closed_sources: SourceId[];
   path: string | null;
   transcript: Record<SourceId, SourceTranscript>;
@@ -64,6 +82,11 @@ export interface StatePayload {
   state: ListeningStateName;
   status: string;
   message: string;
+}
+
+/** Respuesta de POST /api/listening/start: el estado y los dispositivos que se capturan. */
+export interface StartAnswer extends StatePayload {
+  devices: SourceDevices;
 }
 
 export interface PhrasePayload {

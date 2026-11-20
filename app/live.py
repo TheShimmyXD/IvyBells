@@ -21,7 +21,7 @@ import numpy as np
 
 from domain.transcription.engine import EventCallback, TranscriptEvent, TranscriptionEngine
 from domain.transcription.live_state import LiveLogic
-from domain.transcription.live_view import SOURCES, LatencyTracker, LiveTranscript
+from domain.transcription.live_view import SOURCES, LatencyTracker, LiveTranscript, resolve_device
 from domain.transcription.transcript_markdown import format_latency_footer, format_latency_line
 from services.service_capture import AudioCapture, BlockCallback
 from services.service_live import CaptureFactory, LiveSession
@@ -227,6 +227,8 @@ class LiveListening:
         self._stop_event = threading.Event()
         self._run: ListeningRun | None = None
         self._thread: threading.Thread | None = None
+        # Fuente -> dispositivo de la ultima escucha iniciada (vacio antes de la primera).
+        self.devices: dict[str, str] = {}
         # Canales cerrados: se capturan pero no llegan al motor. Siempre queda uno abierto.
         self.closed_sources: set[str] = set()
         for source in closed_sources:
@@ -276,6 +278,27 @@ class LiveListening:
             devices["tu"] = capture.microphone.name
         return devices
 
+    def chosen_devices(self, preferred: dict[str, str]) -> dict[str, str]:
+        """
+        Lo mismo que los combos de la ventana: por fuente, la elegida (`preferred`) si está
+        conectada; si no, la predeterminada de PipeWire; si tampoco, la primera de su tipo.
+        """
+        choices = self.read_sources()
+        lists = {
+            "ellos": [item.name for item in choices.monitors],
+            "tu": [item.name for item in choices.inputs],
+        }
+        defaults = {"ellos": choices.selected.monitor, "tu": choices.selected.microphone}
+        devices = {}
+        for source in SOURCES:
+            default = defaults[source]
+            name = resolve_device(
+                lists[source], preferred.get(source, ""), default.name if default else None
+            )
+            if name:
+                devices[source] = name
+        return devices
+
     def start(self, model: str, devices: dict[str, str], compute_type: str = COMPUTE_TYPE) -> None:
         if self._thread is not None and self._thread.is_alive():
             logger.warning("La escucha anterior aún se está cerrando")
@@ -285,6 +308,7 @@ class LiveListening:
             return
         payload = self.logic.start(model)
         if payload["ok"]:
+            self.devices = dict(devices)
             self._launch(model, devices, compute_type)
         self.listeners.state(payload)
 

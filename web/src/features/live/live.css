@@ -1,0 +1,445 @@
+/* En vivo, direccion 2b de Claude Design: burbujas con esquinas 14/4 px, Tu en el
+   ocre del sello al 15 % sobre la superficie, lo provisional con borde punteado. Solo
+   tokens de tokens.css; nada de colores a mano. */
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+  height: 100%;
+  min-height: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.live-waiting {
+  color: var(--color-text-muted);
+}
+
+/* -- Barra de estado ------------------------------------------------------------- */
+
+.live-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.live-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.live-status {
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.live-reason {
+  color: var(--color-error);
+  font-weight: 400;
+}
+
+.live-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+[data-tone="ok"] > .live-dot {
+  background: var(--color-ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ok) 25%, transparent);
+}
+
+[data-tone="busy"] > .live-dot {
+  background: var(--color-warning);
+}
+
+[data-tone="error"] > .live-dot {
+  background: var(--color-error);
+}
+
+.live-model {
+  padding: 3px 8px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font: 12px var(--font-mono);
+}
+
+.live-run,
+.live-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.live-run {
+  border: 1px solid var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.live-run[data-action="stop"],
+.live-run[data-action="wait"] {
+  border-color: color-mix(in srgb, var(--color-error) 45%, transparent);
+  background: color-mix(in srgb, var(--color-error) 10%, var(--color-surface));
+  color: var(--color-error);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.live-alert {
+  margin: 0;
+  font-size: 13px;
+}
+
+.live-alert[data-tone="error"] {
+  color: var(--color-error);
+}
+
+.live-alert[data-tone="warning"] {
+  color: var(--color-warning);
+}
+
+/* -- Cuerpo: conversacion y Agente -------------------------------------------------- */
+
+.live-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr);
+  gap: var(--spacing);
+  min-height: 0;
+}
+
+.live-card,
+.live-agent {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.live-channels {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.live-channel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.live-channel[data-source="tu"] {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.live-channel-icon {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 50%;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+.live-channel[data-source="tu"] .live-channel-icon {
+  background: color-mix(in srgb, var(--color-seal) 18%, var(--color-surface));
+  color: var(--color-seal);
+}
+
+.live-channel-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 13px;
+}
+
+.live-device {
+  color: var(--color-text-muted);
+  font: 11px var(--font-mono);
+}
+
+.live-channel[data-open="false"] .live-channel-text {
+  opacity: 0.6;
+}
+
+.live-switch {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 17px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-border);
+  cursor: pointer;
+}
+
+.live-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  content: "";
+  transition: transform 120ms ease;
+}
+
+.live-switch[aria-checked="true"] {
+  background: var(--color-brand);
+}
+
+.live-switch[aria-checked="true"]::after {
+  transform: translateX(13px);
+}
+
+/* -- Burbujas ----------------------------------------------------------------------- */
+
+.live-conversation {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.live-bubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.live-empty {
+  margin: auto;
+  color: var(--color-text-muted);
+}
+
+.live-phrase {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.live-phrase[data-source="tu"] {
+  align-items: flex-end;
+}
+
+.live-bubble {
+  max-width: 76%;
+  padding: 7px 12px;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--color-surface-alt);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.live-phrase[data-source="tu"] .live-bubble {
+  border-radius: 14px 14px 4px 14px;
+  background: color-mix(in srgb, var(--color-seal) 15%, var(--color-surface));
+}
+
+.live-phrase[data-final="false"] .live-bubble {
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.live-phrase[data-closed="true"] {
+  opacity: 0.45;
+}
+
+.live-clock {
+  color: var(--color-text-muted);
+  font: 10.5px var(--font-mono);
+}
+
+.live-resumed {
+  align-self: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.live-follow {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 2px 8px var(--color-shadow);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* -- Panel del Agente --------------------------------------------------------------- */
+
+.live-agent-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.live-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.live-tab[aria-selected="true"] {
+  border-bottom-color: var(--color-brand);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.live-anticipated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.live-agent-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4);
+}
+
+.live-agent-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Con el padre en el selector: .workspace p (App.css) pesa mas que una sola clase. */
+.live-agent-body > .live-agent-lead {
+  margin: auto 0 var(--space-3);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.live-keys {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 auto;
+  font-size: 12px;
+}
+
+.live-keys div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.live-keys dt,
+.live-keys dd {
+  margin: 0;
+}
+
+.live-keys dd {
+  color: var(--color-text-muted);
+}
+
+.live-keys kbd {
+  display: inline-block;
+  min-width: 62px;
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+  font: 11px var(--font-mono);
+  text-align: center;
+}
+
+/* -- Pie ---------------------------------------------------------------------------- */
+
+.live-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+  font: 11.5px var(--font-mono);
+}
+
+.live-latency,
+.live-path,
+.live-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.live-latency strong {
+  color: var(--color-text);
+}
+
+.live-save {
+  margin-left: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}

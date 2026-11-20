@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_VIEW, MODULES, nextTheme, viewFromPrefs, viewFromQuery } from "./modules";
+import {
+  DEFAULT_VIEW,
+  MODULES,
+  nextTheme,
+  viewFromPrefs,
+  viewFromQuery,
+  wantsDemo,
+} from "./modules";
 
 describe("modules", () => {
-  it("tiene los tres modulos de Qt en su orden", () => {
-    expect(MODULES.map((entry) => entry.id)).toEqual(["live", "agent", "config"]);
+  it("tiene En vivo y Configuracion", () => {
+    expect(MODULES.map((entry) => entry.id)).toEqual(["live", "config"]);
   });
 
   it("alterna claro y oscuro", () => {
@@ -12,12 +19,16 @@ describe("modules", () => {
   });
 
   it("toma lo recordado y descarta lo desconocido", () => {
-    expect(viewFromPrefs({ theme: "dark", module: "agent" })).toEqual({
+    expect(viewFromPrefs({ theme: "dark", module: "config" })).toEqual({
       theme: "dark",
-      module: "agent",
+      module: "config",
     });
     expect(viewFromPrefs({ theme: "sepia", module: "mail" })).toEqual(DEFAULT_VIEW);
     expect(viewFromPrefs({})).toEqual(DEFAULT_VIEW);
+  });
+
+  it("el Agente que Qt recuerda como modulo abre En vivo", () => {
+    expect(viewFromPrefs({ module: "agent" }).module).toBe("live");
   });
 
   it("lee la vista de la URL para las capturas", () => {
@@ -26,5 +37,7 @@ describe("modules", () => {
       module: "config",
     });
     expect(viewFromQuery("")).toEqual(DEFAULT_VIEW);
+    expect(wantsDemo("?demo=1&theme=dark")).toBe(true);
+    expect(wantsDemo("")).toBe(false);
   });
 });

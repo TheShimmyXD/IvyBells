@@ -277,3 +277,22 @@ def test_console_returns_one_when_the_listening_fails(tmp_path):
     listening = LiveListening(factory, tmp_path, capture_factory=_FakeCapture)
     printer = ConsolePrinter(listening.transcript.clock, lambda _text: None, interactive=False)
     assert run_listening(listening, "small", "int8", {"tu": "mic"}, threading.Event(), printer) == 1
+
+
+def _choices():
+    from services.service_pipewire import AudioSource, CaptureSources, SourceChoices
+
+    def source(name):
+        return AudioSource(0, name, "PipeWire", "s16le 2ch 48000Hz", "IDLE")
+
+    monitor, mic, usb = source("salida.monitor"), source("mic.interno"), source("mic.usb")
+    return SourceChoices([monitor], [mic, usb], CaptureSources(monitor=monitor, microphone=mic))
+
+
+def test_chosen_devices_follow_the_window_rules(tmp_path):
+    """La elegida si está conectada; si no, la predeterminada (como los combos de Qt)."""
+    listening = LiveListening(lambda *_: None, tmp_path)
+    listening.read_sources = _choices
+    assert listening.chosen_devices({}) == {"ellos": "salida.monitor", "tu": "mic.interno"}
+    assert listening.chosen_devices({"tu": "mic.usb"})["tu"] == "mic.usb"
+    assert listening.chosen_devices({"tu": "mic.desconectado"})["tu"] == "mic.interno"

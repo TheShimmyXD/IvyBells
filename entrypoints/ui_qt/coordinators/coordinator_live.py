@@ -16,14 +16,10 @@ from PySide6.QtCore import QObject, Signal, Slot
 from app.live import LiveListeners, LiveListening
 from app.wiring import build_live
 from domain.transcription.live_state import LiveLogic
-from domain.transcription.live_view import LiveTranscript
+from domain.transcription.live_view import LIVE_MODELS, LiveTranscript
 
 # (clave para el motor, nombre en el botón, ayuda)
-MODELS = (
-    ("small", "small", "El más rápido (mediana 0,5 s) pero erra más"),
-    ("medium", "medium", "Intermedio (mediana 1,3 s)"),
-    ("large-v3-turbo", "turbo", "El elegido: mediana 1,8 s y el mejor texto"),
-)
+MODELS = LIVE_MODELS
 
 
 class LiveCoordinator(QObject):
