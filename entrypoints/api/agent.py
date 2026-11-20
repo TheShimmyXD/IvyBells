@@ -27,6 +27,7 @@ from domain.agent.agent_selection import WordPos
 from domain.agent.context_budget import ContextBudget
 from domain.transcription.live_view import SOURCES
 from entrypoints.api.owner import LoopOwner
+from entrypoints.api.prefs import Remember
 
 
 class MarkRequest(BaseModel):
@@ -129,9 +130,18 @@ def live_followers(agent: AgentAssistant) -> LiveListeners:
     )
 
 
+def _ignore(*_args: object) -> None:
+    pass
+
+
 def agent_router(
-    agent: AgentAssistant, owner: LoopOwner, keepalive: float = KEEPALIVE_SECONDS
+    agent: AgentAssistant,
+    owner: LoopOwner,
+    keepalive: float = KEEPALIVE_SECONDS,
+    remember: Remember | None = None,
 ) -> tuple[APIRouter, EventChannel]:
+    """`remember` guarda el modo y el interlocutor que elige el autor."""
+    save = remember or _ignore
     router = APIRouter()
     channel = EventChannel()
     agent.attach(
@@ -154,6 +164,7 @@ def agent_router(
         if body.mode not in AGENT_MODES:
             raise HTTPException(422, f"Modo desconocido: {body.mode}.")
         agent.set_mode(body.mode)
+        save("agent_mode", agent.mode)
         return brief(agent)
 
     @router.post("/api/agent/speaker")
@@ -161,6 +172,7 @@ def agent_router(
         if body.source not in SOURCES:
             raise HTTPException(404, f"No hay canal «{body.source}».")
         agent.set_speaker(body.source)
+        save("speaker", agent.speaker)
         return brief(agent)
 
     @router.post("/api/agent/mark_start")

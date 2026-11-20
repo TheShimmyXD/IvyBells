@@ -28,6 +28,7 @@ from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
 from domain.transcription.engine import TranscriptEvent
 from domain.transcription.live_view import SOURCES, Line
 from entrypoints.api.owner import LoopOwner
+from entrypoints.api.prefs import Remember
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,10 @@ class SourceRequest(BaseModel):
 
 class SaveRequest(BaseModel):
     path: str
+
+
+def _ignore(*_args: object) -> None:
+    pass
 
 
 def state_data(payload: dict) -> dict:
@@ -139,11 +144,14 @@ def listening_router(
     owner: LoopOwner,
     keepalive: float = KEEPALIVE_SECONDS,
     followers: LiveListeners | None = None,
+    remember: Remember | None = None,
 ) -> tuple[APIRouter, EventChannel]:
     """
     Rutas de la escucha y el canal de esta apertura (una sola `LiveListening` por proceso).
-    `followers` recibe los mismos avisos después del canal (el Agente).
+    `followers` recibe los mismos avisos después del canal (el Agente); `remember` guarda el
+    modelo, los dispositivos elegidos y los canales cerrados.
     """
+    keep = remember or _ignore
     router = APIRouter()
     channel = EventChannel()
     listeners = channel_listeners(listening, channel)
@@ -165,6 +173,9 @@ def listening_router(
         if unknown:
             raise HTTPException(422, f"Fuentes desconocidas: {', '.join(sorted(unknown))}.")
         listening.start(body.model, devices, body.compute_type)
+        keep("live_model", body.model)
+        if body.devices is not None:
+            keep("devices", dict(body.devices))
         return _last_state(channel)
 
     @router.post("/api/listening/stop")
@@ -177,6 +188,8 @@ def listening_router(
         if source not in SOURCES:
             raise HTTPException(404, f"No hay canal «{source}».")
         changed = listening.set_source_open(source, body.open)
+        if changed:
+            keep("closed_sources", sorted(listening.closed_sources))
         return {"changed": changed, "closed": sorted(listening.closed_sources)}
 
     @router.post("/api/listening/save")
