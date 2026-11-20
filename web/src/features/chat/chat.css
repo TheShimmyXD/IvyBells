@@ -1,0 +1,217 @@
+/* Chat propio del autor en la pestana Chat del panel del Agente. Dos clases en los selectores
+   de texto: .workspace p (App.css) pesa mas que una sola. */
+
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.chat-setup {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.chat-log {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.chat .chat-empty {
+  margin: auto 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.chat-turn {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.chat-turn:last-child {
+  border-bottom: none;
+}
+
+.chat .chat-turn-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.chat-turn-head strong {
+  color: var(--color-text);
+}
+
+.chat-clock,
+.chat .chat-first {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.chat-request {
+  margin: var(--space-1) 0 var(--space-2);
+  padding: 3px 8px;
+  border-left: 2px solid var(--color-brand);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--color-surface-alt);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.chat-answer {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.chat-answer > :first-child {
+  margin-top: 0;
+}
+
+.chat-answer > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-answer p,
+.chat-answer ul,
+.chat-answer ol {
+  margin: 0 0 var(--space-2);
+}
+
+.chat-answer ul,
+.chat-answer ol {
+  padding-left: 1.3em;
+}
+
+.chat-answer code {
+  padding: 1px 4px;
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+  font: 12.5px var(--font-mono);
+}
+
+.chat-answer pre {
+  overflow-x: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+}
+
+.chat-answer pre code {
+  padding: 0;
+}
+
+.chat-answer blockquote {
+  margin: 0 0 var(--space-2);
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.chat-answer table {
+  border-collapse: collapse;
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+}
+
+.chat-answer th,
+.chat-answer td {
+  padding: 3px 8px;
+  border: 1px solid var(--color-border-soft);
+}
+
+.chat-answer a {
+  color: var(--color-brand);
+}
+
+.chat-turn[data-stage="writing"] .chat-answer > :last-child::after {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: chat-blink 1s steps(1) infinite;
+  content: "";
+}
+
+.chat .chat-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.chat .chat-error {
+  margin: var(--space-1) 0 0;
+  color: var(--color-error);
+  font-size: 13px;
+}
+
+.chat-input {
+  resize: none;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 13px var(--font-sans);
+}
+
+.chat-input:focus {
+  border-color: var(--color-brand);
+  outline: none;
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat .chat-first {
+  margin-right: auto;
+  color: var(--color-text-muted);
+}
+
+.chat-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-button[data-action="send"] {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.chat-button[data-action="cancel"] {
+  border-color: color-mix(in srgb, var(--color-error) 45%, transparent);
+  background: color-mix(in srgb, var(--color-error) 10%, var(--color-surface));
+  color: var(--color-error);
+}
+
+@keyframes chat-blink {
+  50% {
+    opacity: 0;
+  }
+}

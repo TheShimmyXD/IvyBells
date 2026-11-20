@@ -1,6 +1,7 @@
 // Panel del Agente: pestanas Agente | Chat, el interruptor Manual/Anticipado, como va el envio
 // con Cancelar, la respuesta grande y al pie la barra de contexto. Sin respuestas todavia,
-// las teclas para marcar.
+// las teclas para marcar. La pestana Chat pinta lo que le pasa App (otra feature).
+import type { ReactNode } from "react";
 import type { AgentMode, AgentStateName } from "../../api/types";
 import Icon from "../../shared/Icon";
 import AgentAnswer from "./AgentAnswer";
@@ -20,6 +21,8 @@ interface AgentPanelProps {
   onMode: (mode: AgentMode) => void;
   /** El desglose de la barra de contexto abierto al montar (demo). */
   contextOpen?: boolean;
+  /** Lo que va en la pestana Chat; lo compone App con la feature del chat. */
+  chatPanel?: ReactNode;
 }
 
 const TONES: Record<AgentStateName, string> = {
@@ -40,6 +43,7 @@ export default function AgentPanel({
   onCancel,
   onMode,
   contextOpen = false,
+  chatPanel,
 }: AgentPanelProps) {
   const board = agent === null ? null : answerBoard(agent);
   const help = agentHelp(agent);
@@ -117,7 +121,7 @@ export default function AgentPanel({
         </div>
       ) : (
         <div className="live-agent-body" role="tabpanel" aria-label="Chat">
-          <p className="live-agent-lead">Pregunta sobre lo dicho: el chat llega con el Agente.</p>
+          {chatPanel ?? <p className="live-agent-lead">El chat no está disponible.</p>}
         </div>
       )}
       {tab === "agent" && agent?.budget && (

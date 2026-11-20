@@ -1,6 +1,6 @@
 // La vista En vivo, direccion 2b: estado arriba, la conversacion con sus canales a
 // la izquierda, el panel del Agente a la derecha y el pie con latencia, ruta y Guardar.
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import type { Agent } from "./useAgent";
 import type { LiveListening } from "./useLiveListening";
 import AgentPanel, { type AgentTab } from "./AgentPanel";
@@ -25,6 +25,8 @@ interface LiveModuleProps {
   waiting?: string;
   /** Demo: el desglose de la barra de contexto abierto. */
   contextOpen?: boolean;
+  /** La pestana Chat del panel del Agente (feature chat, la compone App). */
+  chatPanel?: ReactNode;
 }
 
 export default function LiveModule(props: LiveModuleProps) {
@@ -106,6 +108,7 @@ export default function LiveModule(props: LiveModuleProps) {
               onCancel={cancel}
               onMode={agent.setMode}
               contextOpen={props.contextOpen}
+              chatPanel={props.chatPanel}
             />
           </div>
           <LiveFooter

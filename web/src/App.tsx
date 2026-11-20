@@ -1,8 +1,12 @@
 // La ventana: la barra de modulos y el area de trabajo del modulo elegido. En vivo ya esta
-// en la web (FW.7); Configuracion llega en FW.9 y hoy se usa en la ventana de Qt.
+// en la web (FW.7) con el Agente y el chat en su panel (FW.8); Configuracion llega en FW.9
+// y hoy se usa en la ventana de Qt.
 import { useMemo, useState } from "react";
 import { runsInDesktop } from "./api/session";
 import type { ApiSession } from "./api/types";
+import ChatPanel from "./features/chat/ChatPanel";
+import { demoChat, demoChatTab } from "./features/chat/demo";
+import { useChat } from "./features/chat/useChat";
 import type { AgentTab } from "./features/live/AgentPanel";
 import LiveModule from "./features/live/LiveModule";
 import { chooseSavePath } from "./features/live/savePath";
@@ -35,7 +39,11 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
     [seed],
   );
   const agent = useAgent(view.session, agentSeed);
-  const [chosenTab, setChosenTab] = useState<AgentTab | null>(null);
+  const chatSeed = useMemo(() => (seed === null ? null : demoChat(window.location.search)), [seed]);
+  const chat = useChat(view.session, chatSeed);
+  const [chosenTab, setChosenTab] = useState<AgentTab | null>(() =>
+    seed !== null && demoChatTab(window.location.search) ? "chat" : null,
+  );
   const agentTab = chosenTab ?? (view.prefs.agent_panel === "chat" ? "chat" : "agent");
   const chooseTab = (tab: AgentTab) => {
     setChosenTab(tab);
@@ -65,6 +73,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
             choosePath={desktop ? chooseSavePath : undefined}
             waiting={waiting}
             contextOpen={seed !== null && demoContextOpen(window.location.search)}
+            chatPanel={<ChatPanel chat={chat} />}
           />
         ) : (
           <>

@@ -7,6 +7,9 @@ import type {
   AgentMode,
   AgentSnapshot,
   ApiSession,
+  ChatBrief,
+  ChatEvent,
+  ChatSnapshot,
   ListeningEvent,
   ListeningSnapshot,
   Prefs,
@@ -142,6 +145,41 @@ export function toAgentEvent(kind: string, data: unknown): AgentEvent | null {
     return null;
   }
   return { kind, data } as AgentEvent;
+}
+
+// -- Chat propio del autor -------------------------------------------------------------
+
+export const chatApi = {
+  snapshot(session: ApiSession): Promise<ChatSnapshot> {
+    return request<ChatSnapshot>(session, "/api/chat");
+  },
+  /** sent es false si ya hay un envio en curso o el texto queda vacio. */
+  send(session: ApiSession, text: string): Promise<ChatBrief & { sent: boolean }> {
+    return postJson(session, "/api/chat/send", { text });
+  },
+  cancel(session: ApiSession): Promise<ChatBrief> {
+    return postJson<ChatBrief>(session, "/api/chat/cancel", {});
+  },
+  /** Vacia el chat; un envio en curso se cancela. */
+  clear(session: ApiSession): Promise<ChatBrief> {
+    return postJson<ChatBrief>(session, "/api/chat/clear", {});
+  },
+  setModel(session: ApiSession, model: string): Promise<ChatBrief> {
+    return postJson<ChatBrief>(session, "/api/chat/model", { model });
+  },
+  setEffort(session: ApiSession, effort: string): Promise<ChatBrief> {
+    return postJson<ChatBrief>(session, "/api/chat/effort", { effort });
+  },
+};
+
+const CHAT_KINDS = new Set(["turns", "sending", "config"]);
+
+/** Un evento del canal del chat con su tipo; los desconocidos quedan fuera (null). */
+export function toChatEvent(kind: string, data: unknown): ChatEvent | null {
+  if (!CHAT_KINDS.has(kind) || typeof data !== "object" || data === null) {
+    return null;
+  }
+  return { kind, data } as ChatEvent;
 }
 
 const LISTENING_KINDS = new Set(["state", "phrase", "latency", "session", "sources", "saved"]);

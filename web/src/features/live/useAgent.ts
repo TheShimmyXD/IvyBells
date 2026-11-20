@@ -1,15 +1,15 @@
 // Estado y pedidos del Agente en la vista En vivo: abre con el snapshot de /api/agent,
-// sigue su canal de eventos (se reconecta desde el ultimo numero visto) y manda las marcas
+// sigue su canal de eventos (followChannel: se reconecta desde el ultimo numero visto) y manda las marcas
 // de los clics, cancelar, el modo y el interlocutor.
 import { useCallback, useEffect, useState } from "react";
-import { agentApi, readEvents, toAgentEvent } from "../../api/client";
+import { agentApi, toAgentEvent } from "../../api/client";
+import { errorMessage, followChannel } from "../../api/follow";
 import type { AgentBrief, AgentMode, ApiSession, SourceId } from "../../api/types";
 import { markFor, type MarkButton } from "./agentMarks";
 import { applyAgentEvent, fromAgentSnapshot, type AgentView } from "./agentView";
 import type { Bubble } from "./conversation";
 
 export const AGENT_EVENTS_PATH = "/api/agent/events";
-const RETRY_MS = 1_000;
 
 export interface Agent {
   view: AgentView | null;
@@ -22,12 +22,6 @@ export interface Agent {
   setSpeaker: (source: SourceId) => void;
 }
 
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
-}
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /** `seed`: el Agente de ejemplo sin API (capturas con ?demo=1&agent=...). */
 export function useAgent(session: ApiSession | null, seed: AgentView | null = null): Agent {
   const [view, setView] = useState<AgentView | null>(seed);
@@ -38,41 +32,23 @@ export function useAgent(session: ApiSession | null, seed: AgentView | null = nu
       return;
     }
     const abort = new AbortController();
-    const { signal } = abort;
-    let last = 0;
-    const onEvent = (seq: number, kind: string, data: unknown) => {
-      const event = toAgentEvent(kind, data);
-      if (event === null || (seq > 0 && seq <= last)) {
-        return;
-      }
-      last = Math.max(last, seq);
-      setView((current) => (current === null ? current : applyAgentEvent(current, seq, event)));
-    };
-    const follow = async () => {
-      const snapshot = await agentApi.snapshot(session);
-      if (signal.aborted) {
-        return;
-      }
-      last = snapshot.last_event;
-      setView(fromAgentSnapshot(snapshot));
-      while (!signal.aborted) {
-        try {
-          await readEvents(session, AGENT_EVENTS_PATH, last, onEvent, signal);
-        } catch (reason) {
-          if (!signal.aborted) {
-            setError(message(reason));
+    void followChannel(
+      session,
+      AGENT_EVENTS_PATH,
+      {
+        snapshot: (opened) => agentApi.snapshot(opened),
+        lastEvent: (snapshot) => snapshot.last_event,
+        onSnapshot: (snapshot) => setView(fromAgentSnapshot(snapshot)),
+        onEvent: (seq, kind, data) => {
+          const event = toAgentEvent(kind, data);
+          if (event !== null) {
+            setView((current) => current && applyAgentEvent(current, seq, event));
           }
-        }
-        if (!signal.aborted) {
-          await wait(RETRY_MS);
-        }
-      }
-    };
-    follow().catch((reason: unknown) => {
-      if (!signal.aborted) {
-        setError(message(reason));
-      }
-    });
+        },
+        onError: setError,
+      },
+      abort.signal,
+    );
     return () => abort.abort();
   }, [session]);
 
@@ -84,7 +60,7 @@ export function useAgent(session: ApiSession | null, seed: AgentView | null = nu
       setError(null);
       request(session)
         .then((brief) => setView((current) => current && { ...current, ...brief }))
-        .catch((reason: unknown) => setError(message(reason)));
+        .catch((reason: unknown) => setError(errorMessage(reason)));
     },
     [session],
   );

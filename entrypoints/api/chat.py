@@ -2,8 +2,9 @@
 Rutas del chat propio del autor y su canal de eventos.
 
 `ChatAssistant` lleva el envío y su cancelación; sus avisos se vuelven eventos:
-`turns` (cuántos turnos y el último, con la respuesta tal como llega), `sending` y
-`config` (modelo y esfuerzo del chat).
+`turns` (cuántos turnos y el último, con la respuesta tal como llega, y el primer texto
+de la última respuesta), `sending` y `config` (modelo y esfuerzo del chat). El snapshot
+trae además los modelos y esfuerzos que se pueden elegir, los mismos de Qt.
 """
 
 from __future__ import annotations
@@ -15,7 +16,9 @@ from jacck_common.webapi.server import KEEPALIVE_SECONDS, sse_response
 from pydantic import BaseModel, Field
 
 from app.chat import ChatAssistant, ChatListeners, ChatTurn
+from app.settings import CLAUDE_MODELS, EFFORTS
 from entrypoints.api.owner import LoopOwner
+from entrypoints.api.settings import choice_items
 
 
 class SendRequest(BaseModel):
@@ -40,7 +43,7 @@ def turn_data(turn: ChatTurn) -> dict:
         "error": turn.error,
         "cancelled": turn.cancelled,
         "done": turn.done,
-        "first_text_s": None if turn.first_text_s is None else round(turn.first_text_s, 3),
+        "first_text_s": rounded(turn.first_text_s),
     }
 
 
@@ -48,9 +51,17 @@ def brief(chat: ChatAssistant) -> dict:
     return {"model": chat.model, "effort": chat.effort, "sending": chat.sending}
 
 
+def rounded(seconds: float | None) -> float | None:
+    return None if seconds is None else round(seconds, 3)
+
+
 def turns_data(chat: ChatAssistant) -> dict:
     last = chat.turns[-1] if chat.turns else None
-    return {"count": len(chat.turns), "last": None if last is None else turn_data(last)}
+    return {
+        "count": len(chat.turns),
+        "last": None if last is None else turn_data(last),
+        "last_first_text_s": rounded(chat.last_first_text_s),
+    }
 
 
 def chat_snapshot(chat: ChatAssistant, channel: EventChannel) -> dict:
@@ -58,6 +69,8 @@ def chat_snapshot(chat: ChatAssistant, channel: EventChannel) -> dict:
     return {
         **brief(chat),
         "turns": [turn_data(turn) for turn in chat.turns],
+        "last_first_text_s": rounded(chat.last_first_text_s),
+        "choices": {"models": choice_items(CLAUDE_MODELS), "efforts": choice_items(EFFORTS)},
         "last_event": count,
     }
 

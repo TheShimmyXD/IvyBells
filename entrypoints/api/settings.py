@@ -90,10 +90,15 @@ def config_data(config: ClaudeModelConfig) -> dict:
     }
 
 
+def choice_items(entries: tuple[tuple[str, str, str], ...]) -> list[dict]:
+    """Las opciones de un selector como las pinta la web: clave, nombre y ayuda."""
+    return [{"key": k, "label": label, "help": tip} for k, label, tip in entries]
+
+
 def choices_data() -> dict:
     return {
-        "models": [{"key": k, "label": label, "help": tip} for k, label, tip in CLAUDE_MODELS],
-        "efforts": [{"key": k, "label": label, "help": tip} for k, label, tip in EFFORTS],
+        "models": choice_items(CLAUDE_MODELS),
+        "efforts": choice_items(EFFORTS),
         "fallbacks": list(FALLBACKS),
         "timeouts_s": list(TIMEOUTS_S),
     }

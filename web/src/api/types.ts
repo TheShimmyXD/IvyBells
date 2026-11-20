@@ -210,3 +210,52 @@ export type AgentEvent =
   | { kind: "marks"; data: AgentMarks }
   | { kind: "budget"; data: AgentBudget | Record<string, never> }
   | { kind: "mode"; data: { mode: AgentMode } };
+
+// -- Chat propio del autor ---------------------------------------------------------------
+
+/** Una opcion de un selector, como la arma la API (las mismas listas de Qt). */
+export interface ChatChoice {
+  key: string;
+  label: string;
+  help: string;
+}
+
+export interface ChatChoices {
+  models: ChatChoice[];
+  efforts: ChatChoice[];
+}
+
+export interface ChatBrief {
+  model: string;
+  effort: string;
+  sending: boolean;
+}
+
+/** Una peticion del autor y su respuesta tal como va llegando. */
+export interface ChatTurn {
+  clock: string;
+  request: string;
+  model: string;
+  effort: string;
+  answer: string;
+  error: string;
+  cancelled: boolean;
+  done: boolean;
+  first_text_s: number | null;
+}
+
+export interface ChatSnapshot extends ChatBrief {
+  turns: ChatTurn[];
+  /** El primer texto de la ultima respuesta que lo tuvo. */
+  last_first_text_s: number | null;
+  choices: ChatChoices;
+  last_event: number;
+}
+
+export type ChatEvent =
+  | {
+      kind: "turns";
+      data: { count: number; last: ChatTurn | null; last_first_text_s: number | null };
+    }
+  | { kind: "sending"; data: { sending: boolean } }
+  | { kind: "config"; data: ChatBrief };

@@ -9,6 +9,8 @@ import type {
   AgentSnapshot,
   AgentTurn,
 } from "../../api/types";
+import { seconds } from "../../shared/format";
+import { withLast } from "../../shared/turnList";
 
 export interface AgentView extends AgentBrief, AgentMarks {
   budget: AgentBudget | null;
@@ -22,15 +24,6 @@ export function fromAgentSnapshot(snapshot: AgentSnapshot): AgentView {
   return { ...rest, turns: [...turns], lastEvent };
 }
 
-/** El evento `turns` trae cuantos hay y el ultimo: crece, se reemplaza o se vacia. */
-function withTurns(turns: AgentTurn[], count: number, last: AgentTurn | null): AgentTurn[] {
-  if (count === 0 || last === null) {
-    return [];
-  }
-  const kept = turns.slice(0, count - 1);
-  return [...kept, last];
-}
-
 /** Sin presupuesto la API manda un objeto vacio. */
 function isBudget(data: object): data is AgentBudget {
   return "parts" in data;
@@ -42,7 +35,7 @@ export function applyAgentEvent(view: AgentView, seq: number, event: AgentEvent)
     case "state":
       return { ...next, ...event.data };
     case "turns":
-      return { ...next, turns: withTurns(view.turns, event.data.count, event.data.last) };
+      return { ...next, turns: withLast(view.turns, event.data.count, event.data.last) };
     case "marks":
       return { ...next, ...event.data };
     case "budget":
@@ -107,10 +100,6 @@ export function answerBoard(view: AgentView): AnswerBoard {
   const card = newestFirst.find((turn) => !turn.superseded) ?? null;
   const older = newestFirst.filter((turn) => turn !== card);
   return { card, older };
-}
-
-export function seconds(value: number): string {
-  return `${value.toFixed(1).replace(".", ",")} s`;
 }
 
 export interface AgentHelp {

@@ -16,6 +16,7 @@ from jacck_common.webapi.security import new_token  # noqa: E402
 from app.agent import AgentAssistant  # noqa: E402
 from app.chat import ChatAssistant  # noqa: E402
 from app.live import LiveListening  # noqa: E402
+from app.settings import CLAUDE_MODELS, EFFORTS  # noqa: E402
 from domain.agent.agent_ahead import TURN_SILENCE_S  # noqa: E402
 from domain.agent.context_budget import build_budget  # noqa: E402
 from domain.claude.claude_model import ClaudeModelConfig  # noqa: E402
@@ -218,6 +219,12 @@ def test_chat_answers_and_reports_sending(parts) -> None:
 
     assert state["turns"][-1]["answer"] == "Listo."
     assert state["turns"][-1]["request"] == "¿Qué dijeron?"
+    assert state["last_first_text_s"] == state["turns"][-1]["first_text_s"]
+    # Los selectores de la web salen de las mismas listas que los de Qt.
+    assert [m["key"] for m in state["choices"]["models"]] == [k for k, _, _ in CLAUDE_MODELS]
+    assert [e["key"] for e in state["choices"]["efforts"]] == [k for k, _, _ in EFFORTS]
+    turns = [data for kind, data in _kinds(stream) if kind == "turns"]
+    assert turns[-1]["last_first_text_s"] == state["last_first_text_s"]
     sending = [data["sending"] for kind, data in _kinds(stream) if kind == "sending"]
     assert sending == [True, False]
 
