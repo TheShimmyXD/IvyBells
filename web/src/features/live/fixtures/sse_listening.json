@@ -1,0 +1,269 @@
+{
+  "request": "GET /api/listening/events",
+  "events": [
+    {
+      "id": 1,
+      "event": "state",
+      "data": {
+        "ok": true,
+        "state": "loading",
+        "status": "Cargando large-v3-turbo en la GPU...",
+        "message": ""
+      }
+    },
+    {
+      "id": 2,
+      "event": "session",
+      "data": {
+        "new": true
+      }
+    },
+    {
+      "id": 3,
+      "event": "state",
+      "data": {
+        "ok": true,
+        "state": "listening",
+        "status": "Escuchando",
+        "message": ""
+      }
+    },
+    {
+      "id": 4,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": false,
+        "clock": "20:08:58",
+        "text": "Buenas tardes,",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 5,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 6,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": true,
+        "clock": "20:08:58",
+        "text": "Buenas tardes, ¿hablo con soporte?",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 7,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": false,
+        "clock": "20:09:02",
+        "text": "Sí, mire, contraté el",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 8,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 9,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": true,
+        "clock": "20:09:02",
+        "text": "Sí, mire, contraté el plan empresarial la semana pasada",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 10,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": false,
+        "clock": "20:09:07",
+        "text": "y todavía no me",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 11,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 12,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": true,
+        "clock": "20:09:07",
+        "text": "y todavía no me llega la factura al correo.",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 13,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": false,
+        "clock": "20:09:13",
+        "text": "¿Me pueden decir cuándo la envían",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 14,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 15,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": true,
+        "clock": "20:09:13",
+        "text": "¿Me pueden decir cuándo la envían y si puedo pagar con transferencia?",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 16,
+      "event": "phrase",
+      "data": {
+        "source": "ellos",
+        "final": false,
+        "clock": "20:09:21",
+        "text": "Ah, y otra cosa",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 17,
+      "event": "phrase",
+      "data": {
+        "source": "tu",
+        "final": false,
+        "clock": "20:09:01",
+        "text": "Sí, buenas",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 18,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 19,
+      "event": "phrase",
+      "data": {
+        "source": "tu",
+        "final": true,
+        "clock": "20:09:01",
+        "text": "Sí, buenas tardes.",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 20,
+      "event": "phrase",
+      "data": {
+        "source": "tu",
+        "final": false,
+        "clock": "20:09:11",
+        "text": "Déjeme revisar,",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 21,
+      "event": "latency",
+      "data": {
+        "last_s": 0.0,
+        "median_s": 0.0
+      }
+    },
+    {
+      "id": 22,
+      "event": "phrase",
+      "data": {
+        "source": "tu",
+        "final": true,
+        "clock": "20:09:11",
+        "text": "Déjeme revisar, un momento.",
+        "stable_words": 0
+      }
+    },
+    {
+      "id": 23,
+      "event": "sources",
+      "data": {
+        "closed": ["tu"]
+      }
+    },
+    {
+      "id": 24,
+      "event": "sources",
+      "data": {
+        "closed": []
+      }
+    },
+    {
+      "id": 25,
+      "event": "state",
+      "data": {
+        "ok": true,
+        "state": "stopping",
+        "status": "Deteniendo...",
+        "message": ""
+      }
+    },
+    {
+      "id": 26,
+      "event": "state",
+      "data": {
+        "ok": true,
+        "state": "stopped",
+        "status": "Detenido",
+        "message": ""
+      }
+    },
+    {
+      "id": 27,
+      "event": "saved",
+      "data": {
+        "path": "llamada_soporte.md"
+      }
+    },
+    {
+      "id": 28,
+      "event": "closed",
+      "data": {}
+    }
+  ]
+}

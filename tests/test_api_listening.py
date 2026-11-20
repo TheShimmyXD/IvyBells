@@ -191,3 +191,31 @@ def test_sources_keep_one_open_and_reject_unknown(listening) -> None:
         early = client.post("/api/listening/save", headers=headers, json={"path": "/tmp/a.md"})
         assert early.status_code == 409
         assert client.get("/api/listening", headers=headers).json()["last_event"] == 1
+
+
+def test_second_start_resumes_and_marks_where(listening) -> None:
+    """La segunda escucha de la apertura reanuda; la web pinta Reanudada con esto."""
+    token = new_token()
+    headers = _auth(token)
+    api = create_api(token, listening, keepalive=0.05)
+    with TestClient(api, base_url="http://127.0.0.1") as client:
+
+        def read() -> dict:
+            return client.get("/api/listening", headers=headers).json()
+
+        for count in (1, 2):
+            client.post("/api/listening/start", headers=headers, json={"devices": DEVICES})
+            _until(read, lambda s, n=count: len(s["transcript"]["tu"]["finals"]) == n)
+            client.post("/api/listening/stop", headers=headers)
+            _until(read, lambda s: s["state"] == "stopped")
+        state = read()
+        api.state.listening_channel.close("closed", {})
+        stream = client.get("/api/listening/events", headers=headers)
+
+    marks = state["resumes"]["tu"]
+    assert [mark["before"] for mark in marks] == [1]
+    assert len(marks[0]["clock"]) == len("20:09")
+    # Ellos no habló: su marca queda antes de su frase 0, con la misma hora.
+    assert state["resumes"]["ellos"] == [{"before": 0, "clock": marks[0]["clock"]}]
+    sessions = [data for _, kind, data in _frames(stream.text) if kind == "session"]
+    assert sessions == [{"new": True}, {"new": False, "resumes": state["resumes"]}]

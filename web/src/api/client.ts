@@ -1,5 +1,14 @@
 // El unico lugar que habla con el Python (web_frontend.md, seccion 5).
-import type { ApiSession, Prefs, ViewPrefKey } from "./types";
+import { SseReader } from "./sse";
+import type {
+  ApiSession,
+  ListeningEvent,
+  ListeningSnapshot,
+  Prefs,
+  SourceId,
+  StatePayload,
+  ViewPrefKey,
+} from "./types";
 
 /** Un error de la API, ya en espanol para la pantalla. */
 export class ApiError extends Error {}
@@ -20,14 +29,42 @@ function url(session: ApiSession, path: string): string {
   return `http://127.0.0.1:${session.port}${path}`;
 }
 
-async function request<T>(session: ApiSession, path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers);
+/** El motivo que la API ya escribe en espanol (``detail`` de FastAPI) o, si no hay, el codigo. */
+async function errorFor(response: Response): Promise<ApiError> {
+  if (response.status !== 401 && response.status !== 403) {
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") {
+        return new ApiError(body.detail);
+      }
+    } catch {
+      // Sin cuerpo JSON: queda el mensaje por codigo.
+    }
+  }
+  return new ApiError(messageForStatus(response.status));
+}
+
+function authHeaders(session: ApiSession, init: HeadersInit = {}): Headers {
+  const headers = new Headers(init);
   headers.set("Authorization", `Bearer ${session.token}`);
+  return headers;
+}
+
+async function request<T>(session: ApiSession, path: string, init: RequestInit = {}): Promise<T> {
+  const headers = authHeaders(session, init.headers);
   const response = await fetch(url(session, path), { ...init, headers });
   if (!response.ok) {
-    throw new ApiError(messageForStatus(response.status));
+    throw await errorFor(response);
   }
   return (await response.json()) as T;
+}
+
+function postJson<T>(session: ApiSession, path: string, body: unknown): Promise<T> {
+  return request<T>(session, path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 export function getPrefs(session: ApiSession): Promise<Prefs> {
@@ -35,9 +72,83 @@ export function getPrefs(session: ApiSession): Promise<Prefs> {
 }
 
 export function savePref(session: ApiSession, key: ViewPrefKey, value: string): Promise<Prefs> {
-  return request<Prefs>(session, "/api/prefs", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key, value }),
-  });
+  return postJson<Prefs>(session, "/api/prefs", { key, value });
+}
+
+// -- Escucha en vivo -----------------------------------------------------------------
+
+export const listeningApi = {
+  snapshot(session: ApiSession): Promise<ListeningSnapshot> {
+    return request<ListeningSnapshot>(session, "/api/listening");
+  },
+  start(session: ApiSession, model: string): Promise<StatePayload> {
+    return postJson<StatePayload>(session, "/api/listening/start", { model });
+  },
+  stop(session: ApiSession): Promise<StatePayload> {
+    return postJson<StatePayload>(session, "/api/listening/stop", {});
+  },
+  setSourceOpen(
+    session: ApiSession,
+    source: SourceId,
+    open: boolean,
+  ): Promise<{ changed: boolean; closed: SourceId[] }> {
+    return postJson(session, `/api/listening/sources/${source}`, { open });
+  },
+  save(session: ApiSession, path: string): Promise<{ path: string }> {
+    return postJson(session, "/api/listening/save", { path });
+  },
+};
+
+const LISTENING_KINDS = new Set(["state", "phrase", "latency", "session", "sources", "saved"]);
+
+/** Un evento del canal con su tipo; los que esta vista no usa quedan fuera (null). */
+export function toListeningEvent(kind: string, data: unknown): ListeningEvent | null {
+  if (!LISTENING_KINDS.has(kind) || typeof data !== "object" || data === null) {
+    return null;
+  }
+  return { kind, data } as ListeningEvent;
+}
+
+export type EventHandler = (seq: number, kind: string, data: unknown) => void;
+
+/** Lee un canal SSE hasta que la API lo cierra o hasta ``signal``. EventSource no manda
+ * Authorization: se lee con fetch. ``after`` pide solo los eventos con numero mayor. */
+export async function readEvents(
+  session: ApiSession,
+  path: string,
+  after: number,
+  onEvent: EventHandler,
+  signal: AbortSignal,
+): Promise<void> {
+  const headers = authHeaders(session, { Accept: "text/event-stream" });
+  if (after > 0) {
+    headers.set("Last-Event-ID", String(after));
+  }
+  const response = await fetch(url(session, path), { headers, signal });
+  if (!response.ok) {
+    throw await errorFor(response);
+  }
+  if (response.body === null) {
+    throw new ApiError("La API no mandó el canal de eventos.");
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const sse = new SseReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      return;
+    }
+    for (const event of sse.push(decoder.decode(value, { stream: true }))) {
+      onEvent(event.id ?? 0, event.event, parseData(event.data));
+    }
+  }
+}
+
+function parseData(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
 }

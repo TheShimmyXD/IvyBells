@@ -58,6 +58,8 @@ class LiveListeners:
     latency(float, float)      -> última latencia final y mediana.
     session_started()          -> primera escucha de la apertura (texto vacío); las
                                   siguientes se reanudan sin borrar nada.
+    session_resumed()          -> la escucha se reanudó en la misma apertura;
+                                  las marcas están en `transcript.resume_marks`.
     sources()                  -> se abrió o cerró un canal (`closed_sources`).
     event(TranscriptEvent)     -> el texto provisional o final tal como llegó (la consola
                                   lo imprime; la ventana lee `transcript`).
@@ -67,6 +69,7 @@ class LiveListeners:
     transcript: Callable[[str], None] = _ignore
     latency: Callable[[float, float], None] = _ignore
     session_started: Callable[[], None] = _ignore
+    session_resumed: Callable[[], None] = _ignore
     sources: Callable[[], None] = _ignore
     event: Callable[[TranscriptEvent], None] = _ignore
 
@@ -329,6 +332,7 @@ class LiveListening:
             self.listeners.session_started()
         else:
             self.transcript.resume(started)
+            self.listeners.session_resumed()
         for source in SOURCES:
             self.listeners.transcript(source)
         self.listeners.state(self.logic.loaded())

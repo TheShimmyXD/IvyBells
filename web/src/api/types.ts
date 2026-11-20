@@ -19,3 +19,71 @@ export interface Prefs {
 
 /** Las claves que la vista guarda con POST /api/prefs (VIEW_PREFS). */
 export type ViewPrefKey = "theme" | "module" | "agent_panel";
+
+// -- Escucha en vivo (entrypoints/api/listening.py) -----------------------------------
+
+export type SourceId = "ellos" | "tu";
+export const SOURCE_IDS: readonly SourceId[] = ["ellos", "tu"];
+
+/** Estados de domain/transcription/live_state.py. */
+export type ListeningStateName = "stopped" | "loading" | "listening" | "stopping" | "error";
+
+export interface TranscriptLine {
+  clock: string;
+  text: string;
+}
+
+export interface SourceTranscript {
+  finals: TranscriptLine[];
+  partial: TranscriptLine | null;
+}
+
+/** Antes de que frase final de su canal se reanudo la escucha y a que hora. */
+export interface ResumeMark {
+  before: number;
+  clock: string;
+}
+
+export type ResumeMarks = Record<SourceId, ResumeMark[]>;
+
+/** GET /api/listening: todo lo que la vista necesita al abrirse. */
+export interface ListeningSnapshot {
+  state: ListeningStateName;
+  status: string;
+  message: string;
+  model: string;
+  closed_sources: SourceId[];
+  path: string | null;
+  transcript: Record<SourceId, SourceTranscript>;
+  resumes: ResumeMarks;
+  last_event: number;
+}
+
+export interface StatePayload {
+  ok: boolean;
+  state: ListeningStateName;
+  status: string;
+  message: string;
+}
+
+export interface PhrasePayload {
+  source: SourceId;
+  final: boolean;
+  clock: string;
+  text: string;
+  stable_words: number;
+}
+
+export interface LatencyPayload {
+  last_s: number | null;
+  median_s: number | null;
+}
+
+/** Un evento del canal de la escucha, ya con su tipo. */
+export type ListeningEvent =
+  | { kind: "state"; data: StatePayload }
+  | { kind: "phrase"; data: PhrasePayload }
+  | { kind: "latency"; data: LatencyPayload }
+  | { kind: "session"; data: { new: true } | { new: false; resumes: ResumeMarks } }
+  | { kind: "sources"; data: { closed: SourceId[] } }
+  | { kind: "saved"; data: { path: string } };

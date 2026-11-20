@@ -7,8 +7,9 @@ de lectores; `fan_out` los pasa además al Agente. Las rutas que tocan la escuch
 `async`: corren en ese mismo bucle, el hilo dueño.
 
 Eventos: `state` (carga de la máquina de estados), `phrase` (provisional o final de un
-canal), `latency` (última y mediana, en segundos), `session` (primera escucha de la
-apertura), `sources` (canales cerrados) y `saved` (copia del `.md`).
+canal), `latency` (última y mediana, en segundos), `session` (`new` en la primera escucha
+de la apertura; si no, `resumes` con las marcas de Reanudada), `sources` (canales
+cerrados) y `saved` (copia del `.md`).
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ from pydantic import BaseModel
 
 from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
 from domain.transcription.engine import TranscriptEvent
-from domain.transcription.live_view import SOURCES, Line
+from domain.transcription.live_view import SOURCES, Line, LiveTranscript
 from entrypoints.api.owner import LoopOwner
 from entrypoints.api.prefs import Remember
 
@@ -60,6 +61,17 @@ def state_data(payload: dict) -> dict:
 
 def line_data(line: Line | None) -> dict | None:
     return None if line is None else {"clock": line.clock, "text": line.text}
+
+
+def resume_data(transcript: LiveTranscript) -> dict:
+    """Por canal, antes de qué frase final se reanudó la escucha y a qué hora (HH:MM)."""
+    return {
+        source: [
+            {"before": position, "clock": mark}
+            for position, mark in transcript.resume_marks(source)
+        ]
+        for source in SOURCES
+    }
 
 
 def phrase_data(event: TranscriptEvent, clock: str) -> dict:
@@ -104,6 +116,9 @@ def channel_listeners(listening: LiveListening, channel: EventChannel) -> LiveLi
             "latency", {"last_s": _seconds(last), "median_s": _seconds(median)}
         ),
         session_started=lambda: channel.emit("session", {"new": True}),
+        session_resumed=lambda: channel.emit(
+            "session", {"new": False, "resumes": resume_data(listening.transcript)}
+        ),
         sources=lambda: channel.emit("sources", {"closed": sorted(listening.closed_sources)}),
         event=on_event,
     )
@@ -129,6 +144,7 @@ def snapshot(listening: LiveListening, channel: EventChannel) -> dict:
             }
             for source in SOURCES
         },
+        "resumes": resume_data(transcript),
         "last_event": count,
     }
 
