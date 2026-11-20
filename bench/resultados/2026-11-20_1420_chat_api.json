@@ -1,0 +1,66 @@
+{
+  "fecha": "2026-11-20_1420",
+  "que": "FW.8: envio real del chat por la API de Tauri (POST /api/chat/send a primer texto por SSE)",
+  "cli": "2.1.329 (Claude Code)",
+  "modelo": "haiku",
+  "perfil_y_contexto": "neutros (sin contexto del autor)",
+  "python": "3.13.5",
+  "corridas": [
+    {
+      "esfuerzo": "low",
+      "corrida": 1,
+      "primer_texto_sse_s": 0.809,
+      "primer_texto_servicio_s": 0.791,
+      "caracteres": 840,
+      "error": ""
+    },
+    {
+      "esfuerzo": "low",
+      "corrida": 2,
+      "primer_texto_sse_s": 0.809,
+      "primer_texto_servicio_s": 0.791,
+      "caracteres": 759,
+      "error": ""
+    },
+    {
+      "esfuerzo": "low",
+      "corrida": 3,
+      "primer_texto_sse_s": 0.902,
+      "primer_texto_servicio_s": 0.883,
+      "caracteres": 754,
+      "error": ""
+    },
+    {
+      "esfuerzo": "medium",
+      "corrida": 1,
+      "primer_texto_sse_s": 0.954,
+      "primer_texto_servicio_s": 0.935,
+      "caracteres": 739,
+      "error": ""
+    },
+    {
+      "esfuerzo": "medium",
+      "corrida": 2,
+      "primer_texto_sse_s": 0.83,
+      "primer_texto_servicio_s": 0.812,
+      "caracteres": 917,
+      "error": ""
+    },
+    {
+      "esfuerzo": "medium",
+      "corrida": 3,
+      "primer_texto_sse_s": 0.815,
+      "primer_texto_servicio_s": 0.796,
+      "caracteres": 735,
+      "error": ""
+    }
+  ],
+  "resumen": {
+    "low": {
+      "mediana_primer_texto_sse_s": 0.809
+    },
+    "medium": {
+      "mediana_primer_texto_sse_s": 0.83
+    }
+  }
+}
