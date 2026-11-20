@@ -123,9 +123,17 @@ def channel_listeners(listening: LiveListening, channel: EventChannel) -> LiveLi
         latency=lambda last, median: channel.emit(
             "latency", {"last_s": _seconds(last), "median_s": _seconds(median)}
         ),
-        session_started=lambda: channel.emit("session", {"new": True}),
+        # La sesion lleva su .md: la web lo necesita para encender Guardar.
+        session_started=lambda: channel.emit(
+            "session", {"new": True, "path": str(listening.last_path)}
+        ),
         session_resumed=lambda: channel.emit(
-            "session", {"new": False, "resumes": resume_data(listening.transcript)}
+            "session",
+            {
+                "new": False,
+                "path": str(listening.last_path),
+                "resumes": resume_data(listening.transcript),
+            },
         ),
         sources=lambda: channel.emit("sources", {"closed": sorted(listening.closed_sources)}),
         event=on_event,

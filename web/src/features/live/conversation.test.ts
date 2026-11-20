@@ -105,6 +105,7 @@ describe("conversation", () => {
       kind: "session",
       data: {
         new: false,
+        path: "/t/a.md",
         resumes: {
           ellos: [...view.resumes.ellos, { before: 2, clock: "10:20" }],
           tu: [...view.resumes.tu, { before: 2, clock: "10:20" }],
@@ -118,8 +119,10 @@ describe("conversation", () => {
 
   it("una sesion nueva empieza en blanco y lo que la vista no usa se ignora", () => {
     let view = applyEvent(fromSnapshot(EMPTY), 1, phrase("ellos", true, "10:00:00", "Hola."));
-    view = applyEvent(view, 2, { kind: "session", data: { new: true } });
+    view = applyEvent(view, 2, { kind: "session", data: { new: true, path: "/t/a.md" } });
     expect(conversation(view)).toEqual([]);
+    // Abierta antes de la primera escucha: la ruta llega con la sesion y enciende Guardar.
+    expect(view.path).toBe("/t/a.md");
     expect(toListeningEvent("closed", {})).toBeNull();
     expect(toListeningEvent("phrase", "texto")).toBeNull();
   });

@@ -107,6 +107,9 @@ export type ListeningEvent =
   | { kind: "state"; data: StatePayload }
   | { kind: "phrase"; data: PhrasePayload }
   | { kind: "latency"; data: LatencyPayload }
-  | { kind: "session"; data: { new: true } | { new: false; resumes: ResumeMarks } }
+  | {
+      kind: "session";
+      data: { new: true; path: string } | { new: false; path: string; resumes: ResumeMarks };
+    }
   | { kind: "sources"; data: { closed: SourceId[] } }
   | { kind: "saved"; data: { path: string } };

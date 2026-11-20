@@ -90,10 +90,16 @@ export function applyEvent(view: LiveView, seq: number, event: ListeningEvent): 
           finals: { ellos: [], tu: [] },
           partials: { ellos: null, tu: null },
           resumes: emptyResumes(),
+          path: event.data.path,
           savedCopy: null,
         };
       }
-      return { ...next, partials: { ellos: null, tu: null }, resumes: event.data.resumes };
+      return {
+        ...next,
+        partials: { ellos: null, tu: null },
+        path: event.data.path,
+        resumes: event.data.resumes,
+      };
     case "sources":
       return { ...next, closed: [...event.data.closed] };
     case "saved":

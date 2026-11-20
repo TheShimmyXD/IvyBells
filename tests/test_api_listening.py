@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -20,6 +21,8 @@ from entrypoints.api.run import VITE_PORT, create_api  # noqa: E402
 
 BLOCK = np.zeros(1_600, dtype=np.float32)
 DEVICES = {"tu": "mic.sintetico"}
+# La muestra que reproduce la web (vista de ejemplo y Vitest).
+WEB_SAMPLE = Path(__file__).parents[1] / "web/src/features/live/fixtures/sse_listening.json"
 
 
 class _OpenCapture:
@@ -218,7 +221,21 @@ def test_second_start_resumes_and_marks_where(listening) -> None:
     # Ellos no habló: su marca queda antes de su frase 0, con la misma hora.
     assert state["resumes"]["ellos"] == [{"before": 0, "clock": marks[0]["clock"]}]
     sessions = [data for _, kind, data in _frames(stream.text) if kind == "session"]
-    assert sessions == [{"new": True}, {"new": False, "resumes": state["resumes"]}]
+    # Las dos llevan el .md de la apertura: con el, la web enciende Guardar.
+    assert sessions == [
+        {"new": True, "path": state["path"]},
+        {"new": False, "path": state["path"], "resumes": state["resumes"]},
+    ]
+
+    # La muestra de la web tiene las mismas claves que la API emite hoy por tipo de evento.
+    emitted: dict[tuple, set] = {}
+    for _, kind, data in _frames(stream.text):
+        emitted.setdefault((kind, data.get("new"), data.get("final")), set(data))
+    assert ("session", True, None) in emitted
+    for event in json.loads(WEB_SAMPLE.read_text(encoding="utf-8"))["events"]:
+        key = (event["event"], event["data"].get("new"), event["data"].get("final"))
+        if key in emitted:
+            assert set(event["data"]) == emitted[key], key
 
 
 def test_start_without_devices_uses_the_recorded_ones(listening) -> None:

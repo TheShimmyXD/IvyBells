@@ -15,7 +15,8 @@
       "id": 2,
       "event": "session",
       "data": {
-        "new": true
+        "new": true,
+        "path": "transcripciones/2026-11-19_2008.md"
       }
     },
     {
