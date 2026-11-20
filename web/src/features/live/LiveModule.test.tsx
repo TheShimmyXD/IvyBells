@@ -61,6 +61,7 @@ describe("LiveModule", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Guardar .md" }));
     await vi.waitFor(() => expect(state.save).toHaveBeenCalledWith("/tmp/copia.md"));
+    expect(choosePath).toHaveBeenCalledWith(base.path);
   });
 
   it("muestra el aviso del ultimo canal como alerta", () => {

@@ -13,8 +13,8 @@ interface LiveModuleProps {
   live: LiveListening;
   agentTab: AgentTab;
   onAgentTab: (tab: AgentTab) => void;
-  /** Pide al usuario donde guardar la copia; sin el, Guardar queda apagado. */
-  choosePath?: () => Promise<string | null>;
+  /** Pide al usuario donde guardar la copia (recibe el .md actual); sin el, Guardar queda apagado. */
+  choosePath?: (lastPath: string | null) => Promise<string | null>;
   /** Que decir mientras no hay vista (sin API); por defecto, que se esta conectando. */
   waiting?: string;
 }
@@ -26,7 +26,7 @@ export default function LiveModule(props: LiveModuleProps) {
     choosePath === undefined
       ? undefined
       : () => {
-          void choosePath().then((path) => path !== null && live.save(path));
+          void choosePath(view?.path ?? null).then((path) => path !== null && live.save(path));
         };
   return (
     <section className="live" aria-labelledby="live-title">

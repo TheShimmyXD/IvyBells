@@ -5,6 +5,7 @@ import { runsInDesktop } from "./api/session";
 import type { ApiSession } from "./api/types";
 import type { AgentTab } from "./features/live/AgentPanel";
 import LiveModule from "./features/live/LiveModule";
+import { chooseSavePath } from "./features/live/savePath";
 import { demoView } from "./features/live/demo";
 import { useLiveListening } from "./features/live/useLiveListening";
 import { MODULES, wantsDemo } from "./shell/modules";
@@ -50,7 +51,13 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
           </p>
         )}
         {current.id === "live" ? (
-          <LiveModule live={live} agentTab={agentTab} onAgentTab={chooseTab} waiting={waiting} />
+          <LiveModule
+            live={live}
+            agentTab={agentTab}
+            onAgentTab={chooseTab}
+            choosePath={desktop ? chooseSavePath : undefined}
+            waiting={waiting}
+          />
         ) : (
           <>
             <h1>{current.label}</h1>
