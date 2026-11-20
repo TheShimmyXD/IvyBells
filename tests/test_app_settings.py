@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import queue
 import threading
+from pathlib import Path
 
 from app.context import ContextLibrary, ContextListeners
 from app.profiles import ProfileLibrary
@@ -77,3 +78,35 @@ def test_account_check_and_profiles_without_qt(tmp_path):
     assert len(threads) == 1 and threads[0] != owner
     assert "Soy de Acme." in options.profiles.system_prompt("")
     options.close()
+
+
+def test_context_opens_its_folder_and_snapshot_without_qt(tmp_path):
+    store = ContextStore(tmp_path / "contextos")
+    store.create("empresa")
+    opened: list[Path] = []
+    notices: list[dict] = []
+    context = ContextLibrary(
+        "empresa",
+        target=tmp_path / "contexto.md",
+        writer=lambda paths, target: None,
+        store=store,
+        opener=opened.append,
+    )
+    context.attach(lambda call: call(), ContextListeners(reloaded=notices.append))
+    assert context.open_folder() is True
+    assert opened == [tmp_path / "contextos" / "empresa"]
+
+
+def test_context_open_failures_are_notices(tmp_path):
+    def fail(path: Path) -> None:
+        raise FileNotFoundError(f"No existe {path}")
+
+    notices: list[dict] = []
+    context = ContextLibrary(
+        target=tmp_path / "contexto.md", store=ContextStore(tmp_path / "vacia"), opener=fail
+    )
+    context.attach(lambda call: call(), ContextListeners(reloaded=notices.append))
+    assert context.open_folder() is False
+    assert context.open_snapshot() is False
+    assert [n["level"] for n in notices] == ["error", "error"]
+    assert "contexto.md" in notices[1]["text"]

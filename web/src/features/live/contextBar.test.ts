@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentBudget } from "../../api/types";
-import { budgetStrip, partDetail, thousands } from "./contextBar";
+import { thousands } from "../../shared/format";
+import { budgetStrip, partDetail } from "./contextBar";
 
 const PARTS = [
   { key: "rules", label: "Reglas y perfil", chars: 1182, tokens: 1037, limit_chars: null },

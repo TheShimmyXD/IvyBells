@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, settingsApi, toSettingsEvent } from "../../api/client";
 import { errorMessage, followChannel } from "../../api/follow";
-import type { ApiSession, ProfilesData, SettingsConfig } from "../../api/types";
+import type { ApiSession, ContextsData, ProfilesData, SettingsConfig } from "../../api/types";
 import { profilesOnly } from "./profileView";
 import { applySettingsEvent, fromSettingsSnapshot, type SettingsView } from "./settingsView";
 
@@ -23,6 +23,8 @@ export interface Settings {
   check: () => void;
   /** Pone la lista de perfiles que respondio un pedido, sin esperar al canal. */
   applyProfiles: (profiles: ProfilesData) => void;
+  /** Pone la lista de contextos que respondio un pedido, sin esperar al canal. */
+  applyContexts: (contexts: ContextsData) => void;
 }
 
 /** `seed`: la configuracion de ejemplo sin API (capturas con ?demo=1&module=config). */
@@ -108,6 +110,10 @@ export function useSettings(
     setView((current) => current && { ...current, profiles: profilesOnly(profiles) });
   }, []);
 
+  const applyContexts = useCallback((contexts: ContextsData) => {
+    setView((current) => current && { ...current, contexts });
+  }, []);
+
   return {
     view,
     error,
@@ -118,5 +124,6 @@ export function useSettings(
     setAccount,
     check,
     applyProfiles,
+    applyContexts,
   };
 }

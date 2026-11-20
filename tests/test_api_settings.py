@@ -21,6 +21,7 @@ from app.settings import ClaudeOptions  # noqa: E402
 from domain.claude.claude_account import AccountStatus  # noqa: E402
 from entrypoints.api.prefs import Prefs  # noqa: E402
 from entrypoints.api.run import create_api  # noqa: E402
+from entrypoints.api.settings import context_entries  # noqa: E402
 from services.service_claude import ScriptedClaude  # noqa: E402
 from services.service_context import ContextReport  # noqa: E402
 from services.service_contexts import ContextStore  # noqa: E402
@@ -62,6 +63,7 @@ def setup(tmp_path):
             target=tmp_path / "contexto.md",
             writer=_writer,
             store=ContextStore(tmp_path / "contextos"),
+            opener=lambda path: remember("opened", path),
         ),
     )
     listening = LiveListening(lambda *_: _NoEngine(), tmp_path / "transcripciones")
@@ -195,7 +197,7 @@ def test_context_is_created_and_its_photo_reaches_the_agent(setup) -> None:
         )
         missing = client.post("/api/contexts/active", headers=headers, json={"name": "nadie"})
         none = client.post("/api/contexts/active", headers=headers, json={"name": ""}).json()
-        _until(
+        last = _until(
             lambda: client.get("/api/settings", headers=headers).json(),
             lambda s: not s["contexts"]["busy"],
         )
@@ -204,9 +206,40 @@ def test_context_is_created_and_its_photo_reaches_the_agent(setup) -> None:
 
     assert missing.status_code == 404
     assert none["active"] == "" and none["folder"] is None
+    assert last["context_notice"]["level"] == "info"
     reloaded = [data["level"] for kind, data in _kinds(stream) if kind == "context_reloaded"]
     assert reloaded[:2] == ["busy", "ok"] and reloaded[-1] == "info"
     assert [v for k, v in remembered if k == "agent_context"] == ["clientes", ""]
+
+
+def test_context_entries_say_name_tokens_and_folder(tmp_path) -> None:
+    (tmp_path / "actas").mkdir()
+    weights = {str(tmp_path / "actas"): 120, str(tmp_path / "precios.csv"): 0}
+    assert context_entries(weights) == [
+        {"name": "actas", "tokens": 120, "folder": True},
+        {"name": "precios.csv", "tokens": 0, "folder": False},
+    ]
+
+
+def test_context_folder_and_snapshot_open_through_the_api(setup, tmp_path) -> None:
+    token = new_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    _, client = _client(setup, token)
+    remembered = setup[4]
+    with client:
+        without = client.post("/api/contexts/open-folder", headers=headers)
+        client.post("/api/contexts", headers=headers, json={"name": "clientes"})
+        _until(
+            lambda: client.get("/api/settings", headers=headers).json(),
+            lambda s: not s["contexts"]["busy"],
+        )
+        folder = client.post("/api/contexts/open-folder", headers=headers)
+        snapshot = client.post("/api/contexts/open-snapshot", headers=headers)
+
+    assert without.status_code == 409 and "contexto en uso" in without.json()["detail"]
+    assert folder.status_code == 200 and snapshot.status_code == 200
+    opened = [v for k, v in remembered if k == "opened"]
+    assert opened == [tmp_path / "contextos" / "clientes", tmp_path / "contexto.md"]
 
 
 def test_remembered_speaker_and_mode_and_view_prefs(setup) -> None:

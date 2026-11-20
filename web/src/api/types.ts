@@ -304,6 +304,13 @@ export interface ProfileText {
 /** La lista tras crear, copiar, renombrar o guardar; name es el perfil que quedo. */
 export type ProfileChange = ProfilesData & { name: string };
 
+/** Un archivo o subcarpeta del contexto en uso, con lo que aporta a la foto. */
+export interface ContextEntry {
+  name: string;
+  tokens: number;
+  folder: boolean;
+}
+
 export interface ContextsData {
   names: string[];
   active: string;
@@ -311,7 +318,18 @@ export interface ContextsData {
   target: string;
   /** Tokens estimados por archivo o subcarpeta del contexto en uso. */
   weights: Record<string, number>;
+  entries: ContextEntry[];
   busy: boolean;
+}
+
+/** Como va la foto contexto.md: "busy" al empezar; al terminar ok, warning, info o error. */
+export interface ContextNotice {
+  text: string;
+  level: "" | "busy" | "ok" | "warning" | "info" | "error";
+}
+
+export interface ContextChange extends ContextsData {
+  name: string;
 }
 
 export interface SettingsSnapshot {
@@ -321,6 +339,7 @@ export interface SettingsSnapshot {
   checking: boolean;
   profiles: ProfilesData;
   contexts: ContextsData;
+  context_notice: ContextNotice;
   last_event: number;
 }
 
@@ -328,4 +347,5 @@ export type SettingsEvent =
   | { kind: "config"; data: SettingsConfig }
   | { kind: "account"; data: AccountStatus }
   | { kind: "profiles"; data: ProfilesData }
-  | { kind: "contexts"; data: ContextsData };
+  | { kind: "contexts"; data: ContextsData }
+  | { kind: "context_reloaded"; data: ContextNotice };

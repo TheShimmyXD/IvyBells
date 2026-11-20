@@ -3,6 +3,7 @@
 import type {
   AccountLevel,
   AccountStatus,
+  ContextNotice,
   ContextsData,
   ProfilesData,
   SettingsChoices,
@@ -17,6 +18,8 @@ export interface SettingsView {
   account: AccountStatus;
   profiles: ProfilesData;
   contexts: ContextsData;
+  /** El ultimo aviso de la foto contexto.md (leyendo, resumen o error). */
+  contextNotice: ContextNotice;
   lastEvent: number;
 }
 
@@ -26,7 +29,15 @@ export function fromSettingsSnapshot(snapshot: SettingsSnapshot): SettingsView {
   const { config, choices, profiles, contexts } = snapshot;
   // Si la comprobacion sigue en curso, la ultima cuenta avisada aun no es la de ahora.
   const account = snapshot.checking ? CHECKING : snapshot.account;
-  return { config, choices, account, profiles, contexts, lastEvent: snapshot.last_event };
+  return {
+    config,
+    choices,
+    account,
+    profiles,
+    contexts,
+    contextNotice: snapshot.context_notice,
+    lastEvent: snapshot.last_event,
+  };
 }
 
 export function applySettingsEvent(
@@ -44,6 +55,8 @@ export function applySettingsEvent(
       return { ...next, profiles: event.data };
     case "contexts":
       return { ...next, contexts: event.data };
+    case "context_reloaded":
+      return { ...next, contextNotice: event.data };
   }
 }
 

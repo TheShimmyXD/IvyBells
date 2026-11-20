@@ -1,0 +1,128 @@
+/* Pestana Contexto (direccion 2d): reusa la lista y la cabecera de profile.css. */
+
+.context-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.context-folder {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-reload:disabled {
+  cursor: progress;
+}
+
+.context-notice {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.context-notice[data-tone="ok"] {
+  color: var(--color-ok);
+}
+
+.context-notice[data-tone="warning"] {
+  color: var(--color-warning);
+}
+
+.context-notice[data-tone="error"] {
+  color: var(--color-error);
+}
+
+.context-weight {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.context-total {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.context-strip {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  margin: var(--space-2) 0;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+}
+
+.context-segment {
+  min-width: 2px;
+}
+
+.context-segment[data-tone="first"],
+.context-dot[data-tone="first"] {
+  background: var(--color-seal);
+}
+
+.context-segment[data-tone="second"],
+.context-dot[data-tone="second"] {
+  background: var(--color-brand);
+}
+
+.context-files {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.context-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px var(--space-1);
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: 13px;
+}
+
+.context-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.context-tokens {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.context-empty {
+  margin: var(--space-2) 0;
+}
+
+.context-foot {
+  margin-top: auto;
+}
+
+.context-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}

@@ -22,10 +22,12 @@ from domain.agent.context_budget import estimate_tokens, path_weights, section_c
 from paths import AGENT_CONTEXT_FILE
 from services.service_context import ContextReport, read_context, write_context
 from services.service_contexts import ContextStore
+from services.service_opener import open_path
 
 logger = logging.getLogger(__name__)
 
 ContextWriter = Callable[[list[str], Path], ContextReport]
+Opener = Callable[[Path], None]
 
 # Omitidos que se nombran en el aviso; el resto está en contexto.md.
 NOTICE_OMITTED = 3
@@ -74,12 +76,14 @@ class ContextLibrary:
         target: Path = AGENT_CONTEXT_FILE,
         writer: ContextWriter = write_context,
         store: ContextStore | None = None,
+        opener: Opener = open_path,
     ) -> None:
         self.store = store or ContextStore()
         self._active = active
         self._save_active = save_active
         self.target = target
         self._writer = writer
+        self._opener = opener
         self.listeners = ContextListeners()
         self._post: Post = call_now
         self._thread: threading.Thread | None = None
@@ -159,6 +163,27 @@ class ContextLibrary:
             # La foto guarda las rutas viejas: se rehace con la carpeta renombrada.
             self.set_active(renamed)
         return renamed
+
+    def open_folder(self) -> bool:
+        """Muestra la carpeta del contexto en uso en el explorador; False si no se pudo."""
+        if self.folder is None:
+            self.listeners.reloaded({"text": "No hay un contexto en uso", "level": "error"})
+            return False
+        return self._open(self.folder)
+
+    def open_snapshot(self) -> bool:
+        """Abre `contexto.md` para revisarlo a mano; False si aún no existe o no se pudo."""
+        return self._open(self.target)
+
+    def _open(self, path: Path) -> bool:
+        try:
+            self._opener(path)
+        except OSError as exc:
+            self.listeners.reloaded(
+                {"text": f"No se pudo abrir {path.name}: {exc}", "level": "error"}
+            )
+            return False
+        return True
 
     def reload(self) -> None:
         """Rehace la foto del contexto en uso en un hilo; el resumen llega por `reloaded`."""

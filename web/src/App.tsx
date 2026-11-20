@@ -14,6 +14,7 @@ import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
 import { demoProfiles, demoSettings, demoSettingsTab } from "./features/settings/demo";
 import SettingsModule from "./features/settings/SettingsModule";
+import { useContexts } from "./features/settings/useContexts";
 import { useProfiles } from "./features/settings/useProfiles";
 import { useSettings } from "./features/settings/useSettings";
 import { MODULES, wantsDemo } from "./shell/modules";
@@ -59,6 +60,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
     settings.applyProfiles,
     profileSeed,
   );
+  const contexts = useContexts(view.session, settings.applyContexts);
   const [chosenTab, setChosenTab] = useState<AgentTab | null>(() =>
     seed !== null && demoChatTab(window.location.search) ? "chat" : null,
   );
@@ -97,6 +99,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
           <SettingsModule
             settings={settings}
             profiles={profiles}
+            contexts={contexts}
             firstTab={seed === null ? "claude" : demoSettingsTab(window.location.search)}
             waiting={waiting}
           />

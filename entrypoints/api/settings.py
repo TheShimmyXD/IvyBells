@@ -4,7 +4,8 @@ Rutas de la configuración de Claude, la cuenta, los perfiles y los contextos de
 `ClaudeOptions` lleva todo (guardar, comprobar la cuenta en su hilo, rehacer la foto del
 contexto en el suyo); aquí solo se piden sus órdenes y sus avisos se vuelven eventos de un
 `EventChannel`: `config`, `account` (`text`, `level`, `login`), `profiles` (lista y perfil
-en uso), `profile_notice`, `contexts` (lista, en uso, carpeta y peso) y `context_reloaded`.
+en uso), `profile_notice`, `contexts` (lista, en uso, carpeta y peso) y `context_reloaded`
+(el último va también en el snapshot, como `context_notice`).
 
 Los mismos avisos le llegan al Agente y al chat con `SettingsFollowers`, como los conecta
 la ventana: el presupuesto se rehace con el modelo, el perfil y la foto nuevos.
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -113,15 +115,25 @@ def profiles_data(options: ClaudeOptions) -> dict:
     }
 
 
+def context_entries(weights: dict[str, int]) -> list[dict]:
+    """Lo que hay en la carpeta del contexto como lo pinta la web: nombre, tokens y si es carpeta."""
+    return [
+        {"name": Path(path).name or path, "tokens": tokens, "folder": Path(path).is_dir()}
+        for path, tokens in weights.items()
+    ]
+
+
 def contexts_data(options: ClaudeOptions) -> dict:
     context = options.context
     folder = context.folder
+    weights = context.weights()
     return {
         "names": context.names(),
         "active": context.active,
         "folder": None if folder is None else str(folder),
         "target": str(context.target),
-        "weights": context.weights(),
+        "weights": weights,
+        "entries": context_entries(weights),
         "busy": context.is_busy(),
     }
 
@@ -135,8 +147,9 @@ def settings_router(
     router = APIRouter()
     channel = EventChannel()
     follow = followers or SettingsFollowers()
-    # La última cuenta avisada y el último error de un pedido (para el detalle del 409).
-    last = {"account": dict(NOT_CHECKED), "error": ""}
+    # La última cuenta avisada, el último aviso de la foto y el último error de un pedido
+    # (para el detalle del 409).
+    last = {"account": dict(NOT_CHECKED), "context": {"text": "", "level": ""}, "error": ""}
 
     def on_account(payload: dict) -> None:
         last["account"] = payload
@@ -159,6 +172,7 @@ def settings_router(
         channel.emit("contexts", contexts_data(options))
 
     def on_reloaded(payload: dict) -> None:
+        last["context"] = payload
         if payload.get("level") == "error":
             last["error"] = payload.get("text", "")
         channel.emit("context_reloaded", payload)
@@ -203,6 +217,7 @@ def settings_router(
             "checking": options.is_busy(),
             "profiles": profiles_data(options),
             "contexts": contexts_data(options),
+            "context_notice": last["context"],
             "last_event": count,
         }
 
@@ -313,6 +328,16 @@ def settings_router(
             lambda: options.context.rename(name, body.name), f"No se renombró el contexto {name}."
         )
         return {"name": renamed, **contexts_data(options)}
+
+    @router.post("/api/contexts/open-folder")
+    async def open_context_folder() -> dict:
+        attempt(options.context.open_folder, "No se pudo abrir la carpeta del contexto.")
+        return contexts_data(options)
+
+    @router.post("/api/contexts/open-snapshot")
+    async def open_context_snapshot() -> dict:
+        attempt(options.context.open_snapshot, "No se pudo abrir contexto.md.")
+        return contexts_data(options)
 
     @router.post("/api/contexts/reload")
     async def reload_context() -> dict:

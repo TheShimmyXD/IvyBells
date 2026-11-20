@@ -63,8 +63,13 @@ export const DEMO_SNAPSHOT: SettingsSnapshot = {
     folder: "contextos/empresa",
     target: "contexto/contexto.md",
     weights: { "precios.csv": 44, "servicios.md": 67 },
+    entries: [
+      { name: "precios.csv", tokens: 44, folder: false },
+      { name: "servicios.md", tokens: 67, folder: false },
+    ],
     busy: false,
   },
+  context_notice: { text: "contexto.md: 2 archivos, 444 caracteres", level: "ok" },
   last_event: 0,
 };
 

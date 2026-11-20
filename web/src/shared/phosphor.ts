@@ -38,6 +38,8 @@ export const PHOSPHOR = {
   "pencil-simple": 0xe3b4,
   "lock-simple": 0xe308,
   "shield-check": 0xe40c,
+  prohibit: 0xe3de,
+  "folder-open": 0xe256,
 } as const;
 
 export type IconName = keyof typeof PHOSPHOR;

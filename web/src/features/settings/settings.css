@@ -60,10 +60,6 @@
   color: var(--color-error);
 }
 
-.settings-later {
-  padding: var(--space-3);
-}
-
 /* -- Pestana Claude ------------------------------------------------------------------ */
 
 .settings-claude {

@@ -15,6 +15,8 @@ import type {
   Prefs,
   ProfileChange,
   ProfilesData,
+  ContextChange,
+  ContextsData,
   ProfileText,
   SettingsConfig,
   SettingsEvent,
@@ -254,7 +256,32 @@ export const profilesApi = {
   },
 };
 
-const SETTINGS_KINDS = new Set(["config", "account", "profiles", "contexts"]);
+// -- Contextos del Agente -------------------------------------------------------------
+
+/** Cada pedido que falla responde 409 con el motivo (nombre usado, carpeta que no se abre). */
+export const contextsApi = {
+  setActive(session: ApiSession, name: string): Promise<ContextsData> {
+    return postJson<ContextsData>(session, "/api/contexts/active", { name });
+  },
+  create(session: ApiSession): Promise<ContextChange> {
+    return postJson<ContextChange>(session, "/api/contexts", {});
+  },
+  rename(session: ApiSession, name: string, newName: string): Promise<ContextChange> {
+    const path = `/api/contexts/${encodeURIComponent(name)}/rename`;
+    return postJson<ContextChange>(session, path, { name: newName });
+  },
+  reload(session: ApiSession): Promise<ContextsData> {
+    return postJson<ContextsData>(session, "/api/contexts/reload", {});
+  },
+  openFolder(session: ApiSession): Promise<ContextsData> {
+    return postJson<ContextsData>(session, "/api/contexts/open-folder", {});
+  },
+  openSnapshot(session: ApiSession): Promise<ContextsData> {
+    return postJson<ContextsData>(session, "/api/contexts/open-snapshot", {});
+  },
+};
+
+const SETTINGS_KINDS = new Set(["config", "account", "profiles", "contexts", "context_reloaded"]);
 
 /** Un evento del canal de la configuracion; los que esta vista aun no usa quedan fuera. */
 export function toSettingsEvent(kind: string, data: unknown): SettingsEvent | null {

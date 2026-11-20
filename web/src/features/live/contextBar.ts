@@ -2,6 +2,7 @@
 // cifras y los resumenes llegan hechos de la API (los de la barra de Qt): aqui solo se
 // reparten en la tira.
 import type { AgentBudget, BudgetPart } from "../../api/types";
+import { thousands } from "../../shared/format";
 
 export interface BudgetSegment {
   key: string;
@@ -18,11 +19,6 @@ export interface BudgetStrip {
   segments: BudgetSegment[];
   /** Sin ventana medida la tira se llena por proporciones y va tenue. */
   measured: boolean;
-}
-
-/** 12000 -> "12.000", como la barra de Qt. */
-export function thousands(value: number): string {
-  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function partDetail(part: BudgetPart): string {

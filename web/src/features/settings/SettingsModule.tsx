@@ -1,12 +1,13 @@
 // El modulo Configuracion de la web (FW.9, direccion 2d): titulo, pestanas Claude | Perfil
-// del agente | Contexto y el aviso de que cada cambio se guarda al momento. Contexto llega
-// en el paso siguiente; hoy se edita en Qt.
+// del agente | Contexto y el aviso de que cada cambio se guarda al momento.
 import { useState } from "react";
 import Icon from "../../shared/Icon";
 import type { IconName } from "../../shared/phosphor";
 import ClaudeTab from "./ClaudeTab";
+import ContextTab from "./ContextTab";
 import type { DemoSettingsTab } from "./demo";
 import ProfileTab from "./ProfileTab";
+import type { ContextActions } from "./useContexts";
 import type { ProfileEditor } from "./useProfiles";
 import type { Settings } from "./useSettings";
 import "./settings.css";
@@ -22,6 +23,7 @@ const TABS: readonly { id: SettingsTab; label: string; icon: IconName }[] = [
 interface SettingsModuleProps {
   settings: Settings;
   profiles: ProfileEditor;
+  contexts: ContextActions;
   /** La pestana con que abre (las capturas piden otra con &tab=). */
   firstTab?: SettingsTab;
   /** El aviso cuando no hay API (fuera de Tauri y sin ?demo=1). */
@@ -31,6 +33,7 @@ interface SettingsModuleProps {
 export default function SettingsModule({
   settings,
   profiles,
+  contexts,
   firstTab = "claude",
   waiting,
 }: SettingsModuleProps) {
@@ -72,9 +75,7 @@ export default function SettingsModule({
       ) : tab === "profile" ? (
         <ProfileTab view={view} editor={profiles} />
       ) : (
-        <p className="settings-later muted">
-          Esta pestaña llega a la web en el paso siguiente; hoy se edita en la ventana de Qt.
-        </p>
+        <ContextTab view={view} actions={contexts} />
       )}
     </div>
   );
