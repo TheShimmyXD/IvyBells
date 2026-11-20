@@ -40,33 +40,34 @@
   border-bottom: none;
 }
 
-.chat .chat-turn-head {
+/* La peticion del autor como sus burbujas de "Tu" en la conversacion. */
+.chat-request {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-bottom: var(--space-2);
+}
+
+.chat .chat-bubble {
+  max-width: 85%;
   margin: 0;
+  padding: 7px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: color-mix(in srgb, var(--color-seal) 15%, var(--color-surface));
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.chat-meta {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font: 10.5px var(--font-mono);
 }
 
-.chat-turn-head strong {
-  color: var(--color-text);
-}
-
-.chat-clock,
 .chat .chat-first {
   font-family: var(--font-mono);
   font-size: 11.5px;
-}
-
-.chat-request {
-  margin: var(--space-1) 0 var(--space-2);
-  padding: 3px 8px;
-  border-left: 2px solid var(--color-brand);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  background: var(--color-surface-alt);
-  font-size: 13px;
-  white-space: pre-wrap;
 }
 
 .chat-answer {

@@ -1,6 +1,6 @@
 // El chat propio del autor (pestana Chat del panel del Agente), como el de Qt: arriba el
-// modelo y el esfuerzo del chat (aparte del Agente); en el centro las peticiones y las
-// respuestas en Markdown; abajo el cuadro (Enter envia, Mayus+Enter salta de linea), el
+// modelo y el esfuerzo del chat (aparte del Agente); en el centro las peticiones del autor
+// como sus burbujas de la conversacion y las respuestas en Markdown; abajo el cuadro (Enter envia, Mayus+Enter salta de linea), el
 // primer texto de la ultima respuesta, Vaciar y Enviar o Cancelar.
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import Dropdown from "../../shared/Dropdown";
@@ -26,12 +26,12 @@ function Turns({ view }: { view: ChatView }) {
     const stage = turnStage(turn);
     return (
       <article key={`${index}-${turn.clock}`} className="chat-turn" data-stage={stage}>
-        <p className="chat-turn-head">
-          <strong>Tú</strong>
-          <span className="chat-clock">{turn.clock}</span>
-          <span>{turnSetup(turn, view.choices)}</span>
-        </p>
-        <blockquote className="chat-request">{turn.request}</blockquote>
+        <div className="chat-request" aria-label="Tú">
+          <p className="chat-bubble">{turn.request}</p>
+          <span className="chat-meta">
+            {turn.clock} · {turnSetup(turn, view.choices)}
+          </span>
+        </div>
         {stage === "waiting" ? (
           <p className="chat-note">Esperando a {turn.model}...</p>
         ) : (
