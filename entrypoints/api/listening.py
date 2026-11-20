@@ -1,10 +1,10 @@
 """
 Rutas de la escucha en vivo y su canal de eventos.
 
-La API es la única puerta de su proceso: `LiveListening` le entrega sus avisos en el
-bucle de asyncio (`LoopOwner`) y aquí se vuelven eventos de un `EventChannel` por
-apertura, que el SSE reparte a cualquier número de lectores. Las rutas que tocan la
-escucha son `async`: corren en ese mismo bucle, que hace de hilo dueño.
+`LiveListening` entrega sus avisos en el bucle de asyncio (`owner.LoopOwner`) y aquí se
+vuelven eventos de un `EventChannel` por apertura, que el SSE reparte a cualquier número
+de lectores; `fan_out` los pasa además al Agente. Las rutas que tocan la escucha son
+`async`: corren en ese mismo bucle, el hilo dueño.
 
 Eventos: `state` (carga de la máquina de estados), `phrase` (provisional o final de un
 canal), `latency` (última y mediana, en segundos), `session` (primera escucha de la
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
+from dataclasses import fields
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
@@ -27,34 +27,11 @@ from pydantic import BaseModel
 from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
 from domain.transcription.engine import TranscriptEvent
 from domain.transcription.live_view import SOURCES, Line
+from entrypoints.api.owner import LoopOwner
 
 logger = logging.getLogger(__name__)
 
 NO_TRANSCRIPT_MESSAGE = "Todavía no hay transcripción que guardar."
-
-
-class LoopOwner:
-    """
-    `Post` hacia el bucle de asyncio de la API. Se fija con `bind()` desde una ruta
-    `async`, antes de lanzar la escucha (el único hilo que entrega tareas).
-    """
-
-    def __init__(self) -> None:
-        self._loop: asyncio.AbstractEventLoop | None = None
-
-    def bind(self) -> None:
-        self._loop = asyncio.get_running_loop()
-
-    def __call__(self, task: Callable[[], None]) -> None:
-        loop = self._loop
-        if loop is None or loop.is_closed():
-            # La API ya se apagó: el aviso no tiene a quién llegar.
-            logger.debug("Aviso de la escucha sin bucle; se descarta")
-            return
-        try:
-            loop.call_soon_threadsafe(task)
-        except RuntimeError:
-            logger.debug("El bucle se cerró mientras llegaba un aviso")
 
 
 class StartRequest(BaseModel):
@@ -92,6 +69,21 @@ def phrase_data(event: TranscriptEvent, clock: str) -> dict:
 
 def _seconds(value: float | None) -> float | None:
     return None if value is None else round(value, 3)
+
+
+def fan_out(*groups: LiveListeners) -> LiveListeners:
+    """Un `LiveListeners` que pasa cada aviso a todos los grupos, en orden."""
+
+    def each(name: str):
+        handlers = [getattr(group, name) for group in groups]
+
+        def call(*args: object) -> None:
+            for handler in handlers:
+                handler(*args)
+
+        return call
+
+    return LiveListeners(**{field.name: each(field.name) for field in fields(LiveListeners)})
 
 
 def channel_listeners(listening: LiveListening, channel: EventChannel) -> LiveListeners:
@@ -143,13 +135,21 @@ def _last_state(channel: EventChannel) -> dict:
 
 
 def listening_router(
-    listening: LiveListening, keepalive: float = KEEPALIVE_SECONDS
+    listening: LiveListening,
+    owner: LoopOwner,
+    keepalive: float = KEEPALIVE_SECONDS,
+    followers: LiveListeners | None = None,
 ) -> tuple[APIRouter, EventChannel]:
-    """Rutas de la escucha y el canal de esta apertura (una sola `LiveListening` por proceso)."""
+    """
+    Rutas de la escucha y el canal de esta apertura (una sola `LiveListening` por proceso).
+    `followers` recibe los mismos avisos después del canal (el Agente).
+    """
     router = APIRouter()
     channel = EventChannel()
-    owner = LoopOwner()
-    listening.attach(owner, channel_listeners(listening, channel))
+    listeners = channel_listeners(listening, channel)
+    if followers is not None:
+        listeners = fan_out(listeners, followers)
+    listening.attach(owner, listeners)
 
     @router.get("/api/listening")
     async def get_listening() -> dict:
@@ -164,7 +164,6 @@ def listening_router(
         unknown = set(devices) - set(SOURCES)
         if unknown:
             raise HTTPException(422, f"Fuentes desconocidas: {', '.join(sorted(unknown))}.")
-        owner.bind()
         listening.start(body.model, devices, body.compute_type)
         return _last_state(channel)
 
