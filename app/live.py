@@ -263,6 +263,16 @@ class LiveListening:
 
         return read_source_choices()
 
+    def default_devices(self) -> dict[str, str]:
+        """Las fuentes que PipeWire da por defecto: el monitor de la salida y el micrófono."""
+        capture = self.read_sources().selected
+        devices = {}
+        if capture.monitor:
+            devices["ellos"] = capture.monitor.name
+        if capture.microphone:
+            devices["tu"] = capture.microphone.name
+        return devices
+
     def start(self, model: str, devices: dict[str, str], compute_type: str = COMPUTE_TYPE) -> None:
         if self._thread is not None and self._thread.is_alive():
             logger.warning("La escucha anterior aún se está cerrando")

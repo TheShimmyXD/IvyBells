@@ -114,12 +114,7 @@ def run_listening(
 def run_cli(model: str, compute_type: str) -> int:
     """Corre la sesión hasta Ctrl+C; devuelve el código de salida del proceso."""
     listening = build_live()
-    capture = listening.read_sources().selected
-    devices = {}
-    if capture.monitor:
-        devices["ellos"] = capture.monitor.name
-    if capture.microphone:
-        devices["tu"] = capture.microphone.name
+    devices = listening.default_devices()
     if not devices:
         logger.error("PipeWire no dio ninguna fuente de captura")
         return 1
