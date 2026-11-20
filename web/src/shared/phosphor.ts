@@ -16,6 +16,10 @@ export const PHOSPHOR = {
   "arrow-down": 0xe03e,
   "chat-circle": 0xe168,
   lightning: 0xe2de,
+  flag: 0xe244,
+  "circle-notch": 0xeb44,
+  "paper-plane-tilt": 0xe398,
+  quotes: 0xe660,
 } as const;
 
 export type IconName = keyof typeof PHOSPHOR;

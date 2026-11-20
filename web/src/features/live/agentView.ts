@@ -2,6 +2,7 @@
 // y cada evento de su canal. Logica pura, sin React.
 import type {
   AgentBrief,
+  AgentStateName,
   AgentBudget,
   AgentEvent,
   AgentMarks,
@@ -59,4 +60,95 @@ export function sentPhrases(view: AgentView): Set<number> {
     }
   }
   return phrases;
+}
+
+export type PhraseMark = "start" | "flight" | "sent";
+
+/**
+ * Como se ve cada frase final del interlocutor: inicio marcado, enviada y todavia sin
+ * respuesta completa (en vuelo) o ya enviada. El inicio pesa mas que lo demas.
+ */
+export function phraseMarks(view: AgentView): Map<number, PhraseMark> {
+  const marks = new Map<number, PhraseMark>();
+  for (const phrase of sentPhrases(view)) {
+    marks.set(phrase, "sent");
+  }
+  for (const turn of view.turns) {
+    if (turn.done || turn.source !== view.speaker || turn.start === null || turn.end === null) {
+      continue;
+    }
+    for (let phrase = turn.start.phrase; phrase <= turn.end.phrase; phrase += 1) {
+      marks.set(phrase, "flight");
+    }
+  }
+  if (view.start_mark !== null) {
+    marks.set(view.start_mark.phrase, "start");
+  }
+  return marks;
+}
+
+export interface AnswerBoard {
+  /** La respuesta vigente, grande; null si todavia no hay ninguna. */
+  card: AgentTurn | null;
+  /** Las demas con algo que mostrar, la mas nueva primero. */
+  older: AgentTurn[];
+}
+
+/** Un turno terminado sin texto ni error (el "-" del anticipado) no se muestra. */
+function hasContent(turn: AgentTurn): boolean {
+  return turn.answer !== "" || turn.error !== "" || !turn.done;
+}
+
+/** Como en Qt: la ultima respuesta no superada va grande; las otras debajo, en Anteriores. */
+export function answerBoard(view: AgentView): AnswerBoard {
+  const shown = view.turns.filter(hasContent);
+  const newestFirst = [...shown].reverse();
+  const card = newestFirst.find((turn) => !turn.superseded) ?? null;
+  const older = newestFirst.filter((turn) => turn !== card);
+  return { card, older };
+}
+
+export function seconds(value: number): string {
+  return `${value.toFixed(1).replace(".", ",")} s`;
+}
+
+/** La linea bajo la respuesta grande: como va, el modelo y el primer texto. */
+export function turnNote(turn: AgentTurn): string {
+  let stage = "Lista";
+  if (turn.error !== "") {
+    stage = "Error";
+  } else if (turn.cancelled) {
+    stage = "Cancelada";
+  } else if (!turn.done) {
+    stage = turn.answer === "" ? "Esperando" : "Escribiendo";
+  }
+  const parts = [stage, turn.model];
+  if (turn.first_text_s !== null) {
+    parts.push(`primer texto ${seconds(turn.first_text_s)}`);
+  }
+  return parts.join(" · ");
+}
+
+/** La etiqueta de una respuesta anterior: superada, cancelada o ninguna. */
+export function olderTag(turn: AgentTurn): string | null {
+  if (turn.superseded) {
+    return "superada";
+  }
+  return turn.cancelled ? "cancelada" : null;
+}
+
+/** Esc y Cancelar sirven con un inicio marcado o un envio en curso, como en Qt. */
+export function canCancel(state: AgentStateName): boolean {
+  return state === "start_marked" || state === "sending";
+}
+
+const LINE_CLOCK = /^\[\d{2}:\d{2}:\d{2}\]\s*/;
+
+/** Lo enviado como cita corta: las frases seguidas, sin la hora de cada linea (como Qt). */
+export function quoteText(fragment: string): string {
+  return fragment
+    .split("\n")
+    .map((line) => line.replace(LINE_CLOCK, "").trim())
+    .filter((line) => line !== "")
+    .join(" ");
 }

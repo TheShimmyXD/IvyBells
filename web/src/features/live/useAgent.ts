@@ -28,8 +28,9 @@ function message(reason: unknown): string {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function useAgent(session: ApiSession | null): Agent {
-  const [view, setView] = useState<AgentView | null>(null);
+/** `seed`: el Agente de ejemplo sin API (capturas con ?demo=1&agent=...). */
+export function useAgent(session: ApiSession | null, seed: AgentView | null = null): Agent {
+  const [view, setView] = useState<AgentView | null>(seed);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

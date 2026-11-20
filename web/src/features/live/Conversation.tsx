@@ -4,17 +4,34 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { SourceId } from "../../api/types";
 import Icon from "../../shared/Icon";
+import type { IconName } from "../../shared/phosphor";
+import type { MarkButton } from "./agentMarks";
+import type { PhraseMark } from "./agentView";
 import type { Bubble } from "./conversation";
+
+/** Lo que el Agente necesita de la conversacion: a quien escucha y como va cada frase. */
+export interface ConversationAgent {
+  speaker: SourceId;
+  marks: Map<number, PhraseMark>;
+  onMark: (bubble: Bubble, button: MarkButton) => void;
+}
 
 interface ConversationProps {
   bubbles: Bubble[];
   closed: SourceId[];
+  agent?: ConversationAgent;
 }
+
+const MARK_ICONS: Record<PhraseMark, [IconName, string]> = {
+  start: ["flag", "Inicio marcado"],
+  flight: ["circle-notch", "Enviando"],
+  sent: ["paper-plane-tilt", "Enviada"],
+};
 
 // Distancia al fondo (px) que todavia cuenta como estar siguiendo en vivo.
 const FOLLOW_SLACK_PX = 40;
 
-export default function Conversation({ bubbles, closed }: ConversationProps) {
+export default function Conversation({ bubbles, closed, agent }: ConversationProps) {
   const list = useRef<HTMLOListElement>(null);
   const [following, setFollowing] = useState(true);
 
@@ -43,17 +60,7 @@ export default function Conversation({ bubbles, closed }: ConversationProps) {
               Reanudada {bubble.clock}
             </li>
           ) : (
-            <li
-              key={bubble.key}
-              className="live-phrase"
-              data-source={bubble.source}
-              data-final={bubble.final}
-              data-closed={closed.includes(bubble.source)}
-              aria-label={bubble.source === "ellos" ? "Ellos" : "Tú"}
-            >
-              <span className="live-bubble">{bubble.final ? bubble.text : `${bubble.text} …`}</span>
-              <span className="live-clock">{bubble.clock}</span>
-            </li>
+            <Phrase key={bubble.key} bubble={bubble} closed={closed} agent={agent} />
           ),
         )}
       </ol>
@@ -69,5 +76,48 @@ export default function Conversation({ bubbles, closed }: ConversationProps) {
         </button>
       )}
     </div>
+  );
+}
+
+interface PhraseProps {
+  bubble: Extract<Bubble, { kind: "phrase" }>;
+  closed: SourceId[];
+  agent?: ConversationAgent;
+}
+
+/** Una frase; las finales del interlocutor se marcan con clic izquierdo y derecho. */
+function Phrase({ bubble, closed, agent }: PhraseProps) {
+  const markable = agent !== undefined && bubble.source === agent.speaker && bubble.index !== null;
+  const mark = markable && bubble.index !== null ? agent.marks.get(bubble.index) : undefined;
+  const click = (button: MarkButton) => agent?.onMark(bubble, button);
+  return (
+    <li
+      className="live-phrase"
+      data-source={bubble.source}
+      data-final={bubble.final}
+      data-closed={closed.includes(bubble.source)}
+      data-markable={markable}
+      data-mark={mark}
+      aria-label={bubble.source === "ellos" ? "Ellos" : "Tú"}
+      onClick={markable ? () => click("left") : undefined}
+      onContextMenu={
+        markable
+          ? (event) => {
+              event.preventDefault();
+              click("right");
+            }
+          : undefined
+      }
+    >
+      <span className="live-bubble">{bubble.final ? bubble.text : `${bubble.text} …`}</span>
+      <span className="live-clock">
+        {bubble.clock}
+        {mark !== undefined && (
+          <span className="live-mark" title={MARK_ICONS[mark][1]}>
+            <Icon name={MARK_ICONS[mark][0]} size={11} />
+          </span>
+        )}
+      </span>
+    </li>
   );
 }

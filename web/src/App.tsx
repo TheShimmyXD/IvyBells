@@ -6,7 +6,8 @@ import type { ApiSession } from "./api/types";
 import type { AgentTab } from "./features/live/AgentPanel";
 import LiveModule from "./features/live/LiveModule";
 import { chooseSavePath } from "./features/live/savePath";
-import { demoView } from "./features/live/demo";
+import { demoAgent, demoView } from "./features/live/demo";
+import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
 import { MODULES, wantsDemo } from "./shell/modules";
 import Sidebar from "./shell/Sidebar";
@@ -29,6 +30,11 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
   );
   const recordedModel = typeof view.prefs.live_model === "string" ? view.prefs.live_model : null;
   const live = useLiveListening(view.session, recordedModel, seed);
+  const agentSeed = useMemo(
+    () => (seed === null ? null : demoAgent(window.location.search)),
+    [seed],
+  );
+  const agent = useAgent(view.session, agentSeed);
   const [chosenTab, setChosenTab] = useState<AgentTab | null>(null);
   const agentTab = chosenTab ?? (view.prefs.agent_panel === "chat" ? "chat" : "agent");
   const chooseTab = (tab: AgentTab) => {
@@ -53,6 +59,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
         {current.id === "live" ? (
           <LiveModule
             live={live}
+            agent={agent}
             agentTab={agentTab}
             onAgentTab={chooseTab}
             choosePath={desktop ? chooseSavePath : undefined}

@@ -1,16 +1,21 @@
 // La vista En vivo, direccion 2b: estado arriba, la conversacion con sus canales a
 // la izquierda, el panel del Agente a la derecha y el pie con latencia, ruta y Guardar.
+import { useEffect, useMemo } from "react";
+import type { Agent } from "./useAgent";
 import type { LiveListening } from "./useLiveListening";
 import AgentPanel, { type AgentTab } from "./AgentPanel";
 import ChannelHeader from "./ChannelHeader";
 import Conversation from "./Conversation";
 import LiveFooter from "./LiveFooter";
 import StatusBar from "./StatusBar";
+import { canCancel, phraseMarks } from "./agentView";
 import { conversation } from "./conversation";
 import "./live.css";
+import "./agent.css";
 
 interface LiveModuleProps {
   live: LiveListening;
+  agent: Agent;
   agentTab: AgentTab;
   onAgentTab: (tab: AgentTab) => void;
   /** Pide al usuario donde guardar la copia (recibe el .md actual); sin el, Guardar queda apagado. */
@@ -20,8 +25,27 @@ interface LiveModuleProps {
 }
 
 export default function LiveModule(props: LiveModuleProps) {
-  const { live, agentTab, onAgentTab, choosePath } = props;
+  const { live, agent, agentTab, onAgentTab, choosePath } = props;
   const { view } = live;
+  const agentView = agent.view;
+  const cancellable = agentView !== null && canCancel(agentView.state);
+  const { cancel } = agent;
+  useEffect(() => {
+    if (!cancellable) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        cancel();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cancellable, cancel]);
+  const marks = useMemo(
+    () => (agentView === null ? undefined : phraseMarks(agentView)),
+    [agentView],
+  );
   const onSave =
     choosePath === undefined
       ? undefined
@@ -61,9 +85,23 @@ export default function LiveModule(props: LiveModuleProps) {
                 closed={view.closed}
                 onToggle={live.toggleSource}
               />
-              <Conversation bubbles={conversation(view)} closed={view.closed} />
+              <Conversation
+                bubbles={conversation(view)}
+                closed={view.closed}
+                agent={
+                  agentView === null || marks === undefined
+                    ? undefined
+                    : { speaker: agentView.speaker, marks, onMark: agent.mark }
+                }
+              />
             </section>
-            <AgentPanel tab={agentTab} onTab={onAgentTab} />
+            <AgentPanel
+              tab={agentTab}
+              onTab={onAgentTab}
+              agent={agentView}
+              error={agent.error}
+              onCancel={cancel}
+            />
           </div>
           <LiveFooter
             latency={view.latency}
