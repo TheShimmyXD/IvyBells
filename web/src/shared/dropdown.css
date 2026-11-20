@@ -1,0 +1,80 @@
+/* Menu desplegable propio (Dropdown.tsx): boton en capsula y lista flotante. */
+.dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 10px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font: 12px var(--font-mono);
+  cursor: pointer;
+}
+
+.dropdown-button:hover:not(:disabled),
+.dropdown-button[aria-expanded="true"] {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.dropdown-button:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 1px;
+}
+
+.dropdown-button:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 320px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px var(--color-shadow);
+}
+
+.dropdown-list li {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 10px 6px 6px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.dropdown-list li[data-active] {
+  background: var(--color-brand-soft);
+}
+
+.dropdown-check {
+  display: inline-flex;
+  grid-row: span 2;
+  color: var(--color-brand);
+}
+
+.dropdown-label {
+  color: var(--color-text);
+  font: 600 13px var(--font-mono);
+}
+
+.dropdown-help {
+  grid-column: 2;
+  color: var(--color-text-muted);
+  font: 12px var(--font-sans);
+}

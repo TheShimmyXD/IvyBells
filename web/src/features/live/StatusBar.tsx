@@ -1,6 +1,7 @@
 // Barra de arriba de En vivo: la capsula de estado con el modelo dentro y, a la derecha,
 // Iniciar o Detener. Solo pinta y avisa clics.
 import type { ListeningStateName, LiveModel } from "../../api/types";
+import Dropdown from "../../shared/Dropdown";
 import Icon from "../../shared/Icon";
 import { runAction, stateTone } from "./liveText";
 
@@ -20,7 +21,6 @@ const RUN_LABELS = { start: "Iniciar", stop: "Detener", wait: "Deteniendo..." } 
 export default function StatusBar(props: StatusBarProps) {
   const action = runAction(props.state);
   const idle = action === "start";
-  const current = props.models.find((entry) => entry.key === props.model);
   return (
     <header className="live-top">
       <div className="live-capsule" data-tone={stateTone(props.state)}>
@@ -29,21 +29,13 @@ export default function StatusBar(props: StatusBarProps) {
           {props.status}
           {props.message && <span className="live-reason"> · {props.message}</span>}
         </span>
-        <select
-          className="live-model"
-          aria-label="Modelo de transcripción"
-          title={current?.help}
+        <Dropdown
+          label="Modelo de transcripción"
           value={props.model}
+          options={props.models}
           disabled={!idle}
-          onChange={(event) => props.onModel(event.target.value)}
-        >
-          {current === undefined && <option value={props.model}>{props.model || "-"}</option>}
-          {props.models.map((entry) => (
-            <option key={entry.key} value={entry.key} title={entry.help}>
-              {entry.label}
-            </option>
-          ))}
-        </select>
+          onChange={props.onModel}
+        />
       </div>
       <button
         type="button"

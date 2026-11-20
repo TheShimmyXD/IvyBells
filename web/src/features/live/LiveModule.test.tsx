@@ -97,9 +97,9 @@ describe("LiveModule", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Iniciar" }));
     expect(state.start).toHaveBeenCalledOnce();
-    fireEvent.change(screen.getByRole("combobox", { name: "Modelo de transcripción" }), {
-      target: { value: "large-v3-turbo" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: "Modelo de transcripción" }));
+    fireEvent.click(screen.getByRole("option", { name: /small/ }));
+    expect(state.chooseModel).toHaveBeenCalledWith("small");
     fireEvent.click(screen.getByRole("button", { name: "Guardar .md" }));
     await vi.waitFor(() => expect(state.save).toHaveBeenCalledWith("/tmp/copia.md"));
     expect(choosePath).toHaveBeenCalledWith(base.path);

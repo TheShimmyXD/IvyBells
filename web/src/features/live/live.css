@@ -76,15 +76,6 @@
   background: var(--color-error);
 }
 
-.live-model {
-  padding: 3px 8px;
-  border: 1px solid var(--color-border-soft);
-  border-radius: 999px;
-  background: var(--color-surface-alt);
-  color: var(--color-text-muted);
-  font: 12px var(--font-mono);
-}
-
 .live-run,
 .live-save {
   display: inline-flex;

@@ -11,7 +11,12 @@ const DEMO_SNAPSHOT: ListeningSnapshot = {
   status: "Detenido",
   message: "",
   model: "large-v3-turbo",
-  models: [{ key: "large-v3-turbo", label: "turbo", help: "Ejemplo sin API" }],
+  // Los de LIVE_MODELS (domain/transcription/live_view.py).
+  models: [
+    { key: "small", label: "small", help: "El más rápido (mediana 0,5 s) pero erra más" },
+    { key: "medium", label: "medium", help: "Intermedio (mediana 1,3 s)" },
+    { key: "large-v3-turbo", label: "turbo", help: "El elegido: mediana 1,8 s y el mejor texto" },
+  ],
   devices: {
     ellos: { name: "demo.monitor", label: "analog-stereo.monitor" },
     tu: { name: "demo.mic", label: "usb-microfono.mono" },
