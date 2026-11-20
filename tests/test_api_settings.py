@@ -162,7 +162,7 @@ def test_profiles_are_created_edited_renamed_and_deleted(setup) -> None:
     with client:
         name = client.post("/api/profiles", headers=headers).json()["name"]
         assert name == "nuevo perfil"
-        saved = client.put(f"/api/profiles/{name}", headers=headers, json={"text": "Breve."})
+        saved = client.post(f"/api/profiles/{name}/save", headers=headers, json={"text": "Breve."})
         assert saved.status_code == 200
         assert client.get(f"/api/profiles/{name}", headers=headers).json()["text"] == "Breve."
         renamed = client.post(
@@ -171,9 +171,9 @@ def test_profiles_are_created_edited_renamed_and_deleted(setup) -> None:
         assert renamed["name"] == "empresa" and "empresa" in renamed["names"]
         active = client.post("/api/profiles/active", headers=headers, json={"name": "empresa"})
         assert active.json()["active"] == "empresa"
-        locked = client.put("/api/profiles/ejemplo", headers=headers, json={"text": "x"})
+        locked = client.post("/api/profiles/ejemplo/save", headers=headers, json={"text": "x"})
         missing = client.get("/api/profiles/nadie", headers=headers)
-        after = client.delete("/api/profiles/empresa", headers=headers).json()
+        after = client.post("/api/profiles/empresa/delete", headers=headers).json()
 
     assert locked.status_code == 409 and locked.json()["detail"]
     assert missing.status_code == 404
@@ -234,3 +234,10 @@ def test_remembered_speaker_and_mode_and_view_prefs(setup) -> None:
     ]
     assert unknown.status_code == 404 and bad.status_code == 422
     assert shown["theme"] == "dark" and shown["speaker"] == "ellos"
+
+
+def test_routes_use_only_methods_that_cors_lets_through(setup) -> None:
+    """La API comun solo deja pasar GET y POST desde la ventana; PUT o DELETE fallarian."""
+    api, _ = _client(setup, new_token())
+    methods = {m for route in api.routes for m in getattr(route, "methods", None) or ()}
+    assert methods <= {"GET", "POST", "HEAD"}

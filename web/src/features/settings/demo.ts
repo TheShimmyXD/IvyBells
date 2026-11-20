@@ -1,7 +1,9 @@
 // La configuracion de ejemplo para las capturas sin API
-// (?demo=1&module=config&account=ok|error|login). Correos y nombres inventados.
+// (?demo=1&module=config&account=ok|error|login&tab=profile&profile=<nombre>). Correos,
+// nombres y textos inventados.
 import type { AccountStatus, SettingsSnapshot } from "../../api/types";
 import { fromSettingsSnapshot, type SettingsView } from "./settingsView";
+import type { ProfileSeed } from "./useProfiles";
 
 const ACCOUNTS: Record<string, { account: string; status: AccountStatus }> = {
   ok: {
@@ -50,7 +52,11 @@ export const DEMO_SNAPSHOT: SettingsSnapshot = {
   },
   account: { text: "", level: "", login: "" },
   checking: false,
-  profiles: { names: ["ejemplo", "demo soporte", "ventas"], active: "ventas", editable: [] },
+  profiles: {
+    names: ["ejemplo", "demo soporte", "ventas"],
+    active: "ventas",
+    editable: ["demo soporte", "ventas"],
+  },
   contexts: {
     names: ["empresa", "entrevistas"],
     active: "empresa",
@@ -71,4 +77,31 @@ export function demoSettings(search: string): SettingsView {
     config: { ...view.config, account: chosen.account },
     account: chosen.status,
   };
+}
+
+const PROFILE_TEXTS: Record<string, string> = {
+  ejemplo: "Eres el asistente de una empresa de ejemplo.\n\nResponde en dos o tres frases cortas.",
+  "demo soporte": [
+    "Eres el asistente de soporte técnico de una empresa de ejemplo.",
+    "",
+    "Cómo respondes:",
+    "- Con calma y en frases cortas: la respuesta se lee en voz alta.",
+    "- Primero confirmas qué entendiste del problema y luego das un solo paso a seguir.",
+    "",
+    "Datos de la empresa:",
+    "- Soporte de lunes a sábado, de 7:00 a 20:00.",
+  ].join("\n"),
+  ventas: "Eres el asistente de ventas de una empresa de ejemplo.\n\nNo prometas precios.",
+};
+
+export type DemoSettingsTab = "claude" | "profile" | "context";
+
+/** La pestana que abre la captura (&tab=profile|context); Claude si no se pide otra. */
+export function demoSettingsTab(search: string): DemoSettingsTab {
+  const tab = new URLSearchParams(search).get("tab");
+  return tab === "profile" || tab === "context" ? tab : "claude";
+}
+
+export function demoProfiles(search: string): ProfileSeed {
+  return { selected: new URLSearchParams(search).get("profile"), texts: PROFILE_TEXTS };
 }

@@ -264,7 +264,7 @@ def settings_router(
         name = attempt(options.profiles.create, "No se pudo crear el perfil.")
         return {"name": name, **profiles_data(options)}
 
-    @router.put("/api/profiles/{name}")
+    @router.post("/api/profiles/{name}/save")
     async def save_profile(name: str, body: TextRequest) -> dict:
         known_profile(name)
         attempt(lambda: options.profiles.save(name, body.text), f"No se guardó el perfil {name}.")
@@ -284,7 +284,7 @@ def settings_router(
         )
         return {"name": renamed, **profiles_data(options)}
 
-    @router.delete("/api/profiles/{name}")
+    @router.post("/api/profiles/{name}/delete")
     async def delete_profile(name: str) -> dict:
         known_profile(name)
         attempt(lambda: options.profiles.delete(name), f"No se borró el perfil {name}.")

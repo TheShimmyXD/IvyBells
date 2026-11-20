@@ -1,14 +1,17 @@
 // El modulo Configuracion de la web (FW.9, direccion 2d): titulo, pestanas Claude | Perfil
-// del agente | Contexto y el aviso de que cada cambio se guarda al momento. Perfil y
-// Contexto llegan en los pasos siguientes; hoy se editan en Qt.
+// del agente | Contexto y el aviso de que cada cambio se guarda al momento. Contexto llega
+// en el paso siguiente; hoy se edita en Qt.
 import { useState } from "react";
 import Icon from "../../shared/Icon";
 import type { IconName } from "../../shared/phosphor";
 import ClaudeTab from "./ClaudeTab";
+import type { DemoSettingsTab } from "./demo";
+import ProfileTab from "./ProfileTab";
+import type { ProfileEditor } from "./useProfiles";
 import type { Settings } from "./useSettings";
 import "./settings.css";
 
-type SettingsTab = "claude" | "profile" | "context";
+type SettingsTab = DemoSettingsTab;
 
 const TABS: readonly { id: SettingsTab; label: string; icon: IconName }[] = [
   { id: "claude", label: "Claude", icon: "sparkle" },
@@ -18,12 +21,20 @@ const TABS: readonly { id: SettingsTab; label: string; icon: IconName }[] = [
 
 interface SettingsModuleProps {
   settings: Settings;
+  profiles: ProfileEditor;
+  /** La pestana con que abre (las capturas piden otra con &tab=). */
+  firstTab?: SettingsTab;
   /** El aviso cuando no hay API (fuera de Tauri y sin ?demo=1). */
   waiting?: string;
 }
 
-export default function SettingsModule({ settings, waiting }: SettingsModuleProps) {
-  const [tab, setTab] = useState<SettingsTab>("claude");
+export default function SettingsModule({
+  settings,
+  profiles,
+  firstTab = "claude",
+  waiting,
+}: SettingsModuleProps) {
+  const [tab, setTab] = useState<SettingsTab>(firstTab);
   const { view, error } = settings;
   return (
     <div className="settings">
@@ -58,6 +69,8 @@ export default function SettingsModule({ settings, waiting }: SettingsModuleProp
         <p className="muted">{waiting ?? "Cargando la configuración..."}</p>
       ) : tab === "claude" ? (
         <ClaudeTab view={view} settings={settings} />
+      ) : tab === "profile" ? (
+        <ProfileTab view={view} editor={profiles} />
       ) : (
         <p className="settings-later muted">
           Esta pestaña llega a la web en el paso siguiente; hoy se edita en la ventana de Qt.

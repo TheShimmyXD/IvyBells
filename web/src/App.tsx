@@ -12,8 +12,9 @@ import { chooseSavePath } from "./features/live/savePath";
 import { demoAgent, demoContextOpen, demoView } from "./features/live/demo";
 import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
-import { demoSettings } from "./features/settings/demo";
+import { demoProfiles, demoSettings, demoSettingsTab } from "./features/settings/demo";
 import SettingsModule from "./features/settings/SettingsModule";
+import { useProfiles } from "./features/settings/useProfiles";
 import { useSettings } from "./features/settings/useSettings";
 import { MODULES, wantsDemo } from "./shell/modules";
 import Sidebar from "./shell/Sidebar";
@@ -48,6 +49,16 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
     [seed],
   );
   const settings = useSettings(view.session, settingsSeed);
+  const profileSeed = useMemo(
+    () => (seed === null ? null : demoProfiles(window.location.search)),
+    [seed],
+  );
+  const profiles = useProfiles(
+    view.session,
+    settings.view?.profiles ?? null,
+    settings.applyProfiles,
+    profileSeed,
+  );
   const [chosenTab, setChosenTab] = useState<AgentTab | null>(() =>
     seed !== null && demoChatTab(window.location.search) ? "chat" : null,
   );
@@ -83,7 +94,12 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
             chatPanel={<ChatPanel chat={chat} />}
           />
         ) : (
-          <SettingsModule settings={settings} waiting={waiting} />
+          <SettingsModule
+            settings={settings}
+            profiles={profiles}
+            firstTab={seed === null ? "claude" : demoSettingsTab(window.location.search)}
+            waiting={waiting}
+          />
         )}
       </main>
     </div>

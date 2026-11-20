@@ -294,6 +294,16 @@ export interface ProfilesData {
   editable: string[];
 }
 
+/** Un perfil abierto (GET /api/profiles/{name}). */
+export interface ProfileText {
+  name: string;
+  text: string;
+  editable: boolean;
+}
+
+/** La lista tras crear, copiar, renombrar o guardar; name es el perfil que quedo. */
+export type ProfileChange = ProfilesData & { name: string };
+
 export interface ContextsData {
   names: string[];
   active: string;

@@ -13,6 +13,9 @@ import type {
   ListeningEvent,
   ListeningSnapshot,
   Prefs,
+  ProfileChange,
+  ProfilesData,
+  ProfileText,
   SettingsConfig,
   SettingsEvent,
   SettingsSnapshot,
@@ -217,6 +220,37 @@ export const settingsApi = {
   },
   check(session: ApiSession): Promise<{ checking: boolean }> {
     return postJson(session, "/api/settings/account/check", {});
+  },
+};
+
+// -- Perfiles del Agente --------------------------------------------------------------
+
+function profilePath(name: string, action = ""): string {
+  return `/api/profiles/${encodeURIComponent(name)}${action}`;
+}
+
+/** Cada pedido que falla responde 409 con el motivo (perfil de solo lectura, nombre usado). */
+export const profilesApi = {
+  read(session: ApiSession, name: string): Promise<ProfileText> {
+    return request<ProfileText>(session, profilePath(name));
+  },
+  setActive(session: ApiSession, name: string): Promise<ProfilesData> {
+    return postJson<ProfilesData>(session, "/api/profiles/active", { name });
+  },
+  create(session: ApiSession): Promise<ProfileChange> {
+    return postJson<ProfileChange>(session, "/api/profiles", {});
+  },
+  save(session: ApiSession, name: string, text: string): Promise<ProfileChange> {
+    return postJson<ProfileChange>(session, profilePath(name, "/save"), { text });
+  },
+  duplicate(session: ApiSession, name: string): Promise<ProfileChange> {
+    return postJson<ProfileChange>(session, profilePath(name, "/duplicate"), {});
+  },
+  rename(session: ApiSession, name: string, newName: string): Promise<ProfileChange> {
+    return postJson<ProfileChange>(session, profilePath(name, "/rename"), { name: newName });
+  },
+  remove(session: ApiSession, name: string): Promise<ProfilesData> {
+    return postJson<ProfilesData>(session, profilePath(name, "/delete"), {});
   },
 };
 

@@ -4,7 +4,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, settingsApi, toSettingsEvent } from "../../api/client";
 import { errorMessage, followChannel } from "../../api/follow";
-import type { ApiSession, SettingsConfig } from "../../api/types";
+import type { ApiSession, ProfilesData, SettingsConfig } from "../../api/types";
+import { profilesOnly } from "./profileView";
 import { applySettingsEvent, fromSettingsSnapshot, type SettingsView } from "./settingsView";
 
 export const SETTINGS_EVENTS_PATH = "/api/settings/events";
@@ -20,6 +21,8 @@ export interface Settings {
   /** Guarda el correo y lo comprueba; si no parece un correo, lo dice la insignia. */
   setAccount: (account: string) => void;
   check: () => void;
+  /** Pone la lista de perfiles que respondio un pedido, sin esperar al canal. */
+  applyProfiles: (profiles: ProfilesData) => void;
 }
 
 /** `seed`: la configuracion de ejemplo sin API (capturas con ?demo=1&module=config). */
@@ -101,5 +104,19 @@ export function useSettings(
     settingsApi.check(session).catch((reason: unknown) => setError(errorMessage(reason)));
   }, [session]);
 
-  return { view, error, setModel, setEffort, setFallback, setTimeout, setAccount, check };
+  const applyProfiles = useCallback((profiles: ProfilesData) => {
+    setView((current) => current && { ...current, profiles: profilesOnly(profiles) });
+  }, []);
+
+  return {
+    view,
+    error,
+    setModel,
+    setEffort,
+    setFallback,
+    setTimeout,
+    setAccount,
+    check,
+    applyProfiles,
+  };
 }
