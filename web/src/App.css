@@ -1,0 +1,31 @@
+/* La barra no ocupa sitio propio: el area de trabajo deja su ancho plegado y la barra
+   desplegada pasa por encima, como en Qt. */
+.shell {
+  position: relative;
+  height: 100%;
+}
+
+.workspace {
+  height: 100%;
+  margin-left: var(--sidebar-collapsed);
+  padding: var(--margin);
+  overflow: auto;
+}
+
+.workspace h1 {
+  margin: 0 0 var(--space-2);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.workspace p {
+  margin: 0 0 var(--space-2);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-error);
+}

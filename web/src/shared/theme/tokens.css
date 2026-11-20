@@ -1,0 +1,64 @@
+/* Generado por tools/theme_css.py desde entrypoints/ui_qt/theme.py: no editar a mano. */
+:root {
+  color-scheme: light;
+  --color-background: #ece8df;
+  --color-surface: #fbf9f4;
+  --color-surface-alt: #f3f0e8;
+  --color-border: #d8d2c4;
+  --color-border-soft: #e6e1d5;
+  --color-text: #1e2427;
+  --color-text-muted: #5f686c;
+  --color-brand: #1f5266;
+  --color-brand-soft: #dce6e8;
+  --color-on-brand: #ffffff;
+  --color-sidebar: #173540;
+  --color-sidebar-text: #b9cbd0;
+  --color-sidebar-active: #24505f;
+  --color-sidebar-ink: #fbf9f4;
+  --color-shadow: #00000050;
+  --color-seal: #a8802f;
+  --color-ok: #2e7550;
+  --color-warning: #a65a0c;
+  --color-error: #ae3329;
+  --radius: 5px;
+  --radius-pill: 11px;
+  --radius-panel: 10px;
+  --radius-floating: 17px;
+  --sidebar-collapsed: 52px;
+  --sidebar-expanded: 180px;
+  --sidebar-button: 40px;
+  --sidebar-icon: 22px;
+  --sidebar-logo: 34px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --margin: 16px;
+  --spacing: 10px;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-background: #12191c;
+  --color-surface: #182226;
+  --color-surface-alt: #1e2a2f;
+  --color-border: #34444a;
+  --color-border-soft: #26343a;
+  --color-text: #e6e2d8;
+  --color-text-muted: #9aa6a9;
+  --color-brand: #7dbcd0;
+  --color-brand-soft: #23414b;
+  --color-on-brand: #0f1e24;
+  --color-sidebar: #0c1417;
+  --color-sidebar-text: #9db4ba;
+  --color-sidebar-active: #1c3640;
+  --color-sidebar-ink: #f3efe6;
+  --color-shadow: #00000080;
+  --color-seal: #c9a04a;
+  --color-ok: #6cc495;
+  --color-warning: #e0a15a;
+  --color-error: #f0857a;
+}

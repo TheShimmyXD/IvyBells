@@ -1,0 +1,20 @@
+/* Las letras e iconos de la ventana de Qt sin red, leidos de resources/ (una sola copia). */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-weight: 400;
+  src: url("../../../../resources/fonts/IBMPlexSans-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-weight: 500 600;
+  src: url("../../../../resources/fonts/IBMPlexSans-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 400;
+  src: url("../../../../resources/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Phosphor";
+  src: url("../../../../resources/icons/phosphor-regular.woff2") format("woff2");
+}

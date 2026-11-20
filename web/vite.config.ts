@@ -1,4 +1,5 @@
 // Vite sirve la interfaz; Vitest corre las pruebas con la misma configuracion.
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -9,6 +10,14 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5174,
     strictPort: true,
+    fs: {
+      // Letras e iconos de resources/, los mismos de Qt (una sola copia).
+      allow: [
+        fileURLToPath(new URL(".", import.meta.url)),
+        fileURLToPath(new URL("../resources/fonts", import.meta.url)),
+        fileURLToPath(new URL("../resources/icons", import.meta.url)),
+      ],
+    },
   },
   test: {
     environment: "jsdom",

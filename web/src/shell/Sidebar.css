@@ -1,0 +1,72 @@
+/* Medidas de _00_ui_sidebar.py y theme_qss.py (por tokens.css): margenes 12/6/10, espacio de
+   6 px, botones de 40 px con relleno de 9 px y esquinas de 8 px. Las pausas de Qt (120 ms al
+   desplegar, 300 ms al plegar) van como retraso de la transicion. */
+.sidebar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: var(--sidebar-collapsed);
+  padding: 12px 6px 10px;
+  overflow: hidden;
+  background: var(--color-sidebar);
+  box-shadow: 2px 0 16px var(--color-shadow);
+  transition: width 140ms cubic-bezier(0.33, 1, 0.68, 1) 300ms;
+}
+
+.sidebar:hover,
+.sidebar:focus-within {
+  width: var(--sidebar-expanded);
+  transition-delay: 120ms;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--sidebar-collapsed) - 12px);
+  height: 40px;
+  margin-bottom: 6px;
+  flex: none;
+}
+
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--sidebar-button);
+  padding: 0 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-sidebar-text);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+
+.sidebar-button:hover,
+.sidebar-button[aria-current="page"] {
+  background: var(--color-sidebar-active);
+}
+
+.sidebar-button[aria-current="page"] {
+  color: var(--color-sidebar-ink);
+  font-weight: 600;
+}
+
+.sidebar-button:focus-visible {
+  outline: 2px solid var(--color-seal);
+  outline-offset: -2px;
+}
+
+.sidebar-label {
+  overflow: hidden;
+}
+
+.sidebar-gap {
+  flex: 1;
+}
