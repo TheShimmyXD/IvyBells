@@ -73,12 +73,39 @@ export const DEMO_SNAPSHOT: SettingsSnapshot = {
   last_event: 0,
 };
 
+// Un contexto grande inventado (&files=many): pesos desiguales, uno minimo y uno vacio.
+const MANY_FILES: [string, number][] = [
+  ["00_presentacion.md", 4675],
+  ["01_historia_de_la_empresa.md", 4953],
+  ["02_catalogo_de_servicios.md", 12402],
+  ["03_precios_2026.csv", 2310],
+  ["04_preguntas_frecuentes.md", 7926],
+  ["05_politica_de_garantia.pdf", 7100],
+  ["06_manual_de_soporte.docx", 9936],
+  ["07_casos_de_exito.md", 3669],
+  ["08_glosario.md", 627],
+  ["09_contratos_tipo.pdf", 8098],
+  ["10_horarios.txt", 81],
+  ["11_organigrama.md", 1581],
+  ["12_objeciones_comunes.md", 5406],
+  ["13_notas_vacias.md", 0],
+];
+
 export function demoSettings(search: string): SettingsView {
-  const stage = new URLSearchParams(search).get("account") ?? "ok";
+  const query = new URLSearchParams(search);
+  const stage = query.get("account") ?? "ok";
   const chosen = ACCOUNTS[stage] ?? ACCOUNTS.ok;
   const view = fromSettingsSnapshot(DEMO_SNAPSHOT);
+  const contexts =
+    query.get("files") === "many"
+      ? {
+          ...view.contexts,
+          entries: MANY_FILES.map(([name, tokens]) => ({ name, tokens, folder: false })),
+        }
+      : view.contexts;
   return {
     ...view,
+    contexts,
     config: { ...view.config, account: chosen.account },
     account: chosen.status,
   };

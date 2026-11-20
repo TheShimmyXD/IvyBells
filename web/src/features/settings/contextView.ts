@@ -1,5 +1,5 @@
-// La pestana Contexto como datos: la lista (con "Sin contexto" primero), la barra con el
-// peso de cada archivo en contexto.md y el aviso de la foto. Logica pura, sin React; los
+// La pestana Contexto como datos: la lista (con "Sin contexto" primero), el peso de cada
+// archivo en contexto.md (una barra por fila) y el aviso de la foto. Logica pura, sin React; los
 // tokens llegan estimados de la API (los mismos que muestra Qt).
 import type { ContextEntry, ContextNotice, ContextsData } from "../../api/types";
 import { thousands } from "../../shared/format";
@@ -23,10 +23,10 @@ export function contextRows(contexts: ContextsData): ContextRow[] {
 }
 
 export interface WeightPart extends ContextEntry {
-  /** Porcentaje de la barra (0 a 100). */
+  /** Porcentaje del total (0 a 100). */
   share: number;
-  /** Color alterno de la barra y del punto de su fila. */
-  tone: "first" | "second";
+  /** Largo de su barra en la fila: 100 es el archivo mas pesado. */
+  meter: number;
 }
 
 export interface WeightBar {
@@ -36,12 +36,21 @@ export interface WeightBar {
 
 export function weightBar(entries: ContextEntry[]): WeightBar {
   const total = entries.reduce((sum, entry) => sum + entry.tokens, 0);
-  const parts = entries.map((entry, index) => ({
+  const largest = Math.max(0, ...entries.map((entry) => entry.tokens));
+  const parts = entries.map((entry) => ({
     ...entry,
     share: total === 0 ? 0 : (100 * entry.tokens) / total,
-    tone: index % 2 === 0 ? ("first" as const) : ("second" as const),
+    meter: largest === 0 ? 0 : (100 * entry.tokens) / largest,
   }));
   return { parts, total };
+}
+
+/** "12 %"; lo que pesa algo pero no llega al 1 % dice "<1 %". */
+export function shareLabel(share: number): string {
+  if (share > 0 && share < 1) {
+    return "<1 %";
+  }
+  return `${Math.round(share)} %`;
 }
 
 /** "~1.200 tokens"; un archivo que no aporta nada dice por que puede ser. */

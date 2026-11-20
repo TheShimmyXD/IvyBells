@@ -1,11 +1,18 @@
 // Pestana Contexto (direccion 2d): a la izquierda los contextos (Sin contexto primero, "en
 // uso" en el del Agente, + para uno nuevo); elegir uno lo pone en uso y rehace la foto,
-// como el combo de Qt. A la derecha el contexto en uso: cabecera, el aviso de la foto, la
-// barra con el peso de cada archivo en contexto.md y la lista de archivos.
+// como el combo de Qt. A la derecha el contexto en uso: cabecera, el aviso de la foto, el
+// total y la lista de archivos, cada uno con su barra y su parte del total.
 import Icon from "../../shared/Icon";
 import { thousands } from "../../shared/format";
 import ContextHeader from "./ContextHeader";
-import { contextRows, isReloading, noticeTone, tokensLabel, weightBar } from "./contextView";
+import {
+  contextRows,
+  isReloading,
+  noticeTone,
+  shareLabel,
+  tokensLabel,
+  weightBar,
+} from "./contextView";
 import type { SettingsView } from "./settingsView";
 import type { ContextActions } from "./useContexts";
 import "./profile.css";
@@ -82,16 +89,6 @@ export default function ContextTab({ view, actions }: ContextTabProps) {
               <span>Peso de cada archivo en contexto.md</span>
               <span className="context-total">~{thousands(bar.total)} tokens</span>
             </div>
-            <div className="context-strip" aria-hidden="true">
-              {bar.parts.map((part) => (
-                <span
-                  key={part.name}
-                  className="context-segment"
-                  data-tone={part.tone}
-                  style={{ width: `${part.share}%` }}
-                />
-              ))}
-            </div>
             {bar.parts.length === 0 ? (
               <p className="muted">
                 La carpeta está vacía: abre la carpeta, copia ahí los archivos y pulsa Recargar.
@@ -100,9 +97,12 @@ export default function ContextTab({ view, actions }: ContextTabProps) {
               <ul className="context-files" aria-label="Archivos del contexto">
                 {bar.parts.map((part) => (
                   <li key={part.name} className="context-file">
-                    <span className="context-dot" data-tone={part.tone} />
                     <Icon name={part.folder ? "folder-simple" : "file-text"} size={14} />
                     <span className="profile-row-name">{part.name}</span>
+                    <span className="context-meter" aria-hidden="true">
+                      {part.tokens > 0 && <span style={{ width: `${part.meter}%` }} />}
+                    </span>
+                    <span className="context-share">{shareLabel(part.share)}</span>
                     <span className="context-tokens">{tokensLabel(part.tokens)}</span>
                   </li>
                 ))}

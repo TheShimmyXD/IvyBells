@@ -5,6 +5,7 @@ import {
   isReloading,
   noticeTone,
   shortFolder,
+  shareLabel,
   tokensLabel,
   weightBar,
 } from "./contextView";
@@ -37,18 +38,18 @@ describe("contextRows", () => {
 });
 
 describe("weightBar", () => {
-  it("reparte la barra por tokens y alterna el color", () => {
+  it("da a cada archivo su parte del total y su barra contra el mas pesado", () => {
     const bar = weightBar(CONTEXTS.entries);
     expect(bar.total).toBe(110);
     expect(bar.parts.map((part) => Math.round(part.share))).toEqual([40, 0, 60]);
-    expect(bar.parts.map((part) => part.tone)).toEqual(["first", "second", "first"]);
+    expect(bar.parts.map((part) => Math.round(part.meter))).toEqual([67, 0, 100]);
   });
 
   it("sin tokens no divide por cero", () => {
     const bar = weightBar([{ name: "a.txt", tokens: 0, folder: false }]);
     expect(bar).toEqual({
       total: 0,
-      parts: [{ name: "a.txt", tokens: 0, folder: false, share: 0, tone: "first" }],
+      parts: [{ name: "a.txt", tokens: 0, folder: false, share: 0, meter: 0 }],
     });
   });
 });
@@ -57,6 +58,12 @@ describe("textos", () => {
   it("tokens con miles y el cero explicado", () => {
     expect(tokensLabel(1200)).toBe("~1.200 tokens");
     expect(tokensLabel(0)).toBe("0 (sin leer o vacío)");
+  });
+
+  it("parte del total redondeada; lo que pesa algo nunca dice 0 %", () => {
+    expect(shareLabel(18.4)).toBe("18 %");
+    expect(shareLabel(0.65)).toBe("<1 %");
+    expect(shareLabel(0)).toBe("0 %");
   });
 
   it("carpeta corta en Linux y en Windows", () => {

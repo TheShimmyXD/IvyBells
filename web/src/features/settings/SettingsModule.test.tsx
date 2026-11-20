@@ -229,7 +229,7 @@ describe("SettingsModule", () => {
     expect(screen.getByText("contextos/empresa")).toBeTruthy();
     expect(screen.getByText("~111 tokens")).toBeTruthy();
     const files = screen.getByRole("list", { name: "Archivos del contexto" });
-    expect(files.textContent).toContain("precios.csv~44 tokens");
+    expect(files.textContent).toContain("precios.csv40 %~44 tokens");
     expect(screen.getByRole("status").textContent).toContain("2 archivos");
   });
 
