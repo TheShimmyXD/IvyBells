@@ -184,6 +184,8 @@ export interface AgentBudget {
 export interface AgentSnapshot extends AgentBrief, AgentMarks {
   budget: AgentBudget | null;
   turns: AgentTurn[];
+  /** Silencio que cierra un turno del interlocutor en anticipado (TURN_SILENCE_S). */
+  turn_silence_s: number;
   last_event: number;
 }
 

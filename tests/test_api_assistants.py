@@ -16,6 +16,7 @@ from jacck_common.webapi.security import new_token  # noqa: E402
 from app.agent import AgentAssistant  # noqa: E402
 from app.chat import ChatAssistant  # noqa: E402
 from app.live import LiveListening  # noqa: E402
+from domain.agent.agent_ahead import TURN_SILENCE_S  # noqa: E402
 from domain.claude.claude_model import ClaudeModelConfig  # noqa: E402
 from domain.transcription.engine import TranscriptEvent  # noqa: E402
 from entrypoints.api.run import create_api  # noqa: E402
@@ -172,6 +173,9 @@ def test_ahead_mode_sends_after_the_turn_through_the_loop(parts) -> None:
         client.post("/api/agent/speaker", headers=headers, json={"source": "tu"})
         mode = client.post("/api/agent/mode", headers=headers, json={"mode": "ahead"})
         assert mode.json()["mode"] == "ahead"
+        snapshot = client.get("/api/agent", headers=headers).json()
+        assert snapshot["mode"] == "ahead"
+        assert snapshot["turn_silence_s"] == TURN_SILENCE_S
         _listen_until_final(client, headers)
         state = _until(
             lambda: client.get("/api/agent", headers=headers).json(),

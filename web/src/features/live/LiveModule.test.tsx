@@ -60,6 +60,28 @@ describe("LiveModule", () => {
     expect(screen.getByRole("switch", { name: "Anticipado" })).toBeDisabled();
   });
 
+  it("el interruptor Anticipado cambia el modo y la ayuda dice como responde", () => {
+    const manual = agent({ view: demoAgent("?agent=answered") });
+    const { unmount } = render(
+      <LiveModule live={live()} agent={manual} agentTab="agent" onAgentTab={vi.fn()} />,
+    );
+    const toggle = screen.getByRole("switch", { name: "Anticipado" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    expect(manual.setMode).toHaveBeenCalledWith("ahead");
+    unmount();
+
+    const ahead = agent({ view: demoAgent("?agent=ahead") });
+    render(<LiveModule live={live()} agent={ahead} agentTab="agent" onAgentTab={vi.fn()} />);
+    const on = screen.getByRole("switch", { name: "Anticipado" });
+    expect(on).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("Anticipado: escuchando a Ellos")).toBeInTheDocument();
+    expect(screen.getByText("1,5 s de silencio")).toBeInTheDocument();
+    expect(screen.getByText("envío forzado")).toBeInTheDocument();
+    fireEvent.click(on);
+    expect(ahead.setMode).toHaveBeenCalledWith("manual");
+  });
+
   it("detenido ofrece Iniciar y el menu de modelos; Guardar pide la ruta", async () => {
     const base = demoView();
     const state = live({ view: { ...base, state: "stopped", status: "Detenido" } });

@@ -1,9 +1,9 @@
-// Panel del Agente: pestanas Agente | Chat, el interruptor Anticipado, como va el envio
+// Panel del Agente: pestanas Agente | Chat, el interruptor Manual/Anticipado, como va el envio
 // con Cancelar y la respuesta grande. Sin respuestas todavia, las teclas para marcar.
-import type { AgentStateName } from "../../api/types";
+import type { AgentMode, AgentStateName } from "../../api/types";
 import Icon from "../../shared/Icon";
 import AgentAnswer from "./AgentAnswer";
-import { answerBoard, canCancel, type AgentView } from "./agentView";
+import { agentHelp, answerBoard, canCancel, type AgentView } from "./agentView";
 
 export type AgentTab = "agent" | "chat";
 
@@ -15,6 +15,7 @@ interface AgentPanelProps {
   /** Por que fallo el ultimo pedido al Agente. */
   error: string | null;
   onCancel: () => void;
+  onMode: (mode: AgentMode) => void;
 }
 
 const TONES: Record<AgentStateName, string> = {
@@ -25,14 +26,19 @@ const TONES: Record<AgentStateName, string> = {
   error: "error",
 };
 
-const KEYS = [
-  ["Clic izq.", "inicio"],
-  ["Clic der.", "final y enviar"],
-  ["Esc", "cancelar"],
-] as const;
+const AHEAD_TIP = "Responde solo al terminar cada turno del interlocutor";
 
-export default function AgentPanel({ tab, onTab, agent, error, onCancel }: AgentPanelProps) {
+export default function AgentPanel({
+  tab,
+  onTab,
+  agent,
+  error,
+  onCancel,
+  onMode,
+}: AgentPanelProps) {
   const board = agent === null ? null : answerBoard(agent);
+  const help = agentHelp(agent);
+  const ahead = agent?.mode === "ahead";
   return (
     <aside className="live-agent" aria-label="Agente">
       <div className="live-agent-head" role="tablist" aria-label="Panel del Agente">
@@ -56,16 +62,17 @@ export default function AgentPanel({ tab, onTab, agent, error, onCancel }: Agent
           <Icon name="chat-circle" size={15} />
           Chat
         </button>
-        <span className="live-anticipated" title="Llega con el Agente (FW.8)">
+        <span className="live-anticipated" title={AHEAD_TIP}>
           <Icon name="lightning" size={14} />
           Anticipado
           <button
             type="button"
             role="switch"
             className="live-switch"
-            aria-checked={false}
+            aria-checked={ahead}
             aria-label="Anticipado"
-            disabled
+            disabled={agent === null}
+            onClick={() => onMode(ahead ? "manual" : "ahead")}
           />
         </span>
       </div>
@@ -87,12 +94,9 @@ export default function AgentPanel({ tab, onTab, agent, error, onCancel }: Agent
           )}
           {board === null || board.card === null ? (
             <>
-              <p className="live-agent-lead">
-                Marca lo que dijo el cliente y la respuesta sale aquí, grande, para leerla en voz
-                alta.
-              </p>
+              <p className="live-agent-lead">{help.lead}</p>
               <dl className="live-keys">
-                {KEYS.map(([key, action]) => (
+                {help.keys.map(([key, action]) => (
                   <div key={key}>
                     <dt>
                       <kbd>{key}</kbd>

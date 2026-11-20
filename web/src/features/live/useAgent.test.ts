@@ -16,6 +16,7 @@ const SNAPSHOT: AgentSnapshot = {
   sent: { ellos: [], tu: [] },
   budget: null,
   turns: [],
+  turn_silence_s: 1.5,
   last_event: 2,
 };
 

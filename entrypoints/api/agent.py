@@ -6,6 +6,7 @@ la vez y la cancelación que termina el proceso de `claude`); aquí solo se pide
 órdenes y sus avisos se vuelven eventos de un `EventChannel`: `state` (estado y texto de
 estado), `turns` (cuántos turnos y el último, con la respuesta tal como va llegando),
 `marks` (interlocutor, inicio marcado y rangos enviados), `budget` y `mode`.
+El snapshot trae además `turn_silence_s`, el silencio que cierra un turno en anticipado.
 
 Los avisos de la escucha le llegan con `live_followers` (sesión nueva, texto y canales).
 """
@@ -22,7 +23,7 @@ from pydantic import BaseModel
 
 from app.agent import AgentAssistant, AgentListeners, AgentTurn
 from app.live import LiveListeners
-from domain.agent.agent_ahead import AGENT_MODES, shown_answer
+from domain.agent.agent_ahead import AGENT_MODES, TURN_SILENCE_S, shown_answer
 from domain.agent.agent_selection import WordPos
 from domain.agent.context_budget import ContextBudget
 from domain.transcription.live_view import SOURCES
@@ -117,6 +118,7 @@ def agent_snapshot(agent: AgentAssistant, channel: EventChannel) -> dict:
         **marks_data(agent),
         "budget": budget_data(agent.budget),
         "turns": [turn_data(turn) for turn in agent.turns],
+        "turn_silence_s": TURN_SILENCE_S,
         "last_event": count,
     }
 

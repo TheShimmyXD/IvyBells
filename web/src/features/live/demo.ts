@@ -45,9 +45,9 @@ export function demoView(): LiveView {
   });
 }
 
-// -- Agente de ejemplo (?demo=1&agent=answered|start|sending) --------------------------
+// -- Agente de ejemplo (?demo=1&agent=answered|start|sending|ahead) --------------------------
 
-const AGENT_STAGES = ["answered", "start", "sending"] as const;
+const AGENT_STAGES = ["answered", "start", "sending", "ahead"] as const;
 type AgentStage = (typeof AGENT_STAGES)[number];
 
 function demoTurn(changes: Partial<AgentTurn>): AgentTurn {
@@ -114,6 +114,12 @@ const STAGES: Record<AgentStage, Partial<AgentSnapshot>> = {
     },
     turns: [demoTurn({}), ASKED],
   },
+  ahead: {
+    status: "Anticipado: escuchando a Ellos",
+    mode: "ahead",
+    sent: { ellos: [], tu: [] },
+    turns: [],
+  },
 };
 
 function isStage(value: string | null): value is AgentStage {
@@ -144,6 +150,7 @@ export function demoAgent(search: string): AgentView | null {
     },
     budget: null,
     turns: [demoTurn({})],
+    turn_silence_s: 1.5,
     last_event: 0,
   };
   return fromAgentSnapshot({ ...base, ...STAGES[stage] });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentTurn } from "../../api/types";
 import {
+  agentHelp,
   answerBoard,
   olderTag,
   phraseMarks,
@@ -40,6 +41,7 @@ function view(changes: Partial<AgentView> = {}): AgentView {
     sent: { ellos: [], tu: [] },
     budget: null,
     turns: [],
+    turn_silence_s: 1.5,
     lastEvent: 0,
     ...changes,
   };
@@ -133,5 +135,15 @@ describe("cita de lo enviado", () => {
       "Quería saber el precio.",
     );
     expect(quoteText("sin hora")).toBe("sin hora");
+  });
+});
+
+describe("ayuda del panel segun el modo", () => {
+  it("en manual, los clics; en anticipado, el silencio de la API y los clics forzados", () => {
+    expect(agentHelp(null).keys[0]).toEqual(["Clic izq.", "inicio"]);
+    expect(agentHelp(view()).lead).toMatch(/^Marca lo que dijo/);
+    const ahead = agentHelp(view({ mode: "ahead", turn_silence_s: 2 }));
+    expect(ahead.keys.map(([key]) => key)).toEqual(["2,0 s de silencio", "Clics", "Esc"]);
+    expect(ahead.lead).toMatch(/^Cuando el cliente termina/);
   });
 });

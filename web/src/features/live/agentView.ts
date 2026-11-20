@@ -13,6 +13,7 @@ import type {
 export interface AgentView extends AgentBrief, AgentMarks {
   budget: AgentBudget | null;
   turns: AgentTurn[];
+  turn_silence_s: number;
   lastEvent: number;
 }
 
@@ -110,6 +111,33 @@ export function answerBoard(view: AgentView): AnswerBoard {
 
 export function seconds(value: number): string {
   return `${value.toFixed(1).replace(".", ",")} s`;
+}
+
+export interface AgentHelp {
+  lead: string;
+  keys: [string, string][];
+}
+
+/** Lo que se ve sin respuestas todavia: en anticipado responde solo y los clics fuerzan. */
+export function agentHelp(view: AgentView | null): AgentHelp {
+  if (view?.mode === "ahead") {
+    return {
+      lead: "Cuando el cliente termina de hablar, la respuesta sale aquí, grande, para leerla en voz alta.",
+      keys: [
+        [`${seconds(view.turn_silence_s)} de silencio`, "responde"],
+        ["Clics", "envío forzado"],
+        ["Esc", "cancelar"],
+      ],
+    };
+  }
+  return {
+    lead: "Marca lo que dijo el cliente y la respuesta sale aquí, grande, para leerla en voz alta.",
+    keys: [
+      ["Clic izq.", "inicio"],
+      ["Clic der.", "final y enviar"],
+      ["Esc", "cancelar"],
+    ],
+  };
 }
 
 /** La linea bajo la respuesta grande: como va, el modelo y el primer texto. */

@@ -101,6 +101,7 @@ export default function LiveModule(props: LiveModuleProps) {
               agent={agentView}
               error={agent.error}
               onCancel={cancel}
+              onMode={agent.setMode}
             />
           </div>
           <LiveFooter
