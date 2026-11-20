@@ -1,7 +1,11 @@
 // El unico lugar que habla con el Python (web_frontend.md, seccion 5).
 import { SseReader } from "./sse";
 import type {
+  AgentBrief,
+  AgentEvent,
   AgentMark,
+  AgentMode,
+  AgentSnapshot,
   ApiSession,
   ListeningEvent,
   ListeningSnapshot,
@@ -111,11 +115,34 @@ export function markRequest(mark: AgentMark): { path: string; body: Omit<AgentMa
 }
 
 export const agentApi = {
-  mark(session: ApiSession, mark: AgentMark): Promise<unknown> {
+  snapshot(session: ApiSession): Promise<AgentSnapshot> {
+    return request<AgentSnapshot>(session, "/api/agent");
+  },
+  mark(session: ApiSession, mark: AgentMark): Promise<AgentBrief> {
     const { path, body } = markRequest(mark);
-    return postJson(session, path, body);
+    return postJson<AgentBrief>(session, path, body);
+  },
+  /** Cancela el envio en curso o el inicio marcado (Esc). */
+  cancel(session: ApiSession): Promise<AgentBrief> {
+    return postJson<AgentBrief>(session, "/api/agent/cancel", {});
+  },
+  setMode(session: ApiSession, mode: AgentMode): Promise<AgentBrief> {
+    return postJson<AgentBrief>(session, "/api/agent/mode", { mode });
+  },
+  setSpeaker(session: ApiSession, source: SourceId): Promise<AgentBrief> {
+    return postJson<AgentBrief>(session, "/api/agent/speaker", { source });
   },
 };
+
+const AGENT_KINDS = new Set(["state", "turns", "marks", "budget", "mode"]);
+
+/** Un evento del canal del Agente con su tipo; los desconocidos quedan fuera (null). */
+export function toAgentEvent(kind: string, data: unknown): AgentEvent | null {
+  if (!AGENT_KINDS.has(kind) || typeof data !== "object" || data === null) {
+    return null;
+  }
+  return { kind, data } as AgentEvent;
+}
 
 const LISTENING_KINDS = new Set(["state", "phrase", "latency", "session", "sources", "saved"]);
 

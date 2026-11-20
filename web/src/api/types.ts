@@ -124,3 +124,72 @@ export interface AgentMark {
   /** Caracter dentro de la frase; el rango va por frases completas, asi que basta 0. */
   offset: number;
 }
+
+export type AgentMode = "manual" | "ahead";
+export type AgentStateName = "idle" | "start_marked" | "sending" | "answered" | "error";
+
+/** Una posicion en el texto del interlocutor: frase y palabra. */
+export interface WordPos {
+  phrase: number;
+  word: number;
+}
+
+export interface AgentBrief {
+  state: AgentStateName;
+  status: string;
+  mode: AgentMode;
+  speaker: SourceId;
+  busy: boolean;
+}
+
+export interface AgentMarks {
+  speaker: SourceId;
+  start_mark: WordPos | null;
+  sent: Record<SourceId, [WordPos, WordPos][]>;
+}
+
+/** Un envio al Agente y su respuesta tal como va llegando. */
+export interface AgentTurn {
+  source: SourceId;
+  model: string;
+  mode: AgentMode;
+  clock: string;
+  done_clock: string;
+  fragment: string;
+  start: WordPos | null;
+  end: WordPos | null;
+  answer: string;
+  error: string;
+  cancelled: boolean;
+  done: boolean;
+  superseded: boolean;
+  first_text_s: number | null;
+}
+
+export interface BudgetPart {
+  key: string;
+  label: string;
+  chars: number;
+  tokens: number;
+  limit_chars: number | null;
+}
+
+export interface AgentBudget {
+  parts: BudgetPart[];
+  estimated_tokens: number;
+  window: number | null;
+  first_text_s: number | null;
+}
+
+export interface AgentSnapshot extends AgentBrief, AgentMarks {
+  budget: AgentBudget | null;
+  turns: AgentTurn[];
+  last_event: number;
+}
+
+export type AgentEvent =
+  | { kind: "state"; data: AgentBrief }
+  | { kind: "turns"; data: { count: number; last: AgentTurn | null } }
+  | { kind: "marks"; data: AgentMarks }
+  | { kind: "budget"; data: AgentBudget | Record<string, never> }
+  | { kind: "mode"; data: { mode: AgentMode } };
