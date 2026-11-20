@@ -139,17 +139,25 @@ button:disabled {
   background: var(--color-surface);
 }
 
+/* Dos mitades iguales: un nombre de equipo largo se recorta y no empuja al otro canal. */
 .live-channels {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border-soft);
 }
 
 .live-channel {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-2);
+}
+
+.live-channel-icon,
+.live-switch {
+  flex: none;
 }
 
 .live-channel[data-source="tu"] {
@@ -172,14 +180,73 @@ button:disabled {
 
 .live-channel-text {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   line-height: 1.25;
   font-size: 13px;
 }
 
 .live-device {
+  overflow: hidden;
   color: var(--color-text-muted);
   font: 11px var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-device-slot,
+.live-device-menu,
+.live-device-menu .dropdown-button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.live-device-slot {
+  display: flex;
+}
+
+.live-channel[data-source="tu"] .live-device-slot {
+  justify-content: flex-end;
+}
+
+/* El menu de equipo sin capsula: se ve como el nombre y se marca al pasar. */
+.live-device-menu .dropdown-button {
+  padding: 0 4px;
+  margin-left: -4px;
+  border-color: transparent;
+  background: none;
+  font-size: 11px;
+}
+
+.live-channel[data-source="tu"] .live-device-menu .dropdown-button {
+  margin-right: -4px;
+  margin-left: 0;
+}
+
+.live-channel[data-source="tu"] .live-device-menu .dropdown-list {
+  right: 0;
+  left: auto;
+  text-align: left;
+}
+
+.live-device-menu .dropdown-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-device-menu .dropdown-list {
+  min-width: 380px;
+}
+
+.live-device-menu .dropdown-help {
+  font: 11px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+[data-missing="true"] .live-device-menu .dropdown-button {
+  color: var(--color-warning);
 }
 
 .live-channel[data-open="false"] .live-channel-text {

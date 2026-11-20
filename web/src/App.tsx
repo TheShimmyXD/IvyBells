@@ -9,9 +9,17 @@ import { useChat } from "./features/chat/useChat";
 import type { AgentTab } from "./features/live/AgentPanel";
 import LiveModule from "./features/live/LiveModule";
 import { chooseSavePath } from "./features/live/savePath";
-import { demoAgent, demoContextOpen, demoView } from "./features/live/demo";
+import {
+  demoAgent,
+  demoContextOpen,
+  demoDevices,
+  demoView,
+  stoppedView,
+} from "./features/live/demo";
+import { runAction } from "./features/live/liveText";
 import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
+import { useSourceMenus } from "./features/live/useSourceMenus";
 import { demoProfiles, demoSettings, demoSettingsTab } from "./features/settings/demo";
 import SettingsModule from "./features/settings/SettingsModule";
 import { useContexts } from "./features/settings/useContexts";
@@ -32,12 +40,18 @@ const NO_API_MESSAGE = "Fuera de la ventana no hay escucha: abre con ?demo=1 par
 export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
   const view = useViewPrefs(desktop, connect);
   const current = MODULES.find((entry) => entry.id === view.module) ?? MODULES[0];
-  const seed = useMemo(
-    () => (!desktop && wantsDemo(window.location.search) ? demoView() : null),
-    [desktop],
-  );
+  const demo = !desktop && wantsDemo(window.location.search);
+  const devicesSeed = useMemo(() => (demo ? demoDevices(window.location.search) : null), [demo]);
+  const seed = useMemo(() => {
+    if (!demo) {
+      return null;
+    }
+    return devicesSeed === null ? demoView() : stoppedView(demoView());
+  }, [demo, devicesSeed]);
   const recordedModel = typeof view.prefs.live_model === "string" ? view.prefs.live_model : null;
   const live = useLiveListening(view.session, recordedModel, seed);
+  const idle = live.view !== null && runAction(live.view.state) === "start";
+  const sources = useSourceMenus(view.session, idle, devicesSeed?.menus ?? null);
   const agentSeed = useMemo(
     () => (seed === null ? null : demoAgent(window.location.search)),
     [seed],
@@ -94,6 +108,8 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
             waiting={waiting}
             contextOpen={seed !== null && demoContextOpen(window.location.search)}
             chatPanel={<ChatPanel chat={chat} />}
+            sources={sources}
+            openMenu={devicesSeed?.open ?? null}
           />
         ) : (
           <SettingsModule

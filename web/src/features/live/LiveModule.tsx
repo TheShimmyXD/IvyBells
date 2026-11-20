@@ -3,6 +3,8 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import type { Agent } from "./useAgent";
 import type { LiveListening } from "./useLiveListening";
+import type { SourceMenusState } from "./useSourceMenus";
+import type { SourceId } from "../../api/types";
 import AgentPanel, { type AgentTab } from "./AgentPanel";
 import ChannelHeader from "./ChannelHeader";
 import Conversation from "./Conversation";
@@ -10,6 +12,7 @@ import LiveFooter from "./LiveFooter";
 import StatusBar from "./StatusBar";
 import { canCancel, phraseMarks } from "./agentView";
 import { conversation } from "./conversation";
+import { runAction } from "./liveText";
 import "./live.css";
 import "./agent.css";
 import "./contextBar.css";
@@ -27,10 +30,14 @@ interface LiveModuleProps {
   contextOpen?: boolean;
   /** La pestana Chat del panel del Agente (feature chat, la compone App). */
   chatPanel?: ReactNode;
+  /** Los menus de equipo de la cabecera; sin ellos, el equipo es solo texto. */
+  sources?: SourceMenusState;
+  /** Demo: el menu de equipo de este canal abierto para la captura. */
+  openMenu?: SourceId | null;
 }
 
 export default function LiveModule(props: LiveModuleProps) {
-  const { live, agent, agentTab, onAgentTab, choosePath } = props;
+  const { live, agent, agentTab, onAgentTab, choosePath, sources } = props;
   const { view } = live;
   const agentView = agent.view;
   const cancellable = agentView !== null && canCancel(agentView.state);
@@ -78,9 +85,13 @@ export default function LiveModule(props: LiveModuleProps) {
             onStart={live.start}
             onStop={live.stop}
           />
-          {(live.error ?? live.notice) !== null && (
-            <p className="live-alert" role="alert" data-tone={live.error ? "error" : "warning"}>
-              {live.error ?? live.notice}
+          {(live.error ?? sources?.error ?? live.notice) != null && (
+            <p
+              className="live-alert"
+              role="alert"
+              data-tone={(live.error ?? sources?.error) ? "error" : "warning"}
+            >
+              {live.error ?? sources?.error ?? live.notice}
             </p>
           )}
           <div className="live-body">
@@ -89,6 +100,11 @@ export default function LiveModule(props: LiveModuleProps) {
                 devices={view.devices}
                 closed={view.closed}
                 onToggle={live.toggleSource}
+                menus={sources?.menus}
+                editable={runAction(view.state) === "start"}
+                onChooseDevice={sources?.choose}
+                onOpenMenu={sources?.refresh}
+                openMenu={props.openMenu}
               />
               <Conversation
                 bubbles={conversation(view)}

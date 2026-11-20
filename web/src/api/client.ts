@@ -22,6 +22,7 @@ import type {
   SettingsEvent,
   SettingsSnapshot,
   SourceId,
+  SourceMenus,
   StartAnswer,
   StatePayload,
   ViewPrefKey,
@@ -122,6 +123,13 @@ export const listeningApi = {
   },
   save(session: ApiSession, path: string): Promise<{ path: string }> {
     return postJson(session, "/api/listening/save", { path });
+  },
+  sources(session: ApiSession): Promise<SourceMenus> {
+    return request<SourceMenus>(session, "/api/listening/sources");
+  },
+  /** "" vuelve a la predeterminada; la API lo recuerda al momento (como el combo de Qt). */
+  chooseDevice(session: ApiSession, source: SourceId, name: string): Promise<SourceMenus> {
+    return postJson<SourceMenus>(session, `/api/listening/devices/${source}`, { name });
   },
 };
 

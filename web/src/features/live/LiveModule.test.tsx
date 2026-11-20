@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import LiveModule from "./LiveModule";
-import { demoAgent, demoView } from "./demo";
+import { demoAgent, demoDevices, demoView, stoppedView } from "./demo";
 import type { Agent } from "./useAgent";
 import type { LiveListening } from "./useLiveListening";
+import type { SourceMenusState } from "./useSourceMenus";
 
 function live(overrides: Partial<LiveListening> = {}): LiveListening {
   return {
@@ -189,5 +190,64 @@ describe("Agente en la vista En vivo", () => {
     );
     expect(phrase("contraté el plan")).toHaveAttribute("data-mark", "start");
     expect(screen.getByTitle("Inicio marcado")).toBeInTheDocument();
+  });
+});
+
+describe("LiveModule, equipo de cada canal", () => {
+  const seeded = demoDevices("?devices=menu");
+  const menus = seeded === null ? null : seeded.menus;
+
+  function sources(overrides: Partial<SourceMenusState> = {}): SourceMenusState {
+    return { menus, error: null, refresh: vi.fn(), choose: vi.fn(), ...overrides };
+  }
+
+  it("detenida, el equipo es un menu: abrirlo relee y elegir avisa la fuente", () => {
+    const state = sources();
+    render(
+      <LiveModule
+        live={live({ view: stoppedView(demoView()) })}
+        agent={agent()}
+        agentTab="agent"
+        onAgentTab={vi.fn()}
+        sources={state}
+      />,
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Equipo de Ellos" }));
+    expect(state.refresh).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("option", { name: /usb-Headset_USB-00/ }));
+    expect(state.choose).toHaveBeenCalledWith(
+      "ellos",
+      "alsa_output.usb-Headset_USB-00.analog-stereo.monitor",
+    );
+    expect(screen.getByRole("combobox", { name: "Equipo de Tú" })).toHaveTextContent(
+      "usb-Microfono_USB-00.mono-fallback",
+    );
+  });
+
+  it("escuchando, el equipo es solo texto", () => {
+    render(
+      <LiveModule
+        live={live()}
+        agent={agent()}
+        agentTab="agent"
+        onAgentTab={vi.fn()}
+        sources={sources()}
+      />,
+    );
+    expect(screen.queryByRole("combobox", { name: /Equipo de/ })).toBeNull();
+    expect(screen.getByText("analog-stereo.monitor")).toBeInTheDocument();
+  });
+
+  it("un error al leer los equipos se muestra como alerta", () => {
+    render(
+      <LiveModule
+        live={live({ view: stoppedView(demoView()) })}
+        agent={agent()}
+        agentTab="agent"
+        onAgentTab={vi.fn()}
+        sources={sources({ error: "La API no respondió." })}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("La API no respondió.");
   });
 });

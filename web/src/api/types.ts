@@ -62,6 +62,23 @@ export interface DeviceLabel {
 
 export type SourceDevices = Partial<Record<SourceId, DeviceLabel>>;
 
+/** GET /api/listening/sources: lo que pide el selector de una fuente (sources_data). */
+export interface SourceMenu {
+  /** La predeterminada del sistema; null si no hay ninguna de su tipo. */
+  default: DeviceLabel | null;
+  /** Los equipos conectados de su tipo. */
+  options: DeviceLabel[];
+  /** El elegido; "" sigue a la predeterminada. */
+  preferred: string;
+  preferred_label: string;
+  /** El elegido no esta conectado: se captura la predeterminada sin olvidarlo. */
+  missing: boolean;
+  /** El que se capturaria al iniciar. */
+  resolved: string | null;
+}
+
+export type SourceMenus = Record<SourceId, SourceMenu>;
+
 /** GET /api/listening: todo lo que la vista necesita al abrirse. */
 export interface ListeningSnapshot {
   state: ListeningStateName;

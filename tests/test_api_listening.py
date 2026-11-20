@@ -264,3 +264,57 @@ def test_start_without_devices_uses_the_recorded_ones(listening) -> None:
     assert started["devices"] == {"tu": {"name": "mic.sintetico", "label": "mic.sintetico"}}
     # Lo recordado no se reescribe: solo se guarda lo que se manda.
     assert prefs.get("devices") == {"tu": "mic.sintetico"}
+
+
+def _sources_api(listening, prefs):
+    """La API con PipeWire falso: dos monitores y un micrófono, los primeros por defecto."""
+    lists = {"ellos": ["salida.monitor", "usb.monitor"], "tu": ["mic.sintetico"]}
+    defaults = {"ellos": "salida.monitor", "tu": "mic.sintetico"}
+    listening.source_lists = lambda: (lists, defaults)
+    token = new_token()
+    return create_api(token, listening, keepalive=0.05, prefs=prefs), _auth(token)
+
+
+def test_sources_list_the_devices_like_the_window(listening) -> None:
+    """Predeterminada, conectados y el elegido; uno elegido que no está se marca y no se olvida."""
+    from entrypoints.api.prefs import Prefs
+
+    prefs = Prefs({"devices": {"ellos": "usb.monitor", "tu": "mic.desconectado"}})
+    api, headers = _sources_api(listening, prefs)
+    with TestClient(api, base_url="http://127.0.0.1") as client:
+        data = client.get("/api/listening/sources", headers=headers).json()
+
+    assert data["ellos"]["default"] == {"name": "salida.monitor", "label": "salida.monitor"}
+    assert [item["name"] for item in data["ellos"]["options"]] == [
+        "salida.monitor",
+        "usb.monitor",
+    ]
+    assert (data["ellos"]["preferred"], data["ellos"]["missing"]) == ("usb.monitor", False)
+    assert data["ellos"]["resolved"] == "usb.monitor"
+    assert (data["tu"]["preferred"], data["tu"]["missing"]) == ("mic.desconectado", True)
+    assert data["tu"]["resolved"] == "mic.sintetico"
+    assert data["tu"]["preferred_label"] == "mic.desconectado"
+
+
+def test_choosing_a_device_is_remembered_and_default_forgets_it(listening) -> None:
+    """Elegir guarda `devices` como la ventana; "" vuelve a la predeterminada; otro equipo, 422."""
+    from entrypoints.api.prefs import Prefs
+
+    prefs = Prefs({"devices": {"tu": "mic.sintetico"}})
+    api, headers = _sources_api(listening, prefs)
+    with TestClient(api, base_url="http://127.0.0.1") as client:
+        chosen = client.post(
+            "/api/listening/devices/ellos", headers=headers, json={"name": "usb.monitor"}
+        )
+        remembered = dict(prefs.get("devices"))
+        back = client.post("/api/listening/devices/tu", headers=headers, json={"name": ""})
+        absent = client.post("/api/listening/devices/tu", headers=headers, json={"name": "otro"})
+        unknown = client.post("/api/listening/devices/nadie", headers=headers, json={"name": ""})
+
+    assert chosen.json()["ellos"]["resolved"] == "usb.monitor"
+    assert remembered == {"ellos": "usb.monitor", "tu": "mic.sintetico"}
+    assert back.json()["tu"]["preferred"] == ""
+    assert prefs.get("devices") == {"ellos": "usb.monitor"}
+    assert absent.status_code == 422
+    assert unknown.status_code == 404
+    assert prefs.get("devices") == {"ellos": "usb.monitor"}

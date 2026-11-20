@@ -283,21 +283,24 @@ class LiveListening:
         Lo mismo que los combos de la ventana: por fuente, la elegida (`preferred`) si está
         conectada; si no, la predeterminada de PipeWire; si tampoco, la primera de su tipo.
         """
+        lists, defaults = self.source_lists()
+        devices = {}
+        for source in SOURCES:
+            name = resolve_device(lists[source], preferred.get(source, ""), defaults[source])
+            if name:
+                devices[source] = name
+        return devices
+
+    def source_lists(self) -> tuple[dict[str, list[str]], dict[str, str | None]]:
+        """Por fuente, los dispositivos conectados de su tipo y el predeterminado de PipeWire."""
         choices = self.read_sources()
         lists = {
             "ellos": [item.name for item in choices.monitors],
             "tu": [item.name for item in choices.inputs],
         }
-        defaults = {"ellos": choices.selected.monitor, "tu": choices.selected.microphone}
-        devices = {}
-        for source in SOURCES:
-            default = defaults[source]
-            name = resolve_device(
-                lists[source], preferred.get(source, ""), default.name if default else None
-            )
-            if name:
-                devices[source] = name
-        return devices
+        selected = {"ellos": choices.selected.monitor, "tu": choices.selected.microphone}
+        defaults = {source: item.name if item else None for source, item in selected.items()}
+        return lists, defaults
 
     def start(self, model: str, devices: dict[str, str], compute_type: str = COMPUTE_TYPE) -> None:
         if self._thread is not None and self._thread.is_alive():

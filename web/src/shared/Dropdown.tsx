@@ -19,6 +19,12 @@ interface DropdownProps {
   options: DropdownOption[];
   disabled?: boolean;
   className?: string;
+  /** Lo que muestra el boton si no es la etiqueta de la opcion elegida. */
+  buttonLabel?: string;
+  /** Abierto al montarse (demo para las capturas). */
+  startOpen?: boolean;
+  /** Al abrir la lista: para refrescar las opciones justo antes de elegir. */
+  onOpen?: () => void;
   onChange: (key: string) => void;
 }
 
@@ -30,9 +36,12 @@ export default function Dropdown({
   options,
   disabled = false,
   className = "",
+  buttonLabel,
+  startOpen = false,
+  onOpen,
   onChange,
 }: DropdownProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -55,6 +64,7 @@ export default function Dropdown({
   const openList = () => {
     setActive(Math.max(0, options.indexOf(current ?? options[0])));
     setOpen(true);
+    onOpen?.();
   };
   const choose = (key: string) => {
     setOpen(false);
@@ -106,7 +116,7 @@ export default function Dropdown({
         onClick={() => (shown ? setOpen(false) : openList())}
         onKeyDown={onKey}
       >
-        <span>{current?.label ?? (value || "-")}</span>
+        <span className="dropdown-current">{buttonLabel ?? current?.label ?? (value || "-")}</span>
         <Icon name="caret-down" size={12} />
       </button>
       {shown && (

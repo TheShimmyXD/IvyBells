@@ -10,6 +10,10 @@ Eventos: `state` (carga de la máquina de estados), `phrase` (provisional o fina
 canal), `latency` (última y mediana, en segundos), `session` (`new` en la primera escucha
 de la apertura; si no, `resumes` con las marcas de Reanudada), `sources` (canales
 cerrados) y `saved` (copia del `.md`).
+
+Los selectores de fuente siguen a los de la ventana: "" es la predeterminada del sistema, que
+se sigue aunque se conecten o desconecten equipos; un equipo elegido se recuerda al elegirlo
+(no al iniciar) y, si no está conectado, se captura la predeterminada sin olvidarlo.
 """
 
 from __future__ import annotations
@@ -33,6 +37,7 @@ from domain.transcription.live_view import (
     SOURCES,
     Line,
     LiveTranscript,
+    resolve_device,
     short_device_name,
 )
 from entrypoints.api.owner import LoopOwner
@@ -53,6 +58,11 @@ class StartRequest(BaseModel):
 
 class SourceRequest(BaseModel):
     open: bool
+
+
+class DeviceRequest(BaseModel):
+    # "" sigue a la predeterminada del sistema.
+    name: str
 
 
 class SaveRequest(BaseModel):
@@ -147,6 +157,32 @@ def devices_data(devices: dict[str, str]) -> dict:
     }
 
 
+def device_data(name: str | None) -> dict | None:
+    return None if name is None else {"name": name, "label": short_device_name(name)}
+
+
+def sources_data(
+    lists: dict[str, list[str]], defaults: dict[str, str | None], preferred: dict[str, str]
+) -> dict:
+    """
+    Por fuente, lo que pide su selector: la predeterminada, los conectados, el elegido ("" es
+    seguir la predeterminada), si el elegido falta y el que se capturaría al iniciar.
+    """
+    data = {}
+    for source in SOURCES:
+        names = lists[source]
+        chosen = preferred.get(source, "")
+        data[source] = {
+            "default": device_data(defaults[source]),
+            "options": [device_data(name) for name in names],
+            "preferred": chosen,
+            "preferred_label": short_device_name(chosen) if chosen else "",
+            "missing": bool(chosen) and chosen not in names,
+            "resolved": resolve_device(names, chosen, defaults[source]),
+        }
+    return data
+
+
 def snapshot(listening: LiveListening, channel: EventChannel) -> dict:
     """Todo lo que la interfaz necesita al abrirse; `last_event` es su `Last-Event-ID`."""
     logic = listening.logic
@@ -195,6 +231,10 @@ def listening_router(
     recordados, que se usan al iniciar sin dispositivos si siguen conectados.
     """
     keep = remember or _ignore
+
+    def recorded() -> dict[str, str]:
+        return preferred() if preferred is not None else {}
+
     router = APIRouter()
     channel = EventChannel()
     listeners = channel_listeners(listening, channel)
@@ -211,8 +251,7 @@ def listening_router(
         devices = body.devices
         if devices is None:
             # pactl es un proceso aparte: fuera del bucle.
-            wanted = preferred() if preferred is not None else {}
-            devices = await asyncio.to_thread(listening.chosen_devices, wanted)
+            devices = await asyncio.to_thread(listening.chosen_devices, recorded())
         unknown = set(devices) - set(SOURCES)
         if unknown:
             raise HTTPException(422, f"Fuentes desconocidas: {', '.join(sorted(unknown))}.")
@@ -221,6 +260,23 @@ def listening_router(
         if body.devices is not None:
             keep("devices", dict(body.devices))
         return {**_last_state(channel), "devices": devices_data(listening.devices)}
+
+    @router.get("/api/listening/sources")
+    async def get_sources() -> dict:
+        lists, defaults = await asyncio.to_thread(listening.source_lists)
+        return sources_data(lists, defaults, recorded())
+
+    @router.post("/api/listening/devices/{source}")
+    async def choose_device(source: str, body: DeviceRequest) -> dict:
+        if source not in SOURCES:
+            raise HTTPException(404, f"No hay canal «{source}».")
+        lists, defaults = await asyncio.to_thread(listening.source_lists)
+        if body.name and body.name not in lists[source]:
+            raise HTTPException(422, f"«{short_device_name(body.name)}» no está conectada.")
+        wanted = {**recorded(), source: body.name}
+        # Como la ventana: solo las fuentes con un equipo elegido.
+        keep("devices", {s: wanted[s] for s in SOURCES if wanted.get(s)})
+        return sources_data(lists, defaults, wanted)
 
     @router.post("/api/listening/stop")
     async def stop() -> dict:

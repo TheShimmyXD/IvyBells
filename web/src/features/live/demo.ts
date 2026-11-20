@@ -1,7 +1,14 @@
 // La vista En vivo sin API (npm run dev con ?demo=1): los eventos reales que mando la API
 // sobre la llamada inventada de captura_ui.py (FW.6), para las capturas de la web.
 import { toListeningEvent } from "../../api/client";
-import type { AgentBudget, AgentSnapshot, AgentTurn, ListeningSnapshot } from "../../api/types";
+import type {
+  AgentBudget,
+  AgentSnapshot,
+  AgentTurn,
+  ListeningSnapshot,
+  SourceId,
+  SourceMenus,
+} from "../../api/types";
 import { fromAgentSnapshot, type AgentView } from "./agentView";
 import { applyEvent, fromSnapshot, type LiveView } from "./conversation";
 import sample from "./fixtures/sse_listening.json";
@@ -47,6 +54,61 @@ export function demoView(): LiveView {
       text: "Ah, y otra cosa",
       stable_words: 0,
     },
+  });
+}
+
+// -- Menus de equipo (?demo=1&devices=menu|ellos|tu|missing) ----------------------------
+
+const MONITOR = "alsa_output.pci-0000_00_1f.3.analog-stereo.monitor";
+const HEADSET = "alsa_output.usb-Headset_USB-00.analog-stereo.monitor";
+const MICROPHONE = "alsa_input.usb-Microfono_USB-00.mono-fallback";
+const BUILT_IN = "alsa_input.pci-0000_00_1f.3.analog-stereo";
+
+function device(name: string) {
+  return { name, label: name.replace(/^alsa_(input|output)\.(pci-[^.]+\.\d+\.)?/, "") };
+}
+
+export interface DemoDevices {
+  menus: SourceMenus;
+  /** El menu abierto para la captura; null si ninguno. */
+  open: SourceId | null;
+}
+
+/** Los menus de equipo de ejemplo (con la escucha detenida); null si la URL no los pide. */
+export function demoDevices(search: string): DemoDevices | null {
+  const stage = new URLSearchParams(search).get("devices");
+  if (stage === null || !["menu", "ellos", "tu", "missing"].includes(stage)) {
+    return null;
+  }
+  const missing = stage === "missing";
+  return {
+    menus: {
+      ellos: {
+        default: device(MONITOR),
+        options: [device(MONITOR), device(HEADSET)],
+        preferred: "",
+        preferred_label: "",
+        missing: false,
+        resolved: MONITOR,
+      },
+      tu: {
+        default: device(BUILT_IN),
+        options: missing ? [device(BUILT_IN)] : [device(BUILT_IN), device(MICROPHONE)],
+        preferred: MICROPHONE,
+        preferred_label: device(MICROPHONE).label,
+        missing,
+        resolved: missing ? BUILT_IN : MICROPHONE,
+      },
+    },
+    open: stage === "ellos" || stage === "tu" ? stage : null,
+  };
+}
+
+/** La misma vista con la escucha detenida: el equipo solo se elige sin escuchar. */
+export function stoppedView(view: LiveView): LiveView {
+  return applyEvent(view, 0, {
+    kind: "state",
+    data: { ok: true, state: "stopped", status: "Detenido", message: "" },
   });
 }
 
