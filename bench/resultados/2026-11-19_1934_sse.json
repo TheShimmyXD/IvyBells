@@ -1,0 +1,64 @@
+{
+  "fecha": "2026-11-19_1934",
+  "equipo": {
+    "python": "3.13.5",
+    "sistema": "Linux-7.0.0-43-generic-x86_64-desconocido-with-glibc2.43"
+  },
+  "versiones": {
+    "fastapi": "0.162.7",
+    "starlette": "1.10.0",
+    "uvicorn": "0.54.0",
+    "httpx": "0.28.1"
+  },
+  "opciones": {
+    "bloque_s": 0.1,
+    "eventos_por_frase": 3,
+    "frases": 200
+  },
+  "objetivo_p90_ms": 50.0,
+  "escenarios": [
+    {
+      "escenario": "uno",
+      "canales_extra": [],
+      "eventos_esperados": 600,
+      "eventos_recibidos": 600,
+      "eventos_otros_canales": 0,
+      "finales": {
+        "n": 200,
+        "mediana_ms": 0.94,
+        "p90_ms": 1.11,
+        "max_ms": 2.0
+      },
+      "todos": {
+        "n": 600,
+        "mediana_ms": 0.81,
+        "p90_ms": 1.04,
+        "p99_ms": 1.6,
+        "max_ms": 2.66
+      }
+    },
+    {
+      "escenario": "tres",
+      "canales_extra": [
+        "agent",
+        "chat"
+      ],
+      "eventos_esperados": 600,
+      "eventos_recibidos": 600,
+      "eventos_otros_canales": 6,
+      "finales": {
+        "n": 200,
+        "mediana_ms": 1.64,
+        "p90_ms": 2.99,
+        "max_ms": 6.0
+      },
+      "todos": {
+        "n": 600,
+        "mediana_ms": 1.31,
+        "p90_ms": 2.7,
+        "p99_ms": 4.91,
+        "max_ms": 6.75
+      }
+    }
+  ]
+}
