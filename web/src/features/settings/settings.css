@@ -1,0 +1,408 @@
+/* Modulo Configuracion (direccion 2d): cabecera con pestanas y la pestana Claude. */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings-head h1 {
+  margin: 0;
+}
+
+.settings-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+}
+
+.settings-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-tab[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px var(--color-shadow);
+}
+
+.settings-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.settings-alert {
+  margin: 0;
+  color: var(--color-error);
+}
+
+.settings-later {
+  padding: var(--space-3);
+}
+
+/* -- Pestana Claude ------------------------------------------------------------------ */
+
+.settings-claude {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-account,
+.settings-panel {
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.settings-account {
+  padding: var(--space-3);
+}
+
+.settings-account-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+.settings-account-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-caption {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.settings-account-input {
+  width: 100%;
+  max-width: 360px;
+  padding: 3px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.settings-account-input:hover,
+.settings-account-input:focus {
+  border-color: var(--color-border);
+  outline: none;
+}
+
+.settings-account-input[data-tone="error"] {
+  border-color: var(--color-error);
+}
+
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.settings-badge[data-tone="ok"] {
+  background: color-mix(in srgb, var(--color-ok) 14%, var(--color-surface));
+  color: var(--color-ok);
+}
+
+.settings-badge[data-tone="warning"] {
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface));
+  color: var(--color-warning);
+}
+
+.settings-badge[data-tone="error"] {
+  background: color-mix(in srgb, var(--color-error) 12%, var(--color-surface));
+  color: var(--color-error);
+}
+
+.settings-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.settings-login {
+  margin-top: var(--space-2);
+  padding-left: calc(32px + var(--space-3));
+}
+
+.settings-login-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-login code {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-help {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.settings-columns {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: var(--spacing);
+  min-height: 0;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.settings-title {
+  margin: var(--space-1) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-title .settings-help {
+  margin-left: 6px;
+}
+
+.settings-models {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.settings-model {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.settings-model:has(input:checked) {
+  border: 2px solid var(--color-brand);
+  padding: 7px 9px;
+  background: var(--color-brand-soft);
+}
+
+.settings-model:has(input:focus-visible),
+.settings-step:has(input:focus-visible) .settings-step-dot {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.settings-model-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.settings-model-name > span {
+  color: var(--color-brand);
+}
+
+.settings-model-help {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+/* La escala: los puntos sobre una linea que se pinta hasta el elegido. */
+.settings-scale {
+  padding: var(--space-2) var(--space-1) 0;
+}
+
+.settings-scale-steps {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+}
+
+.settings-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.settings-step::before {
+  position: absolute;
+  top: 6px;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--color-border);
+  content: "";
+}
+
+.settings-step:first-child::before {
+  display: none;
+}
+
+.settings-step[data-reached="true"]::before {
+  background: var(--color-brand);
+}
+
+.settings-step-dot {
+  position: relative;
+  /* Encima de la linea del paso siguiente, que se dibuja despues. */
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.settings-step[data-reached="true"] .settings-step-dot {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+}
+
+.settings-step:has(input:checked) .settings-step-dot {
+  box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+.settings-step-label {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.settings-step:has(input:checked) .settings-step-label {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.settings-scale-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.settings-fallbacks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-fallback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-fallback:has(input:checked) {
+  background: var(--color-surface-alt);
+}
+
+.settings-fallback input {
+  accent-color: var(--color-brand);
+}
+
+.settings-timeouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.settings-timeout {
+  padding: 4px 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-timeout[aria-checked="true"] {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  font-weight: 600;
+}

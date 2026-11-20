@@ -259,3 +259,63 @@ export type ChatEvent =
     }
   | { kind: "sending"; data: { sending: boolean } }
   | { kind: "config"; data: ChatBrief };
+
+// -- Configuracion de Claude (/api/settings) ---------------------------------------------
+
+/** Lo guardado en app_settings.json (claude); "" en effort y fallback_model = ninguno. */
+export interface SettingsConfig {
+  model: string;
+  effort: string;
+  fallback_model: string;
+  timeout_s: number;
+  account: string;
+}
+
+export interface SettingsChoices {
+  models: ChatChoice[];
+  efforts: ChatChoice[];
+  fallbacks: string[];
+  timeouts_s: number[];
+}
+
+/** "" mientras no se comprobo; "busy" mientras se comprueba. */
+export type AccountLevel = "" | "info" | "ok" | "warning" | "error" | "busy";
+
+export interface AccountStatus {
+  text: string;
+  level: AccountLevel;
+  /** La orden para iniciar sesion, o "" si no hace falta. */
+  login: string;
+}
+
+export interface ProfilesData {
+  names: string[];
+  active: string;
+  editable: string[];
+}
+
+export interface ContextsData {
+  names: string[];
+  active: string;
+  folder: string | null;
+  target: string;
+  /** Tokens estimados por archivo o subcarpeta del contexto en uso. */
+  weights: Record<string, number>;
+  busy: boolean;
+}
+
+export interface SettingsSnapshot {
+  config: SettingsConfig;
+  choices: SettingsChoices;
+  account: AccountStatus;
+  checking: boolean;
+  profiles: ProfilesData;
+  contexts: ContextsData;
+  last_event: number;
+}
+
+export type SettingsEvent =
+  | { kind: "config"; data: SettingsConfig }
+  | { kind: "account"; data: AccountStatus }
+  | { kind: "profiles"; data: ProfilesData }
+  | { kind: "contexts"; data: ContextsData };

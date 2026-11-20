@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { DEMO_SNAPSHOT } from "./features/settings/demo";
 
 function answer(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200 });
@@ -47,8 +48,11 @@ describe("App", () => {
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
       (input) => {
         const path = new URL(String(input)).pathname;
-        if (path === "/api/listening/events") {
+        if (path.endsWith("/events")) {
           return new Promise<Response>(() => undefined);
+        }
+        if (path === "/api/settings") {
+          return Promise.resolve(answer(DEMO_SNAPSHOT));
         }
         return Promise.resolve(answer({ theme: "dark", module: "config" }));
       },

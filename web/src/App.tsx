@@ -1,6 +1,5 @@
-// La ventana: la barra de modulos y el area de trabajo del modulo elegido. En vivo ya esta
-// en la web (FW.7) con el Agente y el chat en su panel (FW.8); Configuracion llega en FW.9
-// y hoy se usa en la ventana de Qt.
+// La ventana: la barra de modulos y el area de trabajo del modulo elegido. En vivo con el
+// Agente y el chat en su panel (FW.7, FW.8) y Configuracion (FW.9).
 import { useMemo, useState } from "react";
 import { runsInDesktop } from "./api/session";
 import type { ApiSession } from "./api/types";
@@ -13,6 +12,9 @@ import { chooseSavePath } from "./features/live/savePath";
 import { demoAgent, demoContextOpen, demoView } from "./features/live/demo";
 import { useAgent } from "./features/live/useAgent";
 import { useLiveListening } from "./features/live/useLiveListening";
+import { demoSettings } from "./features/settings/demo";
+import SettingsModule from "./features/settings/SettingsModule";
+import { useSettings } from "./features/settings/useSettings";
 import { MODULES, wantsDemo } from "./shell/modules";
 import Sidebar from "./shell/Sidebar";
 import { useViewPrefs } from "./shell/useViewPrefs";
@@ -41,6 +43,11 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
   const agent = useAgent(view.session, agentSeed);
   const chatSeed = useMemo(() => (seed === null ? null : demoChat(window.location.search)), [seed]);
   const chat = useChat(view.session, chatSeed);
+  const settingsSeed = useMemo(
+    () => (seed === null ? null : demoSettings(window.location.search)),
+    [seed],
+  );
+  const settings = useSettings(view.session, settingsSeed);
   const [chosenTab, setChosenTab] = useState<AgentTab | null>(() =>
     seed !== null && demoChatTab(window.location.search) ? "chat" : null,
   );
@@ -76,13 +83,7 @@ export default function App({ desktop = runsInDesktop(), connect }: AppProps) {
             chatPanel={<ChatPanel chat={chat} />}
           />
         ) : (
-          <>
-            <h1>{current.label}</h1>
-            <p className="muted">{current.tip}</p>
-            <p className="muted">
-              Este módulo llega a la web más adelante; hoy se usa en la ventana de Qt.
-            </p>
-          </>
+          <SettingsModule settings={settings} waiting={waiting} />
         )}
       </main>
     </div>

@@ -13,6 +13,9 @@ import type {
   ListeningEvent,
   ListeningSnapshot,
   Prefs,
+  SettingsConfig,
+  SettingsEvent,
+  SettingsSnapshot,
   SourceId,
   StartAnswer,
   StatePayload,
@@ -20,7 +23,15 @@ import type {
 } from "./types";
 
 /** Un error de la API, ya en espanol para la pantalla. */
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  /** El codigo HTTP de la respuesta (0 si el error no vino de la API). */
+  constructor(
+    message: string,
+    readonly status = 0,
+  ) {
+    super(message);
+  }
+}
 
 const STATUS_MESSAGES: Record<number, string> = {
   401: "La API rechazó el token de esta sesión.",
@@ -44,13 +55,13 @@ async function errorFor(response: Response): Promise<ApiError> {
     try {
       const body = (await response.json()) as { detail?: unknown };
       if (typeof body.detail === "string") {
-        return new ApiError(body.detail);
+        return new ApiError(body.detail, response.status);
       }
     } catch {
       // Sin cuerpo JSON: queda el mensaje por codigo.
     }
   }
-  return new ApiError(messageForStatus(response.status));
+  return new ApiError(messageForStatus(response.status), response.status);
 }
 
 function authHeaders(session: ApiSession, init: HeadersInit = {}): Headers {
@@ -180,6 +191,43 @@ export function toChatEvent(kind: string, data: unknown): ChatEvent | null {
     return null;
   }
   return { kind, data } as ChatEvent;
+}
+
+// -- Configuracion de Claude ----------------------------------------------------------
+
+export const settingsApi = {
+  snapshot(session: ApiSession): Promise<SettingsSnapshot> {
+    return request<SettingsSnapshot>(session, "/api/settings");
+  },
+  setModel(session: ApiSession, value: string): Promise<SettingsConfig> {
+    return postJson<SettingsConfig>(session, "/api/settings/model", { value });
+  },
+  setEffort(session: ApiSession, value: string): Promise<SettingsConfig> {
+    return postJson<SettingsConfig>(session, "/api/settings/effort", { value });
+  },
+  setFallback(session: ApiSession, value: string): Promise<SettingsConfig> {
+    return postJson<SettingsConfig>(session, "/api/settings/fallback", { value });
+  },
+  setTimeout(session: ApiSession, seconds: number): Promise<SettingsConfig> {
+    return postJson<SettingsConfig>(session, "/api/settings/timeout", { seconds });
+  },
+  /** Guarda el correo y lo comprueba; un correo mal escrito responde 422 con el motivo. */
+  setAccount(session: ApiSession, value: string): Promise<SettingsConfig> {
+    return postJson<SettingsConfig>(session, "/api/settings/account", { value });
+  },
+  check(session: ApiSession): Promise<{ checking: boolean }> {
+    return postJson(session, "/api/settings/account/check", {});
+  },
+};
+
+const SETTINGS_KINDS = new Set(["config", "account", "profiles", "contexts"]);
+
+/** Un evento del canal de la configuracion; los que esta vista aun no usa quedan fuera. */
+export function toSettingsEvent(kind: string, data: unknown): SettingsEvent | null {
+  if (!SETTINGS_KINDS.has(kind) || typeof data !== "object" || data === null) {
+    return null;
+  }
+  return { kind, data } as SettingsEvent;
 }
 
 const LISTENING_KINDS = new Set(["state", "phrase", "latency", "session", "sources", "saved"]);
