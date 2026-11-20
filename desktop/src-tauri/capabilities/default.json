@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "La ventana principal usa lo basico de Tauri y la orden api_session de jacck_tauri.",
+  "description": "La ventana principal usa lo basico de Tauri y la orden api_session de jacck_tauri y el dialogo de Guardar.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "dialog:allow-save"]
 }

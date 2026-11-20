@@ -15,6 +15,6 @@ fn main() {
         spec,
         SCREEN_FRACTION,
         tauri::generate_context!(),
-        |builder| builder,
+        |builder| builder.plugin(tauri_plugin_dialog::init()),
     );
 }
