@@ -86,7 +86,8 @@ El repositorio trae todo lo que necesita: la API local de la ventana y el crate 
 Tauri vienen de `jacck_common`, una librería propia del autor que no se publica, y
 van copiados en `vendor/jacck_common/`. En otra máquina basta con el `git clone` y
 `./install.sh` de arriba; la compilación de la ventana queda en
-`desktop/src-tauri/target/` (unos 3 GB, fuera de Git).
+`desktop/src-tauri/target/` (1,2 GB y 79 s la primera vez, medidos en un clon
+limpio; fuera de Git).
 
 En la máquina del autor, si `../jacck_common` está al lado, `install.sh` usa esa
 copia (editable) y la carpeta de compilación compartida. Tras cambiar algo allí:
