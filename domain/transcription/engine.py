@@ -1,4 +1,4 @@
-"""Contrato del motor de transcripción en vivo, independiente de Whisper, Qt y la GPU."""
+"""Contrato del motor de transcripción en vivo, independiente de Whisper y la GPU."""
 
 from __future__ import annotations
 
@@ -7,6 +7,10 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import numpy as np
+
+# Modelo y precisión por defecto de la escucha: turbo en int8 (FP16 es más lento en la 1660).
+DEFAULT_MODEL = "large-v3-turbo"
+COMPUTE_TYPE = "int8"
 
 
 @dataclass(frozen=True, slots=True)

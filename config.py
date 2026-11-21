@@ -8,6 +8,7 @@ from pathlib import Path
 from domain.agent.agent_ahead import AGENT_MODES, MANUAL
 from domain.agent.chat_prompt import DEFAULT_CHAT_EFFORT, DEFAULT_CHAT_MODEL
 from domain.claude.claude_model import EFFORT_LEVELS, ClaudeModelConfig, is_valid_model
+from domain.transcription.engine import DEFAULT_MODEL
 from domain.transcription.live_view import SOURCES
 from paths import APP_SETTINGS_JSON
 
@@ -69,7 +70,7 @@ class AppConfig:
     debug: bool = False
     theme: str = "light"
     claude: ClaudeModelConfig = field(default_factory=ClaudeModelConfig)
-    live_model: str = "large-v3-turbo"
+    live_model: str = DEFAULT_MODEL
     devices: dict[str, str] = field(default_factory=dict)
     speaker: str = "ellos"
     agent_mode: str = MANUAL

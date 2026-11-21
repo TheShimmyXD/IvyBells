@@ -31,8 +31,8 @@ from jacck_common.webapi.server import KEEPALIVE_SECONDS, sse_response
 from pydantic import BaseModel
 
 from app.background import ignore
-from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
-from domain.transcription.engine import TranscriptEvent
+from app.live import LiveListeners, LiveListening
+from domain.transcription.engine import COMPUTE_TYPE, DEFAULT_MODEL, TranscriptEvent
 from domain.transcription.live_view import (
     LIVE_MODELS,
     SOURCES,

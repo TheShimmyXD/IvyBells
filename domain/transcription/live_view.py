@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from domain.bench.bench_metrics import median_s, percentile
-from domain.transcription.engine import TranscriptEvent
+from domain.transcription.engine import DEFAULT_MODEL, TranscriptEvent
 
 SOURCES = ("ellos", "tu")
 # Modelos de la escucha (clave para el motor, nombre en el boton, ayuda); los muestra la
@@ -15,7 +15,7 @@ SOURCES = ("ellos", "tu")
 LIVE_MODELS = (
     ("small", "small", "El más rápido (mediana 0,5 s) pero erra más"),
     ("medium", "medium", "Intermedio (mediana 1,3 s)"),
-    ("large-v3-turbo", "turbo", "El elegido: mediana 1,8 s y el mejor texto"),
+    (DEFAULT_MODEL, "turbo", "El elegido: mediana 1,8 s y el mejor texto"),
 )
 # "alsa_output.pci-0000_0d_00.4.analog-stereo.monitor" -> "analog-stereo.monitor".
 _ALSA_PREFIX = re.compile(r"^alsa_(input|output)\.(pci-[0-9a-f_]+\.\d+\.)?")

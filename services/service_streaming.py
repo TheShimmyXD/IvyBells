@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 import numpy as np
 
-from domain.transcription.engine import EventCallback, TranscriptEvent
+from domain.transcription.engine import COMPUTE_TYPE, DEFAULT_MODEL, EventCallback, TranscriptEvent
 from domain.transcription.local_agreement import LocalAgreement
 from domain.transcription.phrase_segmenter import PhraseEventKind, PhraseSegmenter
 from services.service_vad import VAD_WINDOW_SAMPLES
@@ -220,8 +220,8 @@ class StreamingEngine:
 
 def create_whisper_engine(
     on_event: EventCallback,
-    model_name: str = "large-v3-turbo",
-    compute_type: str = "int8",
+    model_name: str = DEFAULT_MODEL,
+    compute_type: str = COMPUTE_TYPE,
     language: str = "es",
     beam_size: int = 5,
     partial_interval_s: float = PARTIAL_INTERVAL_S,

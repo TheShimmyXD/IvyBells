@@ -19,7 +19,12 @@ from pathlib import Path
 import numpy as np
 
 from app.background import Post, call_now, ignore
-from domain.transcription.engine import EventCallback, TranscriptEvent, TranscriptionEngine
+from domain.transcription.engine import (
+    COMPUTE_TYPE,
+    EventCallback,
+    TranscriptEvent,
+    TranscriptionEngine,
+)
 from domain.transcription.live_state import LiveLogic
 from domain.transcription.live_view import SOURCES, LatencyTracker, LiveTranscript, resolve_device
 from domain.transcription.transcript_markdown import format_latency_footer, format_latency_line
@@ -30,8 +35,6 @@ from services.service_transcript import TranscriptWriter
 logger = logging.getLogger(__name__)
 
 EngineFactory = Callable[[EventCallback, str, str], TranscriptionEngine]
-DEFAULT_MODEL = "large-v3-turbo"
-COMPUTE_TYPE = "int8"
 # Al cerrar, la escucha cierra las frases abiertas (una llamada al modelo cada una).
 CLOSE_TIMEOUT_S = 20.0
 

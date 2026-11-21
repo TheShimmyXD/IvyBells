@@ -4,6 +4,7 @@ import argparse
 import logging
 import sys
 
+from domain.transcription.engine import COMPUTE_TYPE, DEFAULT_MODEL
 from logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -43,8 +44,8 @@ def main() -> None:
     parser.add_argument("--fuentes", action="store_true", help="lista las fuentes de audio y sale")
     parser.add_argument("--cli", action="store_true", help="transcribe en vivo en la consola")
     parser.add_argument("--api", action="store_true", help="API local para la ventana de Tauri")
-    parser.add_argument("--model", default="large-v3-turbo", help="modelo de faster-whisper")
-    parser.add_argument("--compute-type", default="int8", help="int8, int8_float16 o float16")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="modelo de faster-whisper")
+    parser.add_argument("--compute-type", default=COMPUTE_TYPE, help="int8, int8_float16 o float16")
     parser.add_argument(
         "--install-launcher", action="store_true", help="crea el acceso en el menú y sale"
     )
