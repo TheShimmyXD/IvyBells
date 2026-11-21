@@ -7,6 +7,8 @@
 
 # IvyBells
 
+[![CI](https://github.com/TheShimmyXD/IvyBells/actions/workflows/ci.yml/badge.svg)](https://github.com/TheShimmyXD/IvyBells/actions/workflows/ci.yml)
+
 Transcribe en vivo, en la GPU de tu equipo y sin mandar el audio a ninguna nube,
 lo que suena por los parlantes o audífonos y lo que dices por el micrófono, con
 **«Ellos»** y **«Tú»** separados. Sirve para llamadas de Meet, Teams o cualquier
