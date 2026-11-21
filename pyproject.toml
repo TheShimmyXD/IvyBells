@@ -19,7 +19,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9", "ruff>=0.17"]
+# fonttools[woff]: resources/build_web_fonts.py (letras e iconos de la ventana en WOFF2).
+dev = ["pytest>=9", "ruff>=0.17", "fonttools[woff]>=4.68"]
 # Ventana de Tauri: API local sobre jacck_common, que no se publica; install.sh lo instala
 # antes desde ../jacck_common (maquina del autor) o desde vendor/jacck_common.
 web = ["jacck_common[webapi]>=0.2.0", "httpx>=0.28"]

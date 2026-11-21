@@ -154,4 +154,6 @@ ruff, pytest y Vitest en cada push (`.github/workflows/ci.yml`).
 ## Licencia
 
 MIT. Las letras IBM Plex van con su licencia OFL (`resources/fonts/OFL.txt`) y
-los iconos Phosphor con la suya (`resources/icons/LICENSE.txt`).
+los iconos Phosphor con la suya (`resources/icons/LICENSE.txt`). La ventana carga
+recortes en WOFF2 de `resources/web/` (`resources/build_web_fonts.py`); como la
+OFL reserva el nombre «Plex», el recorte se llama «IvyBells Sans» e «IvyBells Mono».

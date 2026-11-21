@@ -11,4 +11,15 @@ describe("PHOSPHOR", () => {
       expect(parseInt(codes[name], 16), name).toBe(code);
     }
   });
+
+  it("cada icono esta en la fuente recortada de resources/web", () => {
+    // Si falla: agregaste un icono; corre .venv/bin/python resources/build_web_fonts.py
+    const path = resolve(__dirname, "../../../resources/web/phosphor-ui.json");
+    const inFont = new Set(
+      (JSON.parse(readFileSync(path, "utf-8")) as string[]).map((c) => parseInt(c, 16)),
+    );
+    for (const [name, code] of Object.entries(PHOSPHOR)) {
+      expect(inFont.has(code), name).toBe(true);
+    }
+  });
 });

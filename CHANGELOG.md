@@ -24,6 +24,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
   `domain/transcription/engine.py`, sin copias en `web/src` y `settings_router` partido en
   Claude y cuenta, perfiles y contextos.
 - La demo de la interfaz muestra en el pie la latencia medida en uso real.
+- Letras e iconos más livianos: IBM Plex recortado a latín en WOFF2 (como «IvyBells Sans» y
+  «IvyBells Mono», por el nombre reservado de la OFL) y Phosphor con solo sus 39 iconos, con
+  `resources/build_web_fonts.py` para regenerarlos. Las fuentes de `web/dist` pasan de 723 KB a
+  61 KB y `web/dist` de 1,22 MB a 0,55 MB.
 
 ### Corregido
 - `web/` declara `@types/node`: en un `npm ci` limpio `tsc` no encontraba `node:url`.

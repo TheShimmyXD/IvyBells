@@ -1,20 +1,21 @@
-/* Las letras e iconos de la ventana sin red, leidos de resources/ (una sola copia). */
+/* Las letras e iconos de la ventana sin red: los recortes en WOFF2 de resources/web, que
+   arma resources/build_web_fonts.py desde los originales (IBM Plex y Phosphor). */
 @font-face {
-  font-family: "IBM Plex Sans";
+  font-family: "IvyBells Sans";
   font-weight: 400;
-  src: url("../../../../resources/fonts/IBMPlexSans-Regular.ttf") format("truetype");
+  src: url("../../../../resources/web/IvyBellsSans-Regular.woff2") format("woff2");
 }
 @font-face {
-  font-family: "IBM Plex Sans";
+  font-family: "IvyBells Sans";
   font-weight: 500 600;
-  src: url("../../../../resources/fonts/IBMPlexSans-Medium.ttf") format("truetype");
+  src: url("../../../../resources/web/IvyBellsSans-Medium.woff2") format("woff2");
 }
 @font-face {
-  font-family: "IBM Plex Mono";
+  font-family: "IvyBells Mono";
   font-weight: 400;
-  src: url("../../../../resources/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+  src: url("../../../../resources/web/IvyBellsMono-Regular.woff2") format("woff2");
 }
 @font-face {
   font-family: "Phosphor";
-  src: url("../../../../resources/icons/phosphor-regular.woff2") format("woff2");
+  src: url("../../../../resources/web/phosphor-ui.woff2") format("woff2");
 }

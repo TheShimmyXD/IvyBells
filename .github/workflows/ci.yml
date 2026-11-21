@@ -23,7 +23,7 @@ jobs:
         run: |
           python -m pip install "./vendor/jacck_common[webapi]"
           python -m pip install ruff==0.17.1 pytest==9.1.1 httpx==0.28.1 \
-            numpy==2.5.4 pypdf==6.21.1 python-docx==1.2.0
+            numpy==2.5.4 pypdf==6.21.1 python-docx==1.2.0 fonttools==4.68.0 brotli==1.2.1
       - name: ruff
         run: |
           ruff check .

@@ -11,11 +11,10 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     fs: {
-      // Letras e iconos de resources/ (una sola copia, con sus licencias).
+      // Letras e iconos recortados de resources/web (los arma resources/build_web_fonts.py).
       allow: [
         fileURLToPath(new URL(".", import.meta.url)),
-        fileURLToPath(new URL("../resources/fonts", import.meta.url)),
-        fileURLToPath(new URL("../resources/icons", import.meta.url)),
+        fileURLToPath(new URL("../resources/web", import.meta.url)),
       ],
     },
   },
