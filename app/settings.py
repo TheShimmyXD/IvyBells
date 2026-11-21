@@ -1,5 +1,5 @@
 """
-Configuración de Claude sin Qt: cuenta, modelo, esfuerzo, respaldo y tiempo máximo.
+Configuración de Claude: cuenta, modelo, esfuerzo, respaldo y tiempo máximo.
 
 Es la fuente única del `ClaudeModelConfig` que usan el Agente y el chat: cada cambio se
 guarda en `app_settings.json` y se avisa. Lleva también los perfiles (`profiles`) y el

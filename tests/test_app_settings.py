@@ -1,4 +1,4 @@
-"""Configuración, perfiles y contexto sin Qt: los avisos de los hilos llegan por `post`."""
+"""Configuración, perfiles y contexto: los avisos de los hilos llegan por `post`."""
 
 from __future__ import annotations
 

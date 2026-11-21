@@ -1,5 +1,5 @@
 """
-Perfiles del agente sin Qt: cuál está en uso y cómo se editan.
+Perfiles del agente: cuál está en uso y cómo se editan.
 
 El perfil activo se recuerda en `app_settings.json`; si su archivo ya no está, se usa el
 de ejemplo (o ninguno: entonces el system prompt son solo las reglas fijas). Todo pedido

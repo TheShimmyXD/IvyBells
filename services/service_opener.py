@@ -1,7 +1,7 @@
 """
 Abre una carpeta o un archivo con la aplicación del sistema (explorador, editor).
 
-Es lo que hace Qt con `QDesktopServices.openUrl`, pero sin Qt, para la API. No espera al
+La usa la API para los botones de abrir. No espera al
 programa que se abre ni cambia nada del sistema: solo lo lanza en su propia sesión, así
 cerrar IvyBells no lo cierra.
 """

@@ -14,14 +14,10 @@ DESKTOP_SRC = ROOT / "desktop" / "src-tauri"
 APP_SETTINGS_JSON = RESOURCES_DIR / "app_settings.json"
 # Puerto y token de la API local mientras corre; fuera de Git, permisos 0600.
 API_SESSION_JSON = RESOURCES_DIR / "api_session.json"
-# Datos propios de esta máquina (nunca se versionan).
-LOCAL_SETTINGS_JSON = ROOT / "local_settings.json"
 
 # Perfiles del agente (rol, tono y datos de la empresa): solo ejemplo.md se versiona.
 AGENT_DIR = ROOT / "resources" / "agent"
 AGENT_PROFILES_DIR = AGENT_DIR / "perfiles"
-# El perfil de la empresa de antes de los perfiles; al arrancar pasa a la carpeta.
-AGENT_PROFILE_LOCAL = AGENT_DIR / "perfil_local.md"
 # Foto de los archivos de contexto que eligió el autor (nunca se versiona).
 AGENT_CONTEXT_FILE = AGENT_DIR / "contexto" / "contexto.md"
 # Contextos con nombre: una carpeta por contexto, con los archivos que lee el agente.

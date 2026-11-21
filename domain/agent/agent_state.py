@@ -1,5 +1,5 @@
 """
-Máquina de estados del módulo Agente (sin Qt).
+Máquina de estados del módulo Agente.
 
 Transiciones:
     idle | answered | error | start_marked -> mark_start -> start_marked

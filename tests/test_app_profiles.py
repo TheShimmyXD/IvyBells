@@ -1,4 +1,4 @@
-"""Perfiles del agente sin Qt (`app.profiles.ProfileLibrary`); antes, por su adaptador Qt."""
+"""Perfiles del agente (`app.profiles.ProfileLibrary`); antes, por su adaptador Qt."""
 
 from __future__ import annotations
 

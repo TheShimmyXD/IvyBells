@@ -65,24 +65,6 @@ def test_example_is_protected(store, action):
     assert store.read("ejemplo") == "de ejemplo"
 
 
-def test_adopt_legacy_moves_it_once(store, tmp_path):
-    legacy = tmp_path / "perfil_local.md"
-    legacy.write_text("de la empresa", encoding="utf-8")
-    assert store.adopt_legacy(legacy) == "local"
-    assert store.read("local") == "de la empresa"
-    assert not legacy.exists()
-    assert store.adopt_legacy(legacy) == ""
-
-
-def test_adopt_legacy_keeps_an_existing_local(store, tmp_path):
-    store.create("local", "ya estaba")
-    legacy = tmp_path / "perfil_local.md"
-    legacy.write_text("de antes", encoding="utf-8")
-    assert store.adopt_legacy(legacy) == ""
-    assert store.read("local") == "ya estaba"
-    assert legacy.exists()
-
-
 def test_write_if_changed(tmp_path):
     path = tmp_path / "neutral" / "system_prompt.md"
     assert write_if_changed(path, "a")

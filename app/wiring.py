@@ -16,7 +16,7 @@ from app.profiles import ProfileLibrary
 from app.settings import ClaudeOptions
 from domain.claude.claude_model import ClaudeModelConfig
 from domain.transcription.engine import EventCallback, TranscriptionEngine
-from paths import AGENT_PROFILE_LOCAL, TRANSCRIPTS_DIR
+from paths import TRANSCRIPTS_DIR
 from services.service_profiles import ProfileStore
 
 Remember = Callable[[str, object], object]
@@ -45,8 +45,6 @@ def build_claude_options(
     `remember(clave, valor)` guarda cada elección en `app_settings.json`.
     """
     store = ProfileStore()
-    # El perfil local de la primera versión (un solo archivo) pasa a ser un perfil más.
-    store.adopt_legacy(AGENT_PROFILE_LOCAL)
     return ClaudeOptions(
         config,
         lambda claude: remember("claude", claude),

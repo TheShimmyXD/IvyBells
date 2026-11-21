@@ -1,5 +1,5 @@
 """
-Agente sin Qt: une la máquina de estados, la selección, el prompt y el envío a Claude.
+Agente: une la máquina de estados, la selección, el prompt y el envío a Claude.
 
 Lee el texto del interlocutor de la misma escucha en vivo (`LiveText`), así que cambiar
 de módulo no detiene ni recarga nada; el modelo, el perfil y el contexto salen de

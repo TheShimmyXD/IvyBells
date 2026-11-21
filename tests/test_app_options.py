@@ -1,4 +1,4 @@
-"""Modelo y cuenta de Claude sin Qt (`app.settings.ClaudeOptions`); antes, por su adaptador Qt."""
+"""Modelo y cuenta de Claude (`app.settings.ClaudeOptions`); antes, por su adaptador Qt."""
 
 from __future__ import annotations
 

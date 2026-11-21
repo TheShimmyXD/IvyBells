@@ -1,5 +1,5 @@
 """
-Contexto del Agente sin Qt: el contexto con nombre en uso y la foto `contexto.md`.
+Contexto del Agente: el contexto con nombre en uso y la foto `contexto.md`.
 
 Un contexto es una carpeta de `resources/agent/contextos/`; se recuerda su nombre en
 `app_settings.json`. La foto se rehace al cambiar de contexto y con Recargar (no en cada

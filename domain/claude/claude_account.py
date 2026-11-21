@@ -1,5 +1,5 @@
 """
-Estado de una cuenta de Claude Code, leído de `claude auth status --json` (sin Qt ni procesos).
+Estado de una cuenta de Claude Code, leído de `claude auth status --json` (sin procesos).
 
 Cada cuenta vive en su propia carpeta de sesión (`CLAUDE_CONFIG_DIR`); la de siempre es
 `~/.claude`. Aquí solo se interpreta la salida y se arma el texto para la ventana.

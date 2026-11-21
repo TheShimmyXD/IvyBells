@@ -1,4 +1,4 @@
-"""Contexto del agente sin Qt (`app.context.ContextLibrary`); antes, por su adaptador Qt.
+"""Contexto del agente (`app.context.ContextLibrary`); antes, por su adaptador Qt.
 
 Los avisos del hilo que lee llegan por `post` a una cola y los corre el hilo de la prueba,
 el dueño: con `call_now` el hilo podria terminar antes de que `reload` guarde su referencia.

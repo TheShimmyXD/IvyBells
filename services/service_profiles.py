@@ -2,8 +2,6 @@
 Perfiles del agente guardados como `resources/agent/perfiles/<nombre>.md`.
 
 Solo `ejemplo.md` se versiona; los demás llevan datos de la empresa y Git los ignora.
-Listar y leer no escriben nada: mover `perfil_local.md` a la carpeta es un paso aparte
-que hace la ventana al arrancar.
 """
 
 from __future__ import annotations
@@ -18,7 +16,6 @@ from paths import AGENT_PROFILES_DIR
 logger = logging.getLogger(__name__)
 
 SUFFIX = ".md"
-LEGACY_NAME = "local"
 
 
 class ProfileStore:
@@ -80,21 +77,6 @@ class ProfileStore:
         except OSError as exc:
             raise ProfileError(f"No se pudo borrar {name}: {exc}") from exc
         logger.info("Perfil %s borrado", name)
-
-    def adopt_legacy(self, legacy: Path) -> str:
-        """
-        Pasa `perfil_local.md` (el perfil de antes) a la carpeta como `local`.
-
-        Se mueve, no se copia, para que borrarlo en la ventana no lo traiga de vuelta.
-        Devuelve el nombre adoptado o "" si no había nada que mover.
-        """
-        target = self.path(LEGACY_NAME)
-        if not legacy.is_file() or target.exists():
-            return ""
-        self.folder.mkdir(parents=True, exist_ok=True)
-        legacy.rename(target)
-        logger.info("%s pasó a ser el perfil %s", legacy.name, LEGACY_NAME)
-        return LEGACY_NAME
 
     # -- Internos ----------------------------------------------
 

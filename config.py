@@ -9,7 +9,7 @@ from domain.agent.agent_ahead import AGENT_MODES, MANUAL
 from domain.agent.chat_prompt import DEFAULT_CHAT_EFFORT, DEFAULT_CHAT_MODEL
 from domain.claude.claude_model import EFFORT_LEVELS, ClaudeModelConfig, is_valid_model
 from domain.transcription.live_view import SOURCES
-from paths import APP_SETTINGS_JSON, LOCAL_SETTINGS_JSON
+from paths import APP_SETTINGS_JSON
 
 logger = logging.getLogger(__name__)
 
@@ -152,12 +152,3 @@ def save_app_config(config: AppConfig, path: Path | None = None) -> bool:
     except OSError as exc:
         logger.error("No se pudo guardar %s: %s", target.name, exc)
         return False
-
-
-def load_local_settings(path: Path | None = None) -> dict:
-    """
-    Lee local_settings.json: datos propios de esta máquina.
-    Nunca se versiona.
-    """
-    data = _read_json(path or LOCAL_SETTINGS_JSON)
-    return data if isinstance(data, dict) else {}

@@ -1,5 +1,5 @@
 """
-Escucha en vivo sin Qt: carga el modelo, captura, transcribe y escribe el `.md`.
+Escucha en vivo: carga el modelo, captura, transcribe y escribe el `.md`.
 
 `LiveListening` es el caso de uso que piden las puertas (la API y la consola): guarda el estado, el texto de cada columna y los canales, y corre cada escucha en su
 propio hilo (`ListeningRun`). Lo que sale de ese hilo se entrega con `post` al hilo dueño,

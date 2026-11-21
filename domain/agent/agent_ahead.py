@@ -1,6 +1,6 @@
 """
 Modo anticipado del Agente: cuándo termina el turno del interlocutor y qué parte de
-la conversación se le muestra a Claude. Sin Qt: el reloj llega como argumento.
+la conversación se le muestra a Claude. El reloj llega como argumento.
 
 El turno queda pendiente desde la primera frase final del interlocutor sin enviar y vence
 tras `TURN_SILENCE_S` sin frase final ni provisional suyo, o en cuanto habla el otro canal.

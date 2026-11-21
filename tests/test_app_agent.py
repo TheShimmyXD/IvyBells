@@ -1,4 +1,4 @@
-"""El Agente y el chat sin Qt: los avisos llegan al hilo dueño por `post`."""
+"""El Agente y el chat: los avisos llegan al hilo dueño por `post`."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from services.service_claude import ScriptedClaude
 
 
 class _Live:
-    """Lo que el Agente y el chat leen de la escucha, sin Qt."""
+    """Lo que el Agente y el chat leen de la escucha."""
 
     def __init__(self) -> None:
         self.closed_sources: set[str] = set()

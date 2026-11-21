@@ -1,5 +1,5 @@
 """
-Chat propio del autor sin Qt (la columna derecha del módulo Agente).
+Chat propio del autor (la columna derecha del módulo Agente).
 
 Sin perfil: el system prompt son las reglas del chat y el contexto del proyecto. Cada
 petición lleva la transcripción de los dos canales de la misma escucha en vivo (sin las

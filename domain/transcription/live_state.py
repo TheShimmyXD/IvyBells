@@ -1,5 +1,5 @@
 """
-Máquina de estados de la escucha en vivo de la ventana (sin Qt).
+Máquina de estados de la escucha en vivo de la ventana.
 
 Transiciones:
     stopped | error -> start    -> loading
