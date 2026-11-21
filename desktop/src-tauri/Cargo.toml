@@ -1,6 +1,6 @@
 [package]
 name = "ivybells-desktop"
-version = "0.1.0"
+version = "0.2.0"
 description = "Ventana de escritorio de IvyBells: abre la interfaz web y lanza la API de Python"
 edition = "2021"
 publish = false
