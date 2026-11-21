@@ -1,6 +1,6 @@
 """
-Lo que la web guarda lo lee Qt y al revés (FW.9): los dos guardan con `setattr` y
-`save_app_config` sobre el mismo `app_settings.json` y lo leen con `load_app_config` al abrir.
+Lo que la web guarda por la API queda en `app_settings.json` (`setattr` y `save_app_config`)
+y es lo que se lee con `load_app_config` al abrir de nuevo (FW.9).
 Aquí ese archivo es uno temporal; sin red ni cupo.
 """
 
@@ -84,7 +84,7 @@ def test_what_the_web_saves_is_what_qt_reads(tmp_path) -> None:
     finally:
         options.close()
         listening.close(5.0)
-    # Lo que lee Qt al abrir.
+    # Lo que se lee al abrir de nuevo.
     saved = load_app_config(settings_path)
     assert (saved.agent_profile, saved.agent_context) == ("empresa", "clientes")
     claude = saved.claude

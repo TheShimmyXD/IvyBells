@@ -1,7 +1,7 @@
 """
 Raíz de composición: arma los casos de uso con sus servicios.
 
-Las puertas (la ventana Qt, la consola y la API) piden aquí un caso de uso ya armado y
+Las puertas (la consola y la API) piden aquí un caso de uso ya armado y
 nunca crean un servicio por su cuenta.
 """
 

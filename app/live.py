@@ -1,8 +1,7 @@
 """
 Escucha en vivo sin Qt: carga el modelo, captura, transcribe y escribe el `.md`.
 
-`LiveListening` es el caso de uso que piden las puertas (la ventana Qt y, desde FW.4, la
-API): guarda el estado, el texto de cada columna y los canales, y corre cada escucha en su
+`LiveListening` es el caso de uso que piden las puertas (la API y la consola): guarda el estado, el texto de cada columna y los canales, y corre cada escucha en su
 propio hilo (`ListeningRun`). Lo que sale de ese hilo se entrega con `post` al hilo dueño,
 así que el estado solo cambia en un hilo y ninguna puerta orquesta la escucha por su cuenta.
 """
@@ -30,7 +29,7 @@ from services.service_transcript import TranscriptWriter
 logger = logging.getLogger(__name__)
 
 EngineFactory = Callable[[EventCallback, str, str], TranscriptionEngine]
-# Entrega una tarea al hilo dueño (Qt: una señal en cola; asyncio: call_soon_threadsafe).
+# Entrega una tarea al hilo dueño (en la API, asyncio con call_soon_threadsafe).
 Post = Callable[[Callable[[], None]], None]
 
 DEFAULT_MODEL = "large-v3-turbo"

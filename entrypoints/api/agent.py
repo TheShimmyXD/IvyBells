@@ -74,7 +74,7 @@ def turn_data(turn: AgentTurn) -> dict:
 
 
 def budget_data(budget: ContextBudget | None) -> dict | None:
-    """Las cifras y los textos que muestra la barra de Qt, para que la web no los repita."""
+    """Las cifras y los textos de la barra de contexto, para que la web no los repita."""
     if budget is None:
         return None
     return {

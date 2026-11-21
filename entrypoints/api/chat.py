@@ -4,7 +4,7 @@ Rutas del chat propio del autor y su canal de eventos.
 `ChatAssistant` lleva el envío y su cancelación; sus avisos se vuelven eventos:
 `turns` (cuántos turnos y el último, con la respuesta tal como llega, y el primer texto
 de la última respuesta), `sending` y `config` (modelo y esfuerzo del chat). El snapshot
-trae además los modelos y esfuerzos que se pueden elegir, los mismos de Qt.
+trae además los modelos y esfuerzos que se pueden elegir.
 """
 
 from __future__ import annotations
