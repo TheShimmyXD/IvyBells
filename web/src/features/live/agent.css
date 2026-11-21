@@ -38,10 +38,13 @@
   font-size: 12px;
 }
 
+/* min-height 0: sin el, una respuesta larga del chat estira el panel por debajo de la
+   ventana en vez de desplazar su registro. */
 .live-agent-body {
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-height: 0;
   padding: var(--space-3) var(--space-4);
 }
 
