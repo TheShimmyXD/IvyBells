@@ -1,10 +1,10 @@
-"""El Agente de la web arma los mismos prompts que el de Qt (FW.8).
+"""El Agente de la web arma los mismos prompts que armaba el de Qt (FW.8, FW.10).
 
-La muestra `agent_marks.json` (compartida con Vitest) trae una conversación inventada, lo
-que la web manda a la API por cada clic sobre las burbujas y los mismos clics en la vista
-de Qt. Aquí la misma escucha falsa pasa por las dos puertas y un Claude falso guarda lo
-que recibe: el system prompt y cada prompt deben ser iguales. Solo se igualan las horas,
-que dependen de cuándo arrancó cada escucha.
+La muestra `agent_marks.json` (compartida con Vitest) trae una conversacion inventada y lo
+que la web manda a la API por cada clic sobre las burbujas. Una escucha falsa pasa por la
+API y un Claude falso guarda lo que recibe; los prompts, con las horas igualadas, deben ser
+los que mandaba Qt con los mismos clics, guardados en `fixtures/parity/agent_prompts_qt.json`
+(2026-11-20, antes de retirar Qt).
 """
 
 from __future__ import annotations
@@ -23,18 +23,23 @@ from fastapi.testclient import TestClient  # noqa: E402
 from jacck_common.webapi.security import new_token  # noqa: E402
 
 from app.agent import AgentAssistant  # noqa: E402
+from app.context import ContextLibrary  # noqa: E402
 from app.live import LiveListening  # noqa: E402
+from app.profiles import ProfileLibrary  # noqa: E402
 from app.settings import ClaudeOptions  # noqa: E402
 from domain.agent.agent_state import AgentState  # noqa: E402
 from domain.transcription.engine import TranscriptEvent  # noqa: E402
 from entrypoints.api.run import create_api  # noqa: E402
 from services.service_claude import ScriptedClaude  # noqa: E402
+from services.service_contexts import ContextStore  # noqa: E402
+from services.service_profiles import ProfileStore  # noqa: E402
 
 SAMPLE = json.loads(
     (Path(__file__).parents[1] / "web/src/features/live/fixtures/agent_marks.json").read_text(
         encoding="utf-8"
     )
 )
+QT_PROMPTS = Path(__file__).parent / "fixtures/parity/agent_prompts_qt.json"
 BLOCK = np.zeros(1_600, dtype=np.float32)
 MODEL = "small"
 DEVICES = {"ellos": "parlantes.sintetico.monitor", "tu": "mic.sintetico"}
@@ -122,7 +127,14 @@ def _normalized(prompts: list[tuple[str, str]]) -> list[tuple[str, str]]:
 def _web_prompts(tmp_path) -> list[tuple[str, str]]:
     listening = _listening(tmp_path / "web")
     recorder = _Recorder()
-    agent = AgentAssistant(listening, ClaudeOptions(), recorder)
+    # Perfiles y contexto en tmp_path: nunca los del autor.
+    options = ClaudeOptions(
+        profiles=ProfileLibrary(ProfileStore(tmp_path / "profiles")),
+        context=ContextLibrary(
+            target=tmp_path / "context.md", store=ContextStore(tmp_path / "contexts")
+        ),
+    )
+    agent = AgentAssistant(listening, options, recorder)
     headers = {"Authorization": f"Bearer {(token := new_token())}"}
     try:
         with TestClient(create_api(token, listening, agent), base_url="http://127.0.0.1") as client:
@@ -151,42 +163,8 @@ def _web_prompts(tmp_path) -> list[tuple[str, str]]:
     return recorder.prompts()
 
 
-def _qt_prompts(qapp, tmp_path) -> list[tuple[str, str]]:
-    from entrypoints.ui_qt.coordinators.coordinator_agent import AgentCoordinator
-    from entrypoints.ui_qt.coordinators.coordinator_config import ClaudeSettings
-    from entrypoints.ui_qt.coordinators.coordinator_live import LiveCoordinator
-
-    listening = _listening(tmp_path / "qt")
-    live = LiveCoordinator(listening)
-    recorder = _Recorder()
-    agent = AgentCoordinator(
-        live, ClaudeSettings(options=ClaudeOptions()), service_factory=recorder
-    )
-    try:
-        live.start(MODEL, DEVICES)
-        assert _wait(
-            lambda: {s: len(live.transcript.finals(s)) for s in DEVICES} == _counts(),
-            qapp.processEvents,
-        )
-        assert agent.assistant.speaker == SAMPLE["speaker"]
-        for send in SAMPLE["sends"]:
-            for click in send["qt"]:
-                if click["is_end"]:
-                    agent.mark_end(click["phrase"], click["offset"])
-                else:
-                    agent.mark_start(click["phrase"], click["offset"])
-            assert _wait(lambda: agent.logic.state is AgentState.ANSWERED, qapp.processEvents)
-        live.stop()
-    finally:
-        agent.close()
-        live.close()
-        listening.close(TIMEOUT_S)
-    return recorder.prompts()
-
-
-def test_web_and_qt_send_the_same_prompts(qapp, tmp_path) -> None:
+def test_web_sends_the_prompts_that_qt_sent(tmp_path) -> None:
     web = _web_prompts(tmp_path)
-    qt = _qt_prompts(qapp, tmp_path)
     assert len(web) == len(SAMPLE["sends"])
     first, second = (prompt for _system, prompt in web)
     # Primer envío: las dos frases (el final quedó antes y se invierte); el segundo lleva
@@ -194,4 +172,9 @@ def test_web_and_qt_send_the_same_prompts(qapp, tmp_path) -> None:
     assert "Buenas tardes." in first and "plan anual" in first
     assert "permanencia" in second and "Buenas tardes." in second
     assert "".join(ANSWERS) in second
-    assert _normalized(web) == _normalized(qt)
+    # Todos los envios con el mismo system prompt (reglas, perfil y contexto).
+    assert len({system for system, _prompt in web}) == 1
+    qt = json.loads(QT_PROMPTS.read_text(encoding="utf-8"))
+    assert [prompt for _system, prompt in _normalized(web)] == qt, (
+        "los prompts de la web ya no son los que mandaba Qt"
+    )

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import queue
 import threading
 import time
 
@@ -8,7 +10,6 @@ import numpy as np
 from app.live import ListeningRun, LiveListeners, LiveListening, RunCallbacks
 from domain.transcription.engine import TranscriptEvent
 from domain.transcription.live_state import LiveState
-from entrypoints.ui_qt.coordinators.coordinator_live import LiveCoordinator
 from services.service_transcript import TranscriptWriter
 
 BLOCK = np.zeros(1_600, dtype=np.float32)
@@ -198,23 +199,14 @@ def test_start_without_devices_fails_without_a_thread(tmp_path):
     assert listening.wait(0.0)
 
 
-def _process_until(qapp, condition, timeout_s=5.0):
-    deadline = time.monotonic() + timeout_s
-    while not condition() and time.monotonic() < deadline:
-        qapp.processEvents()
-        time.sleep(0.01)
-    return condition()
-
-
-def test_coordinator_delivers_listening_in_the_window_thread(qapp, tmp_path):
-    """El hilo de la escucha avisa; las señales salen en el hilo de la ventana."""
+def test_notices_arrive_in_the_owner_thread_in_order(tmp_path):
+    """El hilo de la escucha avisa; los avisos salen en el hilo dueño (el de la API)."""
 
     def factory(on_event, *_):
         return _FakeEngine(on_event)
 
-    listening = LiveListening(factory, tmp_path, capture_factory=_OpenCapture)
-    coordinator = LiveCoordinator(listening)
-    window_thread = threading.current_thread()
+    tasks: queue.Queue = queue.Queue()
+    owner = threading.current_thread()
     seen = {"threads": set(), "states": [], "sources": []}
 
     def on_state(payload):
@@ -225,18 +217,23 @@ def test_coordinator_delivers_listening_in_the_window_thread(qapp, tmp_path):
         seen["threads"].add(threading.current_thread())
         seen["sources"].append(source)
 
-    coordinator.state_changed.connect(on_state)
-    coordinator.transcript_changed.connect(on_transcript)
+    def drain_until(condition, timeout_s=5.0):
+        deadline = time.monotonic() + timeout_s
+        while not condition() and time.monotonic() < deadline:
+            with contextlib.suppress(queue.Empty):
+                tasks.get(timeout=0.01)()
+        return condition()
 
-    coordinator.start("small", {"tu": "mic.sintetico"})
-    assert _process_until(qapp, lambda: len(coordinator.transcript.finals("tu")) == 1)
-    assert coordinator.logic.can_stop
-    coordinator.stop()
+    listening = LiveListening(factory, tmp_path, capture_factory=_OpenCapture)
+    listening.attach(tasks.put, LiveListeners(state=on_state, transcript=on_transcript))
+    listening.start("small", {"tu": "mic.sintetico"})
+    assert drain_until(lambda: len(listening.transcript.finals("tu")) == 1)
+    listening.stop()
     assert listening.wait(5.0)
-    assert _process_until(qapp, lambda: coordinator.logic.state is LiveState.STOPPED)
-    coordinator.close()
+    assert drain_until(lambda: seen["states"][-1:] == [LiveState.STOPPED])
+    listening.close()
 
-    assert seen["threads"] == {window_thread}
+    assert seen["threads"] == {owner}
     assert seen["states"] == [
         LiveState.LOADING,
         LiveState.LISTENING,

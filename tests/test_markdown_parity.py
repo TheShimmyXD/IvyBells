@@ -1,14 +1,16 @@
-"""El .md de la web es el de Qt: la misma escucha falsa por las dos puertas da el mismo texto.
+"""El .md de la web es el que escribia Qt (FW.10).
 
-Las dos puertas escriben con `LiveListening`; esta prueba cuida que ninguna arranque,
-detenga o guarde de otra forma (modelo, canales, Reanudada, pie de latencia). Solo se
-igualan las horas y las cifras medidas, que cambian de una corrida a otra.
+Una escucha falsa pasa por la API (iniciar, detener, reanudar, guardar) y su .md, con horas
+y cifras medidas igualadas, debe ser el que escribia Qt con la misma escucha, guardado en
+`fixtures/parity/markdown_qt.md` (2026-11-20, antes de retirar Qt): modelo, canales,
+Reanudada y pie de latencia.
 """
 
 from __future__ import annotations
 
 import re
 import time
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -20,10 +22,9 @@ from jacck_common.webapi.security import new_token  # noqa: E402
 
 from app.live import LiveListening  # noqa: E402
 from domain.transcription.engine import TranscriptEvent  # noqa: E402
-from domain.transcription.live_state import LiveState  # noqa: E402
 from entrypoints.api.run import create_api  # noqa: E402
-from entrypoints.ui_qt.coordinators.coordinator_live import LiveCoordinator  # noqa: E402
 
+QT_MARKDOWN = Path(__file__).parent / "fixtures/parity/markdown_qt.md"
 BLOCK = np.zeros(1_600, dtype=np.float32)
 MODEL = "small"
 DEVICES = {"ellos": "parlantes.sintetico.monitor", "tu": "mic.sintetico"}
@@ -118,33 +119,12 @@ def _web_markdown(tmp_path) -> str:
     return copy.read_text(encoding="utf-8")
 
 
-def _qt_markdown(qapp, tmp_path) -> str:
-    listening = _listening(tmp_path / "qt")
-    coordinator = LiveCoordinator(listening)
-    copy = tmp_path / "qt.md"
-    try:
-        for rounds in ROUNDS:
-            coordinator.start(MODEL, DEVICES)
-            assert _wait(
-                lambda rounds=rounds: all(
-                    len(coordinator.transcript.finals(s)) == rounds for s in DEVICES
-                ),
-                qapp.processEvents,
-            )
-            coordinator.stop()
-            assert _wait(lambda: coordinator.logic.state is LiveState.STOPPED, qapp.processEvents)
-        assert coordinator.save_copy(copy)
-    finally:
-        coordinator.close()
-        listening.close(TIMEOUT_S)
-    return copy.read_text(encoding="utf-8")
-
-
-def test_web_and_qt_write_the_same_markdown(qapp, tmp_path) -> None:
+def test_web_writes_the_markdown_that_qt_wrote(tmp_path) -> None:
     web = _web_markdown(tmp_path)
-    qt = _qt_markdown(qapp, tmp_path)
     for phrase in PHRASES.values():
         assert phrase in web
     assert "## Latencia" in web
     assert "## Reanudada" in web
-    assert _normalized(web) == _normalized(qt)
+    assert _normalized(web) == QT_MARKDOWN.read_text(encoding="utf-8"), (
+        "el .md de la web ya no es el que escribia Qt"
+    )
