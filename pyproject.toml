@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ivybells"
-version = "0.2.0"
+version = "0.2.1"
 description = "Transcripción en tiempo real local (GPU) de audio del sistema y del micrófono."
 requires-python = ">=3.13"
 dependencies = [

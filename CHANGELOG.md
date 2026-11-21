@@ -6,6 +6,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Sin publicar]
 
+## [0.2.1] - 2026-11-20
+
+Limpieza y repositorio listo para otra máquina: copia de `jacck_common` en `vendor/`,
+instalación más liviana, CI en cada push y la ventana con letras e iconos de 61 KB.
+
 ### Agregado
 - Captura de la ventana en el README (demo de la interfaz, tema claro y oscuro).
 - CI en GitHub Actions: ruff, pytest y Vitest en cada push, sin GPU ni audio.
