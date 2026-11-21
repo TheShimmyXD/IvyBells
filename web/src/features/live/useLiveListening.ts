@@ -2,12 +2,12 @@
 // eventos (se reconecta desde el ultimo numero visto) y manda Iniciar, Detener, los
 // canales, el modelo y Guardar. Sin sesion (fuera de Tauri) muestra `seed`, si hay.
 import { useCallback, useEffect, useState } from "react";
-import { listeningApi, readEvents, savePref, toListeningEvent } from "../../api/client";
+import { listeningApi, savePref, toListeningEvent } from "../../api/client";
+import { errorMessage, followChannel } from "../../api/follow";
 import type { ApiSession, SourceId } from "../../api/types";
 import { applyEvent, fromSnapshot, type LiveView } from "./conversation";
 
 export const EVENTS_PATH = "/api/listening/events";
-export const RETRY_MS = 1_000;
 export const LAST_OPEN_MESSAGE = "Queda al menos un canal abierto.";
 
 export interface LiveListening {
@@ -24,12 +24,6 @@ export interface LiveListening {
   save: (path: string) => void;
 }
 
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
-}
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export function useLiveListening(
   session: ApiSession | null,
   recordedModel: string | null = null,
@@ -45,41 +39,23 @@ export function useLiveListening(
       return;
     }
     const abort = new AbortController();
-    const { signal } = abort;
-    let last = 0;
-    const onEvent = (seq: number, kind: string, data: unknown) => {
-      const event = toListeningEvent(kind, data);
-      if (event === null || (seq > 0 && seq <= last)) {
-        return;
-      }
-      last = Math.max(last, seq);
-      setView((current) => (current === null ? current : applyEvent(current, seq, event)));
-    };
-    const follow = async () => {
-      const snapshot = await listeningApi.snapshot(session);
-      if (signal.aborted) {
-        return;
-      }
-      last = snapshot.last_event;
-      setView(fromSnapshot(snapshot));
-      while (!signal.aborted) {
-        try {
-          await readEvents(session, EVENTS_PATH, last, onEvent, signal);
-        } catch (reason) {
-          if (!signal.aborted) {
-            setError(message(reason));
+    void followChannel(
+      session,
+      EVENTS_PATH,
+      {
+        snapshot: (opened) => listeningApi.snapshot(opened),
+        lastEvent: (snapshot) => snapshot.last_event,
+        onSnapshot: (snapshot) => setView(fromSnapshot(snapshot)),
+        onEvent: (seq, kind, data) => {
+          const event = toListeningEvent(kind, data);
+          if (event !== null) {
+            setView((current) => current && applyEvent(current, seq, event));
           }
-        }
-        if (!signal.aborted) {
-          await wait(RETRY_MS);
-        }
-      }
-    };
-    follow().catch((reason: unknown) => {
-      if (!signal.aborted) {
-        setError(message(reason));
-      }
-    });
+        },
+        onError: setError,
+      },
+      abort.signal,
+    );
     return () => abort.abort();
   }, [session]);
 
@@ -95,7 +71,7 @@ export function useLiveListening(
       setNotice(null);
       request(session)
         .then((answer) => then?.(answer))
-        .catch((reason: unknown) => setError(message(reason)));
+        .catch((reason: unknown) => setError(errorMessage(reason)));
     },
     [session],
   );

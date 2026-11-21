@@ -1,5 +1,6 @@
 // Seguir un canal de la API: abre con su snapshot y lee sus eventos; si el canal se corta,
-// vuelve a leer desde el ultimo numero visto. Lo usan el Agente y el chat.
+// vuelve a leer desde el ultimo numero visto. Lo usan la escucha, el Agente, el chat y
+// la configuracion.
 import { readEvents } from "./client";
 import type { ApiSession } from "./types";
 

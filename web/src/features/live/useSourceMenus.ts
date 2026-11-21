@@ -3,6 +3,7 @@
 // recuerda la API al momento. Sin sesion (fuera de Tauri) muestra `seed`, si hay.
 import { useCallback, useEffect, useState } from "react";
 import { listeningApi } from "../../api/client";
+import { errorMessage } from "../../api/follow";
 import type { ApiSession, SourceId, SourceMenus } from "../../api/types";
 
 export interface SourceMenusState {
@@ -11,10 +12,6 @@ export interface SourceMenusState {
   error: string | null;
   refresh: () => void;
   choose: (source: SourceId, name: string) => void;
-}
-
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
 }
 
 export function useSourceMenus(
@@ -35,7 +32,7 @@ export function useSourceMenus(
           setMenus(answer);
           setError(null);
         })
-        .catch((reason: unknown) => setError(message(reason)));
+        .catch((reason: unknown) => setError(errorMessage(reason)));
     },
     [session],
   );

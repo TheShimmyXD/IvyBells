@@ -2,6 +2,7 @@
 // (app_settings.json). Fuera de Tauri se leen de la URL y no se guardan.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPrefs, savePref } from "../api/client";
+import { errorMessage } from "../api/follow";
 import { runsInDesktop, waitForSession } from "../api/session";
 import type { ApiSession, ModuleId, Prefs, ViewPrefKey } from "../api/types";
 import { nextTheme, viewFromPrefs, viewFromQuery, type ViewState } from "./modules";
@@ -16,10 +17,6 @@ export interface ViewPrefs extends ViewState {
   chooseModule: (module: ModuleId) => void;
   cycleTheme: () => void;
   remember: (key: ViewPrefKey, value: string) => void;
-}
-
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
 }
 
 export function useViewPrefs(
@@ -52,7 +49,7 @@ export function useViewPrefs(
       })
       .catch((reason: unknown) => {
         if (alive) {
-          setError(message(reason));
+          setError(errorMessage(reason));
         }
       });
     return () => {
@@ -68,7 +65,9 @@ export function useViewPrefs(
     if (session.current === null) {
       return;
     }
-    savePref(session.current, key, value).catch((reason: unknown) => setError(message(reason)));
+    savePref(session.current, key, value).catch((reason: unknown) =>
+      setError(errorMessage(reason)),
+    );
   }, []);
 
   const chooseModule = useCallback(

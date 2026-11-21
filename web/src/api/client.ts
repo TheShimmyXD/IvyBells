@@ -161,15 +161,18 @@ export const agentApi = {
   },
 };
 
-const AGENT_KINDS = new Set(["state", "turns", "marks", "budget", "mode"]);
+/**
+ * El lector de los eventos de un canal: arma el evento con su tipo si `kind` esta en
+ * `kinds` y trae datos; los demas quedan fuera (null).
+ */
+function eventParser<E extends { kind: string; data: unknown }>(kinds: readonly E["kind"][]) {
+  const known = new Set<string>(kinds);
+  return (kind: string, data: unknown): E | null =>
+    known.has(kind) && typeof data === "object" && data !== null ? ({ kind, data } as E) : null;
+}
 
 /** Un evento del canal del Agente con su tipo; los desconocidos quedan fuera (null). */
-export function toAgentEvent(kind: string, data: unknown): AgentEvent | null {
-  if (!AGENT_KINDS.has(kind) || typeof data !== "object" || data === null) {
-    return null;
-  }
-  return { kind, data } as AgentEvent;
-}
+export const toAgentEvent = eventParser<AgentEvent>(["state", "turns", "marks", "budget", "mode"]);
 
 // -- Chat propio del autor -------------------------------------------------------------
 
@@ -196,15 +199,8 @@ export const chatApi = {
   },
 };
 
-const CHAT_KINDS = new Set(["turns", "sending", "config"]);
-
 /** Un evento del canal del chat con su tipo; los desconocidos quedan fuera (null). */
-export function toChatEvent(kind: string, data: unknown): ChatEvent | null {
-  if (!CHAT_KINDS.has(kind) || typeof data !== "object" || data === null) {
-    return null;
-  }
-  return { kind, data } as ChatEvent;
-}
+export const toChatEvent = eventParser<ChatEvent>(["turns", "sending", "config"]);
 
 // -- Configuracion de Claude ----------------------------------------------------------
 
@@ -289,25 +285,24 @@ export const contextsApi = {
   },
 };
 
-const SETTINGS_KINDS = new Set(["config", "account", "profiles", "contexts", "context_reloaded"]);
-
 /** Un evento del canal de la configuracion; los que esta vista aun no usa quedan fuera. */
-export function toSettingsEvent(kind: string, data: unknown): SettingsEvent | null {
-  if (!SETTINGS_KINDS.has(kind) || typeof data !== "object" || data === null) {
-    return null;
-  }
-  return { kind, data } as SettingsEvent;
-}
-
-const LISTENING_KINDS = new Set(["state", "phrase", "latency", "session", "sources", "saved"]);
+export const toSettingsEvent = eventParser<SettingsEvent>([
+  "config",
+  "account",
+  "profiles",
+  "contexts",
+  "context_reloaded",
+]);
 
 /** Un evento del canal con su tipo; los que esta vista no usa quedan fuera (null). */
-export function toListeningEvent(kind: string, data: unknown): ListeningEvent | null {
-  if (!LISTENING_KINDS.has(kind) || typeof data !== "object" || data === null) {
-    return null;
-  }
-  return { kind, data } as ListeningEvent;
-}
+export const toListeningEvent = eventParser<ListeningEvent>([
+  "state",
+  "phrase",
+  "latency",
+  "session",
+  "sources",
+  "saved",
+]);
 
 export type EventHandler = (seq: number, kind: string, data: unknown) => void;
 
