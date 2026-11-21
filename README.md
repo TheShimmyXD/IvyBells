@@ -12,6 +12,14 @@ lo que suena por los parlantes o audífonos y lo que dices por el micrófono, co
 **«Ellos»** y **«Tú»** separados. Sirve para llamadas de Meet, Teams o cualquier
 otra app: escucha la salida de audio del sistema, no la app.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/captura-dark.png">
+  <img src="docs/captura-light.png" alt="Ventana de IvyBells escuchando una llamada de ejemplo, con la respuesta del Agente al lado" width="768">
+</picture>
+
+*Llamada de ejemplo (la demo de la interfaz); la latencia del pie es la mediana
+medida en uso real.*
+
 La ventana (Tauri, con la interfaz en React) tiene dos módulos sobre la misma
 escucha:
 
@@ -140,7 +148,8 @@ cd web && npm test
 ```
 
 Las pruebas usan audio sintético y muestras reales de `pactl` en
-`tests/fixtures/pipewire/`; no necesitan GPU ni micrófono.
+`tests/fixtures/pipewire/`; no necesitan GPU ni micrófono. GitHub Actions corre
+ruff, pytest y Vitest en cada push (`.github/workflows/ci.yml`).
 
 ## Licencia
 

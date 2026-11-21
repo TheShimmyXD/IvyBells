@@ -6,10 +6,29 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Sin publicar]
 
+### Agregado
+- Captura de la ventana en el README (demo de la interfaz, tema claro y oscuro).
+- CI en GitHub Actions: ruff, pytest y Vitest en cada push, sin GPU ni audio.
+- Prueba de versión única: falla si `pyproject.toml`, `web/package.json` y su lock,
+  `tauri.conf.json`, `Cargo.toml` o `Cargo.lock` no coinciden.
+
 ### Cambiado
 - La API local y el crate de Tauri de `jacck_common` van copiados en `vendor/jacck_common/`,
   con `vendor/sync_jacck_common.py` y una prueba que falla si la copia se aparta: IvyBells se
   instala en otra máquina sin `../jacck_common`. `.cargo/config.toml` pasa a ser local.
+- Instalación más liviana: `install.sh` deja la ventana (12 MB) en `desktop/bin/` y borra
+  `desktop/src-tauri/target/` y `web/node_modules/`; un clon limpio pasa de ~4,1 GB a 2,7 GB.
+- Vitest sin aislar cada archivo: de 3,3 s a 1,6 s.
+- Limpieza: sin `noqa` que no silencian nada (`RUF100`), sin ajustes locales ni perfil viejo
+  sin uso, ayudantes de hilos en `app/background.py`, modelo y precisión por defecto en
+  `domain/transcription/engine.py`, sin copias en `web/src` y `settings_router` partido en
+  Claude y cuenta, perfiles y contextos.
+- La demo de la interfaz muestra en el pie la latencia medida en uso real.
+
+### Corregido
+- `web/` declara `@types/node`: en un `npm ci` limpio `tsc` no encontraba `node:url`.
+- La prueba de provisionales del streaming usa un reloj falso: ya no falla con la máquina
+  cargada.
 
 ## [0.2.0] - 2026-11-20
 

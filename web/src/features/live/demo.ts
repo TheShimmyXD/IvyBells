@@ -45,7 +45,13 @@ export function demoView(): LiveView {
     kind: "state",
     data: { ok: true, state: "listening", status: "Escuchando", message: "" },
   });
-  return applyEvent(listening, 0, {
+  // El motor falso de la muestra da 0,0 s: el pie muestra la mediana medida en uso real
+  // (125 frases de Ellos, transcripciones/2026-11-19_1703.md).
+  const measured = applyEvent(listening, 0, {
+    kind: "latency",
+    data: { last_s: 1.4, median_s: 1.5 },
+  });
+  return applyEvent(measured, 0, {
     kind: "phrase",
     data: {
       source: "ellos",
