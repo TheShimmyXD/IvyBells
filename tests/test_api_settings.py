@@ -19,9 +19,10 @@ from app.live import LiveListening
 from app.profiles import ProfileLibrary
 from app.settings import ClaudeOptions
 from domain.claude.claude_account import AccountStatus
+from entrypoints.api.owner import LoopOwner
 from entrypoints.api.prefs import Prefs
 from entrypoints.api.run import create_api
-from entrypoints.api.settings import context_entries
+from entrypoints.api.settings import context_entries, settings_router
 from services.service_claude import ScriptedClaude
 from services.service_context import ContextReport
 from services.service_contexts import ContextStore
@@ -274,3 +275,35 @@ def test_routes_use_only_methods_that_cors_lets_through(setup) -> None:
     api, _ = _client(setup, new_token())
     methods = {m for route in api.routes for m in getattr(route, "methods", None) or ()}
     assert methods <= {"GET", "POST", "HEAD"}
+
+
+# Las rutas de la configuracion, en el orden en que FastAPI las prueba.
+SETTINGS_ROUTES = [
+    ("GET", "/api/settings"),
+    ("POST", "/api/settings/model"),
+    ("POST", "/api/settings/effort"),
+    ("POST", "/api/settings/fallback"),
+    ("POST", "/api/settings/timeout"),
+    ("POST", "/api/settings/account"),
+    ("POST", "/api/settings/account/check"),
+    ("GET", "/api/profiles/{name}"),
+    ("POST", "/api/profiles/active"),
+    ("POST", "/api/profiles"),
+    ("POST", "/api/profiles/{name}/save"),
+    ("POST", "/api/profiles/{name}/duplicate"),
+    ("POST", "/api/profiles/{name}/rename"),
+    ("POST", "/api/profiles/{name}/delete"),
+    ("POST", "/api/contexts/active"),
+    ("POST", "/api/contexts"),
+    ("POST", "/api/contexts/{name}/rename"),
+    ("POST", "/api/contexts/open-folder"),
+    ("POST", "/api/contexts/open-snapshot"),
+    ("POST", "/api/contexts/reload"),
+    ("GET", "/api/settings/events"),
+]
+
+
+def test_settings_routes_keep_their_list_and_order(setup) -> None:
+    router, _ = settings_router(setup[3], LoopOwner())
+    routes = [(method, route.path) for route in router.routes for method in sorted(route.methods)]
+    assert routes == SETTINGS_ROUTES

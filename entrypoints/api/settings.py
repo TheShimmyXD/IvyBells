@@ -135,88 +135,47 @@ def contexts_data(options: ClaudeOptions) -> dict:
     }
 
 
-def settings_router(
-    options: ClaudeOptions,
-    owner: LoopOwner,
-    keepalive: float = KEEPALIVE_SECONDS,
-    followers: SettingsFollowers | None = None,
-) -> tuple[APIRouter, EventChannel]:
-    router = APIRouter()
-    channel = EventChannel()
-    follow = followers or SettingsFollowers()
-    # La última cuenta avisada, el último aviso de la foto y el último error de un pedido
-    # (para el detalle del 409).
-    last = {"account": dict(NOT_CHECKED), "context": {"text": "", "level": ""}, "error": ""}
+class _Settings:
+    """
+    Lo que comparten las tres partes de las rutas: las opciones, el canal, a quién avisar
+    y lo último avisado (la cuenta, la foto del contexto y el error de un pedido, para el
+    detalle del 409).
+    """
+
+    def __init__(self, options: ClaudeOptions, follow: SettingsFollowers) -> None:
+        self.options = options
+        self.follow = follow
+        self.channel = EventChannel()
+        self.account: dict = dict(NOT_CHECKED)
+        self.context: dict = {"text": "", "level": ""}
+        self.error = ""
+
+    def note_error(self, payload: dict) -> None:
+        if payload.get("level") == "error":
+            self.error = payload.get("text", "")
+
+    def attempt(self, action: Callable[[], object], default: str) -> object:
+        """Corre el pedido; si falla, 409 con el motivo que avisó la biblioteca."""
+        self.error = ""
+        result = action()
+        if not result:
+            raise HTTPException(409, self.error or default)
+        return result
+
+
+def _claude_routes(router: APIRouter, state: _Settings, owner: LoopOwner) -> None:
+    """Modelo, esfuerzo, respaldo, tiempo y cuenta."""
+    options, channel = state.options, state.channel
 
     def on_account(payload: dict) -> None:
-        last["account"] = payload
+        state.account = payload
         channel.emit("account", payload)
 
     def on_config(config: ClaudeModelConfig) -> None:
         channel.emit("config", config_data(config))
-        follow.config()
-
-    def on_profiles(*_args: object) -> None:
-        channel.emit("profiles", profiles_data(options))
-        follow.profile()
-
-    def on_notice(payload: dict) -> None:
-        if payload.get("level") == "error":
-            last["error"] = payload.get("text", "")
-        channel.emit("profile_notice", payload)
-
-    def on_contexts(*_args: object) -> None:
-        channel.emit("contexts", contexts_data(options))
-
-    def on_reloaded(payload: dict) -> None:
-        last["context"] = payload
-        if payload.get("level") == "error":
-            last["error"] = payload.get("text", "")
-        channel.emit("context_reloaded", payload)
-        if payload.get("level") != "busy":
-            # El peso de cada archivo sale de la foto nueva.
-            channel.emit("contexts", contexts_data(options))
-        follow.context(payload)
+        state.follow.config()
 
     options.attach(owner, SettingsListeners(config=on_config, account=on_account))
-    options.profiles.listeners = ProfileListeners(
-        changed=on_profiles, active=on_profiles, notice=on_notice
-    )
-    options.context.attach(
-        owner, ContextListeners(changed=on_contexts, active=on_contexts, reloaded=on_reloaded)
-    )
-
-    def attempt(action: Callable[[], object], default: str) -> object:
-        """Corre el pedido; si falla, 409 con el motivo que avisó la biblioteca."""
-        last["error"] = ""
-        result = action()
-        if not result:
-            raise HTTPException(409, last["error"] or default)
-        return result
-
-    def known_profile(name: str) -> None:
-        if name not in options.profiles.names():
-            raise HTTPException(404, f"No hay perfil «{name}».")
-
-    def known_context(name: str) -> None:
-        if name not in options.context.names():
-            raise HTTPException(404, f"No hay contexto «{name}».")
-
-    # -- Configuración y cuenta --------------------------------
-
-    @router.get("/api/settings")
-    async def get_settings() -> dict:
-        count, _, _ = channel.state()
-        return {
-            "config": config_data(options.config),
-            "choices": choices_data(),
-            "account": last["account"],
-            "checking": options.is_busy(),
-            "profiles": profiles_data(options),
-            "contexts": contexts_data(options),
-            "context_notice": last["context"],
-            "last_event": count,
-        }
 
     @router.post("/api/settings/model")
     async def set_model(body: ValueRequest) -> dict:
@@ -249,7 +208,7 @@ def settings_router(
     @router.post("/api/settings/account")
     async def set_account(body: ValueRequest) -> dict:
         if not options.set_account(body.value):
-            raise HTTPException(422, last["account"]["text"])
+            raise HTTPException(422, state.account["text"])
         return config_data(options.config)
 
     @router.post("/api/settings/account/check")
@@ -257,89 +216,158 @@ def settings_router(
         options.check()
         return {"checking": options.is_busy()}
 
-    # -- Perfiles ----------------------------------------------
+
+def _profile_routes(router: APIRouter, state: _Settings) -> None:
+    """Elegir, ver, crear, guardar, copiar, renombrar y borrar perfiles."""
+    options, attempt = state.options, state.attempt
+    profiles = options.profiles
+
+    def on_profiles(*_args: object) -> None:
+        state.channel.emit("profiles", profiles_data(options))
+        state.follow.profile()
+
+    def on_notice(payload: dict) -> None:
+        state.note_error(payload)
+        state.channel.emit("profile_notice", payload)
+
+    profiles.listeners = ProfileListeners(changed=on_profiles, active=on_profiles, notice=on_notice)
+
+    def known_profile(name: str) -> None:
+        if name not in profiles.names():
+            raise HTTPException(404, f"No hay perfil «{name}».")
 
     @router.get("/api/profiles/{name}")
     async def get_profile(name: str) -> dict:
         known_profile(name)
-        profiles = options.profiles
         return {"name": name, "text": profiles.text(name), "editable": profiles.is_editable(name)}
 
     @router.post("/api/profiles/active")
     async def set_active_profile(body: NameRequest) -> dict:
         known_profile(body.name)
-        options.profiles.set_active(body.name)
+        profiles.set_active(body.name)
         return profiles_data(options)
 
     @router.post("/api/profiles")
     async def create_profile() -> dict:
-        name = attempt(options.profiles.create, "No se pudo crear el perfil.")
+        name = attempt(profiles.create, "No se pudo crear el perfil.")
         return {"name": name, **profiles_data(options)}
 
     @router.post("/api/profiles/{name}/save")
     async def save_profile(name: str, body: TextRequest) -> dict:
         known_profile(name)
-        attempt(lambda: options.profiles.save(name, body.text), f"No se guardó el perfil {name}.")
+        attempt(lambda: profiles.save(name, body.text), f"No se guardó el perfil {name}.")
         return {"name": name, **profiles_data(options)}
 
     @router.post("/api/profiles/{name}/duplicate")
     async def duplicate_profile(name: str) -> dict:
         known_profile(name)
-        copy = attempt(lambda: options.profiles.duplicate(name), f"No se copió el perfil {name}.")
+        copy = attempt(lambda: profiles.duplicate(name), f"No se copió el perfil {name}.")
         return {"name": copy, **profiles_data(options)}
 
     @router.post("/api/profiles/{name}/rename")
     async def rename_profile(name: str, body: NameRequest) -> dict:
         known_profile(name)
         renamed = attempt(
-            lambda: options.profiles.rename(name, body.name), f"No se renombró el perfil {name}."
+            lambda: profiles.rename(name, body.name), f"No se renombró el perfil {name}."
         )
         return {"name": renamed, **profiles_data(options)}
 
     @router.post("/api/profiles/{name}/delete")
     async def delete_profile(name: str) -> dict:
         known_profile(name)
-        attempt(lambda: options.profiles.delete(name), f"No se borró el perfil {name}.")
+        attempt(lambda: profiles.delete(name), f"No se borró el perfil {name}.")
         return profiles_data(options)
 
-    # -- Contextos ---------------------------------------------
+
+def _context_routes(router: APIRouter, state: _Settings, owner: LoopOwner) -> None:
+    """Elegir, crear y renombrar contextos, abrir su carpeta o su foto y rehacerla."""
+    options, attempt, channel = state.options, state.attempt, state.channel
+    context = options.context
+
+    def on_contexts(*_args: object) -> None:
+        channel.emit("contexts", contexts_data(options))
+
+    def on_reloaded(payload: dict) -> None:
+        state.context = payload
+        state.note_error(payload)
+        channel.emit("context_reloaded", payload)
+        if payload.get("level") != "busy":
+            # El peso de cada archivo sale de la foto nueva.
+            channel.emit("contexts", contexts_data(options))
+        state.follow.context(payload)
+
+    context.attach(
+        owner, ContextListeners(changed=on_contexts, active=on_contexts, reloaded=on_reloaded)
+    )
+
+    def known_context(name: str) -> None:
+        if name not in context.names():
+            raise HTTPException(404, f"No hay contexto «{name}».")
 
     @router.post("/api/contexts/active")
     async def set_active_context(body: NameRequest) -> dict:
         if body.name:
             known_context(body.name)
-        options.context.set_active(body.name)
+        context.set_active(body.name)
         return contexts_data(options)
 
     @router.post("/api/contexts")
     async def create_context(body: NewContextRequest) -> dict:
-        name = attempt(
-            lambda: options.context.create(body.name), f"No se creó el contexto {body.name}."
-        )
+        name = attempt(lambda: context.create(body.name), f"No se creó el contexto {body.name}.")
         return {"name": name, **contexts_data(options)}
 
     @router.post("/api/contexts/{name}/rename")
     async def rename_context(name: str, body: NameRequest) -> dict:
         known_context(name)
         renamed = attempt(
-            lambda: options.context.rename(name, body.name), f"No se renombró el contexto {name}."
+            lambda: context.rename(name, body.name), f"No se renombró el contexto {name}."
         )
         return {"name": renamed, **contexts_data(options)}
 
     @router.post("/api/contexts/open-folder")
     async def open_context_folder() -> dict:
-        attempt(options.context.open_folder, "No se pudo abrir la carpeta del contexto.")
+        attempt(context.open_folder, "No se pudo abrir la carpeta del contexto.")
         return contexts_data(options)
 
     @router.post("/api/contexts/open-snapshot")
     async def open_context_snapshot() -> dict:
-        attempt(options.context.open_snapshot, "No se pudo abrir contexto.md.")
+        attempt(context.open_snapshot, "No se pudo abrir contexto.md.")
         return contexts_data(options)
 
     @router.post("/api/contexts/reload")
     async def reload_context() -> dict:
-        options.context.reload()
+        context.reload()
         return contexts_data(options)
+
+
+def settings_router(
+    options: ClaudeOptions,
+    owner: LoopOwner,
+    keepalive: float = KEEPALIVE_SECONDS,
+    followers: SettingsFollowers | None = None,
+) -> tuple[APIRouter, EventChannel]:
+    """Las rutas de Claude y la cuenta, de los perfiles y de los contextos, con un canal."""
+    router = APIRouter()
+    state = _Settings(options, followers or SettingsFollowers())
+    channel = state.channel
+
+    @router.get("/api/settings")
+    async def get_settings() -> dict:
+        count, _, _ = channel.state()
+        return {
+            "config": config_data(options.config),
+            "choices": choices_data(),
+            "account": state.account,
+            "checking": options.is_busy(),
+            "profiles": profiles_data(options),
+            "contexts": contexts_data(options),
+            "context_notice": state.context,
+            "last_event": count,
+        }
+
+    _claude_routes(router, state, owner)
+    _profile_routes(router, state)
+    _context_routes(router, state, owner)
 
     @router.get("/api/settings/events")
     def events(request: Request) -> StreamingResponse:
