@@ -8,8 +8,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ### Cambiado
 - `main.py` y el acceso del menú abren la ventana de Tauri (binario de release, sin
-  Vite); la de Qt queda de respaldo con `main.py --qt` hasta su retiro. `install.sh`
-  instala `jacck_common` y compila la ventana si encuentra npm y cargo.
+  Vite). `install.sh` instala `jacck_common` y compila la ventana si encuentra npm y cargo.
+- Los colores de la interfaz se editan en `web/src/shared/theme/tokens.css` (antes se
+  generaban desde el tema de Qt).
+
+### Quitado
+- La ventana de Qt (PySide6), `main.py --qt`, `captura_ui.py` y sus pruebas: la de Tauri
+  hace lo mismo. El entorno pesa unos 670 MB menos.
 
 ### Agregado
 - Logo de IvyBells al inicio del README, en versión para tema claro y oscuro; el acceso del

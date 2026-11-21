@@ -7,15 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 RESOURCES_DIR = ROOT / "resources" / "json"
-# Letras (IBM Plex, OFL) e iconos (Phosphor, MIT) de la interfaz, con sus licencias.
-FONTS_DIR = ROOT / "resources" / "fonts"
-ICONS_DIR = ROOT / "resources" / "icons"
 # Logo en 256 px para el acceso del menú (el mismo del README).
 LOGO_PNG = ROOT / "docs" / "logo-light.png"
 # Ventana de Tauri: su Cargo.toml y .cargo/config.toml dicen dónde queda el binario.
 DESKTOP_SRC = ROOT / "desktop" / "src-tauri"
-ICON_FONT = ICONS_DIR / "phosphor-regular.woff2"
-ICON_MAP = ICONS_DIR / "phosphor-regular.json"
 APP_SETTINGS_JSON = RESOURCES_DIR / "app_settings.json"
 # Puerto y token de la API local mientras corre; fuera de Git, permisos 0600.
 API_SESSION_JSON = RESOURCES_DIR / "api_session.json"

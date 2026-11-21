@@ -1,4 +1,4 @@
-/* Generado por tools/theme_css.py desde entrypoints/ui_qt/theme.py: no editar a mano. */
+/* Colores de la interfaz, claro y oscuro: la fuente es este archivo (antes salia del tema de Qt). */
 :root {
   color-scheme: light;
   --color-background: #ece8df;

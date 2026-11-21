@@ -12,7 +12,7 @@ describe("pickProfile", () => {
     expect(pickProfile(PROFILES, "soporte")).toBe("soporte");
   });
 
-  it("si el elegido ya no esta (borrado o renombrado en Qt), abre el que esta en uso", () => {
+  it("si el elegido ya no esta (borrado o renombrado por fuera), abre el que esta en uso", () => {
     expect(pickProfile(PROFILES, "nadie")).toBe("ventas");
     expect(pickProfile(PROFILES, null)).toBe("ventas");
   });

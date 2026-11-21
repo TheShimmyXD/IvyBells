@@ -1,5 +1,5 @@
 // La vista En vivo sin API (npm run dev con ?demo=1): los eventos reales que mando la API
-// sobre la llamada inventada de captura_ui.py (FW.6), para las capturas de la web.
+// sobre una llamada inventada (FW.6), para las capturas de la web.
 import { toListeningEvent } from "../../api/client";
 import type {
   AgentBudget,

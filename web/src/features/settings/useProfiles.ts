@@ -1,7 +1,6 @@
 // El editor de perfiles del Agente: abre el texto del perfil elegido, lo guarda solo tras
 // SAVE_DELAY_MS sin escribir (o al salir del campo) y manda crear, copiar, renombrar, borrar
-// y "Usar en el Agente". La API guarda en resources/agent/perfiles/ y app_settings.json,
-// lo mismo que lee Qt.
+// y "Usar en el Agente". La API guarda en resources/agent/perfiles/ y app_settings.json.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { profilesApi } from "../../api/client";
 import { errorMessage } from "../../api/follow";

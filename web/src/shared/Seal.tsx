@@ -1,6 +1,6 @@
-// El logo de IvyBells, el de Qt: la misma rejilla de 64 que entrypoints/ui_qt/blocks/logo.py,
-// en SVG. La campana se dibuja en su rejilla y se reduce a 0.70 al centro del sello, asi que
-// sus trazos se dividen por esa escala para medir lo mismo que en Qt.
+// El logo de IvyBells en SVG, sobre una rejilla de 64 (la del logo de Qt). La campana se
+// dibuja en su rejilla y se reduce a 0.70 al centro del sello, asi que sus trazos se dividen
+// por esa escala para medir lo mismo que el sello.
 // Los colores van en style: WebKitGTK no acepta var() en los atributos del SVG.
 const BELL_SCALE = 0.7;
 const BELL_EDGE = 2.4 / BELL_SCALE;

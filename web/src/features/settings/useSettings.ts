@@ -1,6 +1,6 @@
 // Estado y pedidos de la configuracion de Claude: abre con el snapshot de /api/settings,
 // sigue su canal de eventos y manda cada cambio, que la API guarda al momento en
-// app_settings.json (el mismo archivo que lee Qt).
+// app_settings.json.
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, settingsApi, toSettingsEvent } from "../../api/client";
 import { errorMessage, followChannel } from "../../api/follow";

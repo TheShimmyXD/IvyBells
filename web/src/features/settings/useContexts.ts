@@ -1,7 +1,7 @@
 // Los pedidos de la pestana Contexto: usar otro contexto (rehace la foto), crear, renombrar,
 // recargar y abrir la carpeta o contexto.md con la aplicacion del sistema. La lista y el
 // aviso de la foto llegan por el canal de la configuracion (useSettings); aqui solo se
-// pone sin esperar la lista que respondio cada pedido. Lo guardado es lo que lee Qt.
+// pone sin esperar la lista que respondio cada pedido.
 import { useCallback, useState } from "react";
 import { contextsApi } from "../../api/client";
 import { errorMessage } from "../../api/follow";

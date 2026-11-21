@@ -1,6 +1,6 @@
 // La cuenta de Claude arriba de la pestana: el correo (se guarda al salir del campo o con
 // Enter), su estado como insignia, Comprobar y, si hace falta, la orden para iniciar sesion
-// que el autor pega en una terminal (como en Qt, config_page.py).
+// que el autor pega en una terminal.
 import { useState } from "react";
 import type { AccountStatus } from "../../api/types";
 import Icon from "../../shared/Icon";

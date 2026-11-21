@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "Transcripción en tiempo real local (GPU) de audio del sistema y del micrófono."
 requires-python = ">=3.13"
 dependencies = [
-    "PySide6>=6.12",
     # Motor: faster-whisper en la GPU; cuBLAS y cuDNN por pip (sin CUDA Toolkit).
     "faster-whisper>=1.2.1",
     "nvidia-cublas-cu12>=12.9",
@@ -31,8 +30,8 @@ packages = []
 py-modules = []
 
 [tool.python-programmer]
-# Tipo de proyecto para check_structure.py: "app" (PySide6) o "cli".
-type = "app"
+# Tipo de proyecto para check_structure.py: "web" (domain/services/app/entrypoints y web/).
+type = "web"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

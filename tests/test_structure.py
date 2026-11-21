@@ -12,7 +12,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DOORS = ("cli", "api", "ui_qt")
+DOORS = ("cli", "api")
 GUI_AND_HTTP = ("PySide6", "fastapi", "uvicorn", "starlette")
 
 # Puertas que todavía crean o llaman servicios: ninguna desde FW.3 (las puertas usan app/).

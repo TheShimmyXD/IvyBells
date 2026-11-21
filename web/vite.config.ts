@@ -11,7 +11,7 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     fs: {
-      // Letras e iconos de resources/, los mismos de Qt (una sola copia).
+      // Letras e iconos de resources/ (una sola copia, con sus licencias).
       allow: [
         fileURLToPath(new URL(".", import.meta.url)),
         fileURLToPath(new URL("../resources/fonts", import.meta.url)),

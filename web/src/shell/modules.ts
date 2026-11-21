@@ -1,5 +1,5 @@
 // Los modulos de la barra y el tema. La web tiene dos (el Agente vive dentro de En
-// vivo); los textos del tema son los de Qt (THEME_TIPS en entrypoints/ui_qt/_00_ui_main.py).
+// vivo); los textos del tema son los que tenia la ventana de Qt.
 // Logica pura, sin React.
 import type { ModuleId, Prefs, ThemeName } from "../api/types";
 import type { IconName } from "../shared/phosphor";

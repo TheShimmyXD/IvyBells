@@ -78,7 +78,7 @@ Para abrirlo sin el menú:
 
 ```bash
 .venv/bin/python main.py        # ventana de Tauri
-.venv/bin/python main.py --qt   # ventana de Qt, de respaldo hasta su retiro
+.venv/bin/python main.py --cli  # transcripción en la consola
 ```
 
 ## Primer uso

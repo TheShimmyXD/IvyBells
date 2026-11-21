@@ -48,12 +48,9 @@ def main() -> None:
     parser.add_argument(
         "--install-launcher", action="store_true", help="crea el acceso en el menú y sale"
     )
-    parser.add_argument(
-        "--qt", action="store_true", help="abre la ventana de Qt (respaldo hasta su retiro)"
-    )
     args = parser.parse_args()
 
-    if args.qt or args.cli or args.api:
+    if args.cli or args.api:
         # La GPU necesita LD_LIBRARY_PATH desde el arranque: relanza el proceso si falta.
         from services.service_whisper import reexec_with_cuda_libraries
 
@@ -73,12 +70,6 @@ def main() -> None:
         from entrypoints.cli.live import run_cli
 
         sys.exit(run_cli(args.model, args.compute_type))
-    if args.qt:
-        # Import diferido: el logging queda configurado antes de cargar Qt y los módulos.
-        from entrypoints.ui_qt._00_ui_main import run_app
-
-        run_app()
-        return
     sys.exit(open_desktop_window())
 
 

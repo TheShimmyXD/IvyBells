@@ -59,11 +59,6 @@ if ! command -v nvidia-smi >/dev/null; then
     echo
     echo "Aviso: no se encontro nvidia-smi. El motor necesita una GPU NVIDIA con su driver."
 fi
-if command -v ldconfig >/dev/null && ! ldconfig -p | grep -q "libxcb-cursor.so.0"; then
-    echo
-    echo "Aviso: falta libxcb-cursor0. Si la ventana no abre, instalalo con:"
-    echo "  sudo apt install libxcb-cursor0"
-fi
 if ! command -v claude >/dev/null; then
     echo
     echo "Aviso: no se encontro la CLI de Claude Code; el modulo Agente no va a responder."
@@ -75,7 +70,8 @@ if [ "$WINDOW_READY" = 1 ]; then
     echo "Listo. Abre IvyBells desde el menu de aplicaciones o con:"
     echo "  .venv/bin/python main.py"
 else
-    echo "Sin la ventana de Tauri, por ahora abre la de Qt con:"
-    echo "  .venv/bin/python main.py --qt"
+    echo "Sin la ventana de Tauri: resuelve el aviso de arriba y vuelve a correr ./install.sh."
+    echo "Mientras tanto se transcribe en la consola con:"
+    echo "  .venv/bin/python main.py --cli"
 fi
 echo "La primera vez descarga el modelo de Whisper (unos 1,6 GB) a ~/.cache/huggingface."

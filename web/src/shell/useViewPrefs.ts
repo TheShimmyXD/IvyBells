@@ -1,5 +1,5 @@
-// Tema y modulo de la ventana: se leen de la API al abrir y se guardan al cambiar, como
-// en Qt (app_settings.json). Fuera de Tauri se leen de la URL y no se guardan.
+// Tema y modulo de la ventana: se leen de la API al abrir y se guardan al cambiar
+// (app_settings.json). Fuera de Tauri se leen de la URL y no se guardan.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPrefs, savePref } from "../api/client";
 import { runsInDesktop, waitForSession } from "../api/session";
