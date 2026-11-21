@@ -6,6 +6,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Sin publicar]
 
+### Cambiado
+- `main.py` y el acceso del menú abren la ventana de Tauri (binario de release, sin
+  Vite); la de Qt queda de respaldo con `main.py --qt` hasta su retiro. `install.sh`
+  instala `jacck_common` y compila la ventana si encuentra npm y cargo.
+
 ### Agregado
 - Logo de IvyBells al inicio del README, en versión para tema claro y oscuro; el acceso del
   menú usa la misma campana.

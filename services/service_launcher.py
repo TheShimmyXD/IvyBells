@@ -34,8 +34,12 @@ def _quote(path: Path) -> str:
     return text
 
 
-def desktop_entry(root: Path, python: Path, icon: Path) -> str:
-    """Contenido de ``IvyBells.desktop`` para la carpeta ``root``."""
+def desktop_entry(root: Path, python: Path, icon: Path, window_class: str = APP_NAME) -> str:
+    """Contenido de ``IvyBells.desktop`` para la carpeta ``root``.
+
+    ``window_class`` es la clase de la ventana que abre ``main.py`` (la de Tauri se
+    llama como su binario): con ella el dock la agrupa bajo este acceso y su logo.
+    """
     return "\n".join(
         [
             "[Desktop Entry]",
@@ -50,14 +54,20 @@ def desktop_entry(root: Path, python: Path, icon: Path) -> str:
             "Terminal=false",
             "Categories=AudioVideo;Audio;",
             "Keywords=transcripcion;whisper;audio;llamada;microfono;agente;",
-            f"StartupWMClass={APP_NAME}",
+            f"StartupWMClass={window_class}",
             "StartupNotify=true",
             "",
         ]
     )
 
 
-def install_launcher(root: Path, python: Path, logo_png: Path, home: Path | None = None) -> Path:
+def install_launcher(
+    root: Path,
+    python: Path,
+    logo_png: Path,
+    home: Path | None = None,
+    window_class: str = APP_NAME,
+) -> Path:
     """Copia el icono, escribe el acceso y devuelve su ruta."""
     base = home or data_home()
     icon = base / ICON_SUBDIR / f"{APP_NAME}.png"
@@ -65,7 +75,7 @@ def install_launcher(root: Path, python: Path, logo_png: Path, home: Path | None
     shutil.copyfile(logo_png, icon)
     entry = base / APPLICATIONS_SUBDIR / f"{APP_NAME}.desktop"
     entry.parent.mkdir(parents=True, exist_ok=True)
-    entry.write_text(desktop_entry(root, python, icon), encoding="utf-8")
+    entry.write_text(desktop_entry(root, python, icon, window_class), encoding="utf-8")
     entry.chmod(0o755)
     logger.info("Acceso en el menú: %s", entry)
     return entry

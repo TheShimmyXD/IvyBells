@@ -22,10 +22,20 @@ def list_sources() -> None:
 
 def install_launcher() -> None:
     """Deja IvyBells en el menú de aplicaciones con su logo."""
-    from paths import LOGO_PNG, ROOT
+    from paths import DESKTOP_SRC, LOGO_PNG, ROOT
+    from services.service_desktop import binary_name
     from services.service_launcher import install_launcher as write_launcher
 
-    write_launcher(ROOT, ROOT / ".venv" / "bin" / "python", LOGO_PNG)
+    python = ROOT / ".venv" / "bin" / "python"
+    write_launcher(ROOT, python, LOGO_PNG, window_class=binary_name(DESKTOP_SRC))
+
+
+def open_desktop_window() -> int:
+    """Abre la ventana de Tauri; ella lanza la API (``main.py --api``) por su cuenta."""
+    from paths import DESKTOP_SRC, ROOT
+    from services.service_desktop import open_window, release_binary
+
+    return open_window(release_binary(DESKTOP_SRC), ROOT)
 
 
 def main() -> None:
@@ -38,9 +48,12 @@ def main() -> None:
     parser.add_argument(
         "--install-launcher", action="store_true", help="crea el acceso en el menú y sale"
     )
+    parser.add_argument(
+        "--qt", action="store_true", help="abre la ventana de Qt (respaldo hasta su retiro)"
+    )
     args = parser.parse_args()
 
-    if not (args.fuentes or args.install_launcher):
+    if args.qt or args.cli or args.api:
         # La GPU necesita LD_LIBRARY_PATH desde el arranque: relanza el proceso si falta.
         from services.service_whisper import reexec_with_cuda_libraries
 
@@ -60,10 +73,13 @@ def main() -> None:
         from entrypoints.cli.live import run_cli
 
         sys.exit(run_cli(args.model, args.compute_type))
-    # Import diferido: el logging queda configurado antes de cargar Qt y los módulos.
-    from entrypoints.ui_qt._00_ui_main import run_app
+    if args.qt:
+        # Import diferido: el logging queda configurado antes de cargar Qt y los módulos.
+        from entrypoints.ui_qt._00_ui_main import run_app
 
-    run_app()
+        run_app()
+        return
+    sys.exit(open_desktop_window())
 
 
 if __name__ == "__main__":

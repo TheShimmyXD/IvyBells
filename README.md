@@ -58,6 +58,9 @@ En una GTX 1660 Super (6 GB), con `large-v3-turbo` en `int8`, banco del
 - Python 3.13 o superior con `venv` (en Debian/Ubuntu/Mint: `python3-venv`).
 - Para el módulo Agente, la CLI de [Claude Code](https://claude.com/claude-code)
   con una sesión iniciada. La transcripción funciona sin ella.
+- Para la ventana: [`jacck_common`](../jacck_common) en la carpeta de al lado,
+  Node (npm) y Rust (cargo), los dos sin sudo (nvm y rustup), y `webkit2gtk-4.1`
+  (`libwebkit2gtk-4.1-dev`).
 
 ## Instalación
 
@@ -67,14 +70,15 @@ cd IvyBells
 ./install.sh
 ```
 
-`install.sh` crea `.venv/` dentro de la carpeta, instala las dependencias y
-deja IvyBells en el menú de aplicaciones. La primera vez que transcribe
-descarga el modelo (1,6 GB).
+`install.sh` crea `.venv/` dentro de la carpeta, instala las dependencias,
+compila la ventana de Tauri (unos 80 s la primera vez) y deja IvyBells en el
+menú de aplicaciones. La primera vez que transcribe descarga el modelo (1,6 GB).
 
 Para abrirlo sin el menú:
 
 ```bash
-.venv/bin/python main.py
+.venv/bin/python main.py        # ventana de Tauri
+.venv/bin/python main.py --qt   # ventana de Qt, de respaldo hasta su retiro
 ```
 
 ## Primer uso

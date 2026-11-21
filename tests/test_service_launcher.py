@@ -16,7 +16,13 @@ def test_install_writes_icon_and_entry_under_data_home(tmp_path):
     root.mkdir()
     logo = root / "logo.png"
     logo.write_bytes(b"\x89PNG prueba")
-    entry = install_launcher(root, root / ".venv/bin/python", logo, home=tmp_path / "share")
+    entry = install_launcher(
+        root,
+        root / ".venv/bin/python",
+        logo,
+        home=tmp_path / "share",
+        window_class="ivybells-desktop",
+    )
 
     icon = tmp_path / "share/icons/hicolor/256x256/apps/IvyBells.png"
     assert entry == tmp_path / "share/applications/IvyBells.desktop"
@@ -25,7 +31,7 @@ def test_install_writes_icon_and_entry_under_data_home(tmp_path):
     assert fields["Exec"] == f"{root}/.venv/bin/python {root}/main.py"
     assert fields["Path"] == str(root)
     assert fields["Icon"] == str(icon)
-    assert fields["StartupWMClass"] == "IvyBells"
+    assert fields["StartupWMClass"] == "ivybells-desktop"
     assert entry.stat().st_mode & 0o111
 
 

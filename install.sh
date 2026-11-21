@@ -22,6 +22,31 @@ fi
 # Toolkit); el codigo corre desde esta carpeta.
 .venv/bin/python -m pip install .
 
+# API local de la ventana: jacck_common vive al lado de esta carpeta (sin repositorio
+# todavia) y se instala antes del extra web, que lo pide.
+WINDOW_READY=0
+if [ -d ../jacck_common ]; then
+    .venv/bin/python -m pip install -e "../jacck_common[webapi]"
+    .venv/bin/python -m pip install ".[web]"
+    # Ventana de Tauri en release (unos 80 s la primera vez); queda en la carpeta de
+    # compilacion compartida de jacck_common. Node y Rust van sin sudo (nvm, rustup).
+    if command -v npm >/dev/null && command -v cargo >/dev/null; then
+        if (cd web && npm ci && npm run tauri build -- --no-bundle); then
+            WINDOW_READY=1
+        else
+            echo
+            echo "Aviso: no se pudo compilar la ventana. Si falta webkit2gtk, instalalo con:"
+            echo "  sudo apt install libwebkit2gtk-4.1-dev"
+        fi
+    else
+        echo
+        echo "Aviso: faltan npm o cargo para compilar la ventana (Node con nvm, Rust con rustup)."
+    fi
+else
+    echo
+    echo "Aviso: no se encontro ../jacck_common; la ventana de Tauri no se puede instalar."
+fi
+
 .venv/bin/python main.py --install-launcher
 
 # Lo que no se instala con pip; solo se avisa.
@@ -46,6 +71,11 @@ if ! command -v claude >/dev/null; then
 fi
 
 echo
-echo "Listo. Abre IvyBells desde el menu de aplicaciones o con:"
-echo "  .venv/bin/python main.py"
+if [ "$WINDOW_READY" = 1 ]; then
+    echo "Listo. Abre IvyBells desde el menu de aplicaciones o con:"
+    echo "  .venv/bin/python main.py"
+else
+    echo "Sin la ventana de Tauri, por ahora abre la de Qt con:"
+    echo "  .venv/bin/python main.py --qt"
+fi
 echo "La primera vez descarga el modelo de Whisper (unos 1,6 GB) a ~/.cache/huggingface."
