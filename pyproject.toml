@@ -32,7 +32,8 @@ py-modules = []
 [tool.python-programmer]
 # Tipo de proyecto para check_structure.py: "web" (domain/services/app/entrypoints y web/).
 type = "web"
-exclude = ["vendor/jacck_common"]
+# Agente_IvyBells guarda trabajo del agente (maquetas, notas), no codigo de la app.
+exclude = ["vendor/jacck_common", "Agente_IvyBells"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
