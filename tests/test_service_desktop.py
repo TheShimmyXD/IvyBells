@@ -33,10 +33,15 @@ def test_release_binary_without_cargo_config_uses_its_own_target(tmp_path):
     assert release_binary(src) == src / "target" / "release" / "demo-desktop"
 
 
-def test_project_files_point_to_jacck_common():
+def test_project_binary_follows_the_local_cargo_config():
+    # .cargo/config.toml es local: lo escribe install.sh si existe ../jacck_common.
     binary = release_binary(SRC_TAURI)
     assert binary_name(SRC_TAURI) == "ivybells-desktop"
-    assert binary == ROOT.parent / "jacck_common" / "rust" / "target" / "release" / binary.name
+    if (SRC_TAURI / ".cargo" / "config.toml").is_file():
+        target = ROOT.parent / "jacck_common" / "rust" / "target"
+    else:
+        target = SRC_TAURI / "target"
+    assert binary == target / "release" / binary.name
 
 
 def test_missing_binary_returns_one_without_exec(tmp_path, caplog):

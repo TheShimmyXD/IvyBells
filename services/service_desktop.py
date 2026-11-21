@@ -2,8 +2,9 @@
 
 La ruta no se escribe a mano: el nombre sale del ``Cargo.toml`` de
 ``desktop/src-tauri`` y la carpeta de compilación, del ``target-dir`` de su
-``.cargo/config.toml`` (la compartida de ``jacck_common``). ``install.sh`` lo
-compila; aquí solo se busca y se abre.
+``.cargo/config.toml``: en la máquina del autor, la compartida de ``../jacck_common``;
+sin ese archivo (otra máquina), ``desktop/src-tauri/target``. El archivo es local y lo
+escribe ``install.sh``, que también compila; aquí solo se busca y se abre.
 """
 
 from __future__ import annotations

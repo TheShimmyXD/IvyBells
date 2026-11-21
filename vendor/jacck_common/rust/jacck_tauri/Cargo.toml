@@ -1,0 +1,12 @@
+[package]
+name = "jacck_tauri"
+version = "0.1.0"
+description = "Ventana de Tauri comun: lanza la API de Python de la app como proceso hijo, coloca la ventana y la apaga al salir (de Venona; primero en IvyBells)"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Misma version de Tauri en todos los proyectos: asi la compilacion compartida se reutiliza.
+tauri = { version = "=2.12.5", features = [] }
+serde = { version = "1", features = ["derive"] }
+getrandom = "0.3"

@@ -22,29 +22,40 @@ fi
 # Toolkit); el codigo corre desde esta carpeta.
 .venv/bin/python -m pip install .
 
-# API local de la ventana: jacck_common vive al lado de esta carpeta (sin repositorio
-# todavia) y se instala antes del extra web, que lo pide.
+# API local de la ventana: jacck_common no se publica. Si esta al lado (maquina del
+# autor) se usa esa, editable, con la compilacion compartida; si no, la copia de vendor/.
+# Va antes del extra web, que lo pide.
 WINDOW_READY=0
 if [ -d ../jacck_common ]; then
     .venv/bin/python -m pip install -e "../jacck_common[webapi]"
-    .venv/bin/python -m pip install ".[web]"
-    # Ventana de Tauri en release (unos 80 s la primera vez); queda en la carpeta de
-    # compilacion compartida de jacck_common. Node y Rust van sin sudo (nvm, rustup).
-    if command -v npm >/dev/null && command -v cargo >/dev/null; then
-        if (cd web && npm ci && npm run tauri build -- --no-bundle); then
-            WINDOW_READY=1
-        else
-            echo
-            echo "Aviso: no se pudo compilar la ventana. Si falta webkit2gtk, instalalo con:"
-            echo "  sudo apt install libwebkit2gtk-4.1-dev"
-        fi
+    CARGO_CONFIG=desktop/src-tauri/.cargo/config.toml
+    if [ ! -f "$CARGO_CONFIG" ]; then
+        mkdir -p "$(dirname "$CARGO_CONFIG")"
+        cat > "$CARGO_CONFIG" <<'TOML'
+# Compilacion compartida de Tauri en ../jacck_common/rust/target. Archivo local, fuera de
+# Git: lo escribe install.sh solo si existe ../jacck_common.
+# La ruta es relativa a desktop/src-tauri (la carpeta que contiene .cargo/).
+[build]
+target-dir = "../../../jacck_common/rust/target"
+TOML
+    fi
+else
+    .venv/bin/python -m pip install "./vendor/jacck_common[webapi]"
+fi
+.venv/bin/python -m pip install ".[web]"
+# Ventana de Tauri en release (unos 80 s la primera vez). Node y Rust van sin sudo (nvm,
+# rustup).
+if command -v npm >/dev/null && command -v cargo >/dev/null; then
+    if (cd web && npm ci && npm run tauri build -- --no-bundle); then
+        WINDOW_READY=1
     else
         echo
-        echo "Aviso: faltan npm o cargo para compilar la ventana (Node con nvm, Rust con rustup)."
+        echo "Aviso: no se pudo compilar la ventana. Si falta webkit2gtk, instalalo con:"
+        echo "  sudo apt install libwebkit2gtk-4.1-dev"
     fi
 else
     echo
-    echo "Aviso: no se encontro ../jacck_common; la ventana de Tauri no se puede instalar."
+    echo "Aviso: faltan npm o cargo para compilar la ventana (Node con nvm, Rust con rustup)."
 fi
 
 .venv/bin/python main.py --install-launcher

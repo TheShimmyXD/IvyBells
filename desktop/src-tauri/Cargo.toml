@@ -11,7 +11,8 @@ tauri-build = { version = "=2.7.4", features = [] }
 [dependencies]
 # Misma version que jacck_tauri y Venona: la compilacion compartida se reutiliza.
 tauri = { version = "=2.12.5", features = [] }
-jacck_tauri = { path = "../../../jacck_common/rust/jacck_tauri" }
+# Copia de jacck_common dentro del proyecto: se trae con vendor/sync_jacck_common.py.
+jacck_tauri = { path = "../../vendor/jacck_common/rust/jacck_tauri" }
 # Dialogo nativo de Guardar (la misma version que Venona). Va aqui y no en jacck_tauri:
 # tauri-build solo ve los permisos de los plugins que la app declara directamente.
 tauri-plugin-dialog = "=2.8.4"

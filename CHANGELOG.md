@@ -6,6 +6,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Sin publicar]
 
+### Cambiado
+- La API local y el crate de Tauri de `jacck_common` van copiados en `vendor/jacck_common/`,
+  con `vendor/sync_jacck_common.py` y una prueba que falla si la copia se aparta: IvyBells se
+  instala en otra máquina sin `../jacck_common`. `.cargo/config.toml` pasa a ser local.
+
 ## [0.2.0] - 2026-11-20
 
 La ventana pasa a ser web (Tauri, React y TypeScript) sobre el mismo Python, y la de Qt se

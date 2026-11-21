@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Copia de lo que IvyBells usa de jacck_common. No se edita aquí: se edita en
+# ../jacck_common y se trae con `python3 vendor/sync_jacck_common.py`. Este archivo es
+# propio de la copia (solo el extra webapi, sin keyring); la versión sigue a __init__.py.
+[project]
+name = "jacck_common"
+version = "0.2.0"
+description = "API local para Tauri (copia de jacck_common dentro de IvyBells)."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+webapi = ["fastapi>=0.162,<1", "uvicorn>=0.54"]
+
+[tool.setuptools]
+packages = ["jacck_common", "jacck_common.webapi"]

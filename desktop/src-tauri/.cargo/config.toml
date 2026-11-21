@@ -1,4 +1,0 @@
-# Compilacion compartida de Tauri: todo va a jacck_common/rust/target, fuera de Git.
-# La ruta es relativa a desktop/src-tauri (la carpeta que contiene .cargo/).
-[build]
-target-dir = "../../../jacck_common/rust/target"

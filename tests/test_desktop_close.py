@@ -20,8 +20,12 @@ from pathlib import Path
 
 import pytest
 
+from services.service_desktop import release_binary
+
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = ROOT.parent / "jacck_common" / "rust" / "target" / "debug" / "ivybells-desktop"
+# El de desarrollo, al lado del de release (carpeta compartida o la propia).
+_RELEASE = release_binary(ROOT / "desktop" / "src-tauri")
+BINARY = _RELEASE.parent.parent / "debug" / _RELEASE.name
 API_MARK = "--api"
 START_TIMEOUT_S = 30.0
 EXIT_TIMEOUT_S = 5.0

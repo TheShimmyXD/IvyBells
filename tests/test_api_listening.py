@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-pytest.importorskip("fastapi", reason="extra web: pip install -e '../jacck_common[webapi]'")
+pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from jacck_common.webapi.security import new_token  # noqa: E402

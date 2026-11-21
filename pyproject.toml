@@ -20,8 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=9", "ruff>=0.17"]
-# Ventana de Tauri: API local sobre jacck_common, sin remoto todavia; se instala
-# con `pip install -e "../jacck_common[webapi]"`. Extra aparte para que install.sh siga igual.
+# Ventana de Tauri: API local sobre jacck_common, que no se publica; install.sh lo instala
+# antes desde ../jacck_common (maquina del autor) o desde vendor/jacck_common.
 web = ["jacck_common[webapi]>=0.2.0", "httpx>=0.28"]
 
 [tool.setuptools]
@@ -32,6 +32,7 @@ py-modules = []
 [tool.python-programmer]
 # Tipo de proyecto para check_structure.py: "web" (domain/services/app/entrypoints y web/).
 type = "web"
+exclude = ["vendor/jacck_common"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -41,7 +42,8 @@ testpaths = ["tests"]
 line-length = 100
 target-version = "py313"
 # .claude/ guarda skills del agente: no son código del proyecto.
-extend-exclude = ["resources", ".claude"]
+# vendor/jacck_common es copia de otro proyecto: se revisa alla.
+extend-exclude = ["resources", ".claude", "vendor/jacck_common"]
 
 [tool.ruff.lint]
 # E/F: errores básicos, I: orden de imports, UP: sintaxis moderna,

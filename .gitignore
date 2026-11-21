@@ -1,4 +1,7 @@
 # Entorno y cachés
+# Lo que deja pip al instalar la copia de jacck_common
+vendor/jacck_common/build/
+vendor/jacck_common/*.egg-info/
 .venv/
 __pycache__/
 .pytest_cache/
@@ -25,7 +28,9 @@ transcripciones/
 bench/resultados/*.log
 
 # -- Ventana de Tauri ------------------------------------------
-# La compilacion va a jacck_common/rust/target; esto es por si alguien compila sin .cargo/.
+# Sin .cargo/ la compilacion queda aqui (otra maquina). En la del autor, install.sh escribe
+# .cargo/config.toml hacia la compartida de ../jacck_common: es local, no va a Git.
 desktop/src-tauri/target/
+desktop/src-tauri/.cargo/
 desktop/src-tauri/gen/
 resources/json/api_session.json

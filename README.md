@@ -65,10 +65,8 @@ de una llamada real (2026-11-19, 125 frases de «Ellos»); el resto, del banco d
 - Python 3.13 o superior con `venv` (en Debian/Ubuntu/Mint: `python3-venv`).
 - Para el módulo Agente, la CLI de [Claude Code](https://claude.com/claude-code)
   con una sesión iniciada. La transcripción funciona sin ella.
-- Para la ventana: `jacck_common` (librería propia del autor, aún sin
-  repositorio público) en la carpeta de al lado,
-  Node (npm) y Rust (cargo), los dos sin sudo (nvm y rustup), y `webkit2gtk-4.1`
-  (`libwebkit2gtk-4.1-dev`).
+- Para la ventana: Node (npm) y Rust (cargo), los dos sin sudo (nvm y rustup),
+  y `webkit2gtk-4.1` (`libwebkit2gtk-4.1-dev`).
 
 ## Instalación
 
@@ -81,6 +79,22 @@ cd IvyBells
 `install.sh` crea `.venv/` dentro de la carpeta, instala las dependencias,
 compila la ventana de Tauri (unos 80 s la primera vez) y deja IvyBells en el
 menú de aplicaciones. La primera vez que transcribe descarga el modelo (1,6 GB).
+
+### Instalar en otra máquina
+
+El repositorio trae todo lo que necesita: la API local de la ventana y el crate de
+Tauri vienen de `jacck_common`, una librería propia del autor que no se publica, y
+van copiados en `vendor/jacck_common/`. En otra máquina basta con el `git clone` y
+`./install.sh` de arriba; la compilación de la ventana queda en
+`desktop/src-tauri/target/` (unos 3 GB, fuera de Git).
+
+En la máquina del autor, si `../jacck_common` está al lado, `install.sh` usa esa
+copia (editable) y la carpeta de compilación compartida. Tras cambiar algo allí:
+
+```bash
+python3 vendor/sync_jacck_common.py          # trae los cambios a vendor/
+python3 vendor/sync_jacck_common.py --check  # sale 1 si difieren
+```
 
 Para abrirlo sin el menú:
 
