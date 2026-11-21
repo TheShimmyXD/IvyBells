@@ -30,10 +30,26 @@ def _signal(*parts: tuple[str, float]) -> np.ndarray:
     return np.concatenate(pieces).astype(np.float32)
 
 
-def _feed(engine: StreamingEngine, source: str, audio: np.ndarray) -> None:
-    step = int(CHUNK_S * SAMPLE_RATE)
-    for start in range(0, len(audio), step):
-        engine.feed(source, audio[start : start + step])
+class AudioClock:
+    """
+    Reloj falso que avanza con el audio entregado, como la captura en vivo.
+
+    Con el reloj real, la CPU cargada hace que el motor parezca atrasado y salte
+    provisionales; con este, la llamada al reconocedor falso no cuesta tiempo.
+    """
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def deliver(self, engine: StreamingEngine, source: str, audio: np.ndarray) -> None:
+        """Entrega `audio` en bloques de CHUNK_S; cada bloque llega cuando termina de sonar."""
+        step = int(CHUNK_S * SAMPLE_RATE)
+        for start in range(0, len(audio), step):
+            self.now = max(self.now, (start + step) / SAMPLE_RATE)
+            engine.feed(source, audio[start : start + step])
 
 
 @pytest.fixture
@@ -42,14 +58,19 @@ def events() -> list[TranscriptEvent]:
 
 
 @pytest.fixture
-def engine(events: list[TranscriptEvent]) -> StreamingEngine:
-    engine = StreamingEngine(events.append, recognizer=fake_recognizer, vad=fake_vad)
+def clock() -> AudioClock:
+    return AudioClock()
+
+
+@pytest.fixture
+def engine(events: list[TranscriptEvent], clock: AudioClock) -> StreamingEngine:
+    engine = StreamingEngine(events.append, recognizer=fake_recognizer, vad=fake_vad, clock=clock)
     engine.start()
     return engine
 
 
-def test_partials_grow_and_become_one_final_with_its_times(engine, events):
-    _feed(engine, "ellos", _signal(("silencio", 1.0), ("voz", 3.0), ("silencio", 1.0)))
+def test_partials_grow_and_become_one_final_with_its_times(engine, events, clock):
+    clock.deliver(engine, "ellos", _signal(("silencio", 1.0), ("voz", 3.0), ("silencio", 1.0)))
 
     partials = [event for event in events if not event.is_final]
     finals = [event for event in events if event.is_final]
@@ -79,16 +100,16 @@ def test_sources_keep_separate_phrases(engine, events):
     assert {event.text for event in finals} == {"p0 p1 p2"}
 
 
-def test_stop_closes_the_open_phrase(engine, events):
-    _feed(engine, "tu", _signal(("voz", 2.0)))
+def test_stop_closes_the_open_phrase(engine, events, clock):
+    clock.deliver(engine, "tu", _signal(("voz", 2.0)))
     assert not any(event.is_final for event in events)
     engine.stop()
     assert events[-1].is_final
     assert events[-1].text == "p0 p1 p2 p3"
 
 
-def test_short_noise_is_not_transcribed(engine, events):
-    _feed(engine, "ellos", _signal(("silencio", 0.5), ("voz", 0.1), ("silencio", 1.0)))
+def test_short_noise_is_not_transcribed(engine, events, clock):
+    clock.deliver(engine, "ellos", _signal(("silencio", 0.5), ("voz", 0.1), ("silencio", 1.0)))
     assert events == []
 
 
@@ -120,33 +141,36 @@ def test_partials_are_skipped_while_the_engine_is_behind(events):
 
 def test_shorter_partial_interval_gives_more_partials():
     audio = _signal(("voz", 4.0), ("silencio", 1.0))
-    step = int(CHUNK_S * SAMPLE_RATE)
     counts = []
     for interval in (1.0, 0.5):
         received = []
+        clock = AudioClock()
         engine = StreamingEngine(
-            received.append, recognizer=fake_recognizer, vad=fake_vad, partial_interval_s=interval
+            received.append,
+            recognizer=fake_recognizer,
+            vad=fake_vad,
+            clock=clock,
+            partial_interval_s=interval,
         )
-        for start in range(0, len(audio), step):
-            engine.feed("ellos", audio[start : start + step])
+        clock.deliver(engine, "ellos", audio)
         counts.append(sum(1 for event in received if not event.is_final))
     assert counts[1] > counts[0] >= 1
 
 
-def test_end_source_closes_only_that_phrase(engine, events):
-    _feed(engine, "ellos", _signal(("voz", 2.0)))
-    _feed(engine, "tu", _signal(("voz", 2.0)))
+def test_end_source_closes_only_that_phrase(engine, events, clock):
+    clock.deliver(engine, "ellos", _signal(("voz", 2.0)))
+    clock.deliver(engine, "tu", _signal(("voz", 2.0)))
     events.clear()
     engine.end_source("ellos")
     engine.end_source("ellos")
     assert [(event.source, event.is_final) for event in events] == [("ellos", True)]
 
 
-def test_skip_keeps_phrase_times_on_the_real_clock(engine, events):
-    _feed(engine, "ellos", _signal(("voz", 1.0)))
+def test_skip_keeps_phrase_times_on_the_real_clock(engine, events, clock):
+    clock.deliver(engine, "ellos", _signal(("voz", 1.0)))
     engine.skip("ellos", 3 * SAMPLE_RATE)
     assert events[-1].is_final
-    _feed(engine, "ellos", _signal(("silencio", 1.0), ("voz", 1.0), ("silencio", 1.0)))
+    clock.deliver(engine, "ellos", _signal(("silencio", 1.0), ("voz", 1.0), ("silencio", 1.0)))
     assert events[-1].is_final
     # 1 s de voz + 3 s cerrado + 1 s de silencio, menos el audio previo al disparo.
     assert events[-1].start_s == pytest.approx(4.8, abs=0.1)
