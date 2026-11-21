@@ -3,6 +3,8 @@ Tareas cortas en segundo plano: corren en su propio hilo y avisan al hilo dueño
 
 Las usan los casos de uso que leen algo lento sin congelar la puerta: el estado de la cuenta
 de Claude (`claude auth status`) y la foto del contexto (PDF y Word tardan).
+
+Aquí viven también `Post`, `call_now` e `ignore`, que usan todos los casos de uso con hilos.
 """
 
 from __future__ import annotations
@@ -11,9 +13,19 @@ import logging
 import threading
 from collections.abc import Callable
 
-from app.live import Post
-
 logger = logging.getLogger(__name__)
+
+# Entrega una tarea al hilo dueño (en la API, asyncio con call_soon_threadsafe).
+Post = Callable[[Callable[[], None]], None]
+
+
+def call_now(task: Callable[[], None]) -> None:
+    """`Post` sin hilo dueño: corre la tarea en el hilo que avisa (pruebas y consola)."""
+    task()
+
+
+def ignore(*_args: object) -> None:
+    """Aviso por defecto de los oyentes: no hace nada."""
 
 
 def start_task[T](

@@ -15,8 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.background import join, start_task
-from app.live import Post, call_now
+from app.background import Post, call_now, ignore, join, start_task
 from domain.agent.agent_context import ContextError
 from domain.agent.context_budget import estimate_tokens, path_weights, section_chars
 from paths import AGENT_CONTEXT_FILE
@@ -46,10 +45,6 @@ def describe_report(files: int, chars: int, omitted: list) -> str:
     return text
 
 
-def _ignore(*_args: object) -> None:
-    pass
-
-
 @dataclass
 class ContextListeners:
     """
@@ -61,9 +56,9 @@ class ContextListeners:
                       al terminar "ok", "warning", "info" o "error").
     """
 
-    changed: Callable[[], None] = _ignore
-    active: Callable[[str], None] = _ignore
-    reloaded: Callable[[dict], None] = _ignore
+    changed: Callable[[], None] = ignore
+    active: Callable[[str], None] = ignore
+    reloaded: Callable[[dict], None] = ignore
 
 
 class ContextLibrary:

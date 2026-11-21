@@ -16,8 +16,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.background import Post, call_now, ignore
 from app.claude_ask import AskCallbacks, AskSlot, ClaudeSetup, LiveText, ServiceFactory, claude_cli
-from app.live import Post, call_now
 from domain.agent.chat_prompt import (
     DEFAULT_CHAT_EFFORT,
     DEFAULT_CHAT_MODEL,
@@ -35,10 +35,6 @@ from domain.transcription.transcript_markdown import SOURCE_LABELS
 logger = logging.getLogger(__name__)
 
 CLOSE_TIMEOUT_S = 5.0
-
-
-def _ignore(*_args: object) -> None:
-    pass
 
 
 @dataclass(slots=True)
@@ -72,9 +68,9 @@ class ChatListeners:
     config(ClaudeModelConfig) -> el modelo del chat (modelo, esfuerzo o cuenta).
     """
 
-    turns: Callable[[], None] = _ignore
-    sending: Callable[[bool], None] = _ignore
-    config: Callable[[ClaudeModelConfig], None] = _ignore
+    turns: Callable[[], None] = ignore
+    sending: Callable[[bool], None] = ignore
+    config: Callable[[ClaudeModelConfig], None] = ignore
 
 
 class ChatAssistant:

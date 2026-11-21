@@ -14,7 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
-from app.live import Post
+from app.background import Post, ignore
 from domain.claude.claude_model import ClaudeModelConfig
 from domain.transcription.live_view import LiveTranscript
 from services.service_claude import ClaudeCancelled, ClaudeCli, ClaudeError, ClaudeService
@@ -28,10 +28,6 @@ ServiceFactory = Callable[[ClaudeModelConfig, str], ClaudeService]
 def claude_cli(config: ClaudeModelConfig, system_prompt: str) -> ClaudeService:
     """El servicio de siempre: la CLI `claude -p` del autor."""
     return ClaudeCli(config, system_prompt)
-
-
-def _ignore(*_args: object) -> None:
-    pass
 
 
 class LiveText(Protocol):
@@ -101,9 +97,9 @@ class AskCallbacks:
     finished(dict) -> siempre al final: `_request_id`, `answer`, `cancelled` y `usage`.
     """
 
-    text: Callable[[str], None] = _ignore
-    failed: Callable[[str], None] = _ignore
-    finished: Callable[[dict], None] = _ignore
+    text: Callable[[str], None] = ignore
+    failed: Callable[[str], None] = ignore
+    finished: Callable[[dict], None] = ignore
 
 
 class ClaudeAsk:
@@ -177,7 +173,7 @@ class AskSlot:
         prompt: str,
         post: Post,
         callbacks: AskCallbacks,
-        on_cleared: Callable[[], None] = _ignore,
+        on_cleared: Callable[[], None] = ignore,
     ) -> None:
         self._cancel = threading.Event()
 

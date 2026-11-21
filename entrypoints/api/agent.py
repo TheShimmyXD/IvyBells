@@ -22,6 +22,7 @@ from jacck_common.webapi.server import KEEPALIVE_SECONDS, sse_response
 from pydantic import BaseModel
 
 from app.agent import AgentAssistant, AgentListeners, AgentTurn
+from app.background import ignore
 from app.live import LiveListeners
 from domain.agent.agent_ahead import AGENT_MODES, TURN_SILENCE_S, shown_answer
 from domain.agent.agent_selection import WordPos
@@ -137,10 +138,6 @@ def live_followers(agent: AgentAssistant) -> LiveListeners:
     )
 
 
-def _ignore(*_args: object) -> None:
-    pass
-
-
 def agent_router(
     agent: AgentAssistant,
     owner: LoopOwner,
@@ -148,7 +145,7 @@ def agent_router(
     remember: Remember | None = None,
 ) -> tuple[APIRouter, EventChannel]:
     """`remember` guarda el modo y el interlocutor que elige el autor."""
-    save = remember or _ignore
+    save = remember or ignore
     router = APIRouter()
     channel = EventChannel()
     agent.attach(

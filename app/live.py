@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
+from app.background import Post, call_now, ignore
 from domain.transcription.engine import EventCallback, TranscriptEvent, TranscriptionEngine
 from domain.transcription.live_state import LiveLogic
 from domain.transcription.live_view import SOURCES, LatencyTracker, LiveTranscript, resolve_device
@@ -29,22 +30,10 @@ from services.service_transcript import TranscriptWriter
 logger = logging.getLogger(__name__)
 
 EngineFactory = Callable[[EventCallback, str, str], TranscriptionEngine]
-# Entrega una tarea al hilo dueño (en la API, asyncio con call_soon_threadsafe).
-Post = Callable[[Callable[[], None]], None]
-
 DEFAULT_MODEL = "large-v3-turbo"
 COMPUTE_TYPE = "int8"
 # Al cerrar, la escucha cierra las frases abiertas (una llamada al modelo cada una).
 CLOSE_TIMEOUT_S = 20.0
-
-
-def call_now(task: Callable[[], None]) -> None:
-    """`Post` sin hilo dueño: corre la tarea en el hilo que avisa (pruebas y consola)."""
-    task()
-
-
-def _ignore(*_args: object) -> None:
-    pass
 
 
 @dataclass
@@ -64,13 +53,13 @@ class LiveListeners:
                                   lo imprime; la ventana lee `transcript`).
     """
 
-    state: Callable[[dict], None] = _ignore
-    transcript: Callable[[str], None] = _ignore
-    latency: Callable[[float, float], None] = _ignore
-    session_started: Callable[[], None] = _ignore
-    session_resumed: Callable[[], None] = _ignore
-    sources: Callable[[], None] = _ignore
-    event: Callable[[TranscriptEvent], None] = _ignore
+    state: Callable[[dict], None] = ignore
+    transcript: Callable[[str], None] = ignore
+    latency: Callable[[float, float], None] = ignore
+    session_started: Callable[[], None] = ignore
+    session_resumed: Callable[[], None] = ignore
+    sources: Callable[[], None] = ignore
+    event: Callable[[TranscriptEvent], None] = ignore
 
 
 @dataclass(frozen=True)
@@ -87,11 +76,11 @@ class RunCallbacks:
                               (las de toda la apertura).
     """
 
-    loaded: Callable[[datetime, bool], None] = _ignore
-    event: Callable[[TranscriptEvent], None] = _ignore
-    latency: Callable[[float, float], None] = _ignore
-    failed: Callable[[str], None] = _ignore
-    finished: Callable[[dict], None] = _ignore
+    loaded: Callable[[datetime, bool], None] = ignore
+    event: Callable[[TranscriptEvent], None] = ignore
+    latency: Callable[[float, float], None] = ignore
+    failed: Callable[[str], None] = ignore
+    finished: Callable[[dict], None] = ignore
 
 
 class ListeningRun:

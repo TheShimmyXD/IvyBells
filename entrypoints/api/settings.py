@@ -23,6 +23,7 @@ from jacck_common.webapi.events import EventChannel
 from jacck_common.webapi.server import KEEPALIVE_SECONDS, sse_response
 from pydantic import BaseModel, Field
 
+from app.background import ignore
 from app.context import ContextListeners
 from app.profiles import ProfileListeners
 from app.settings import (
@@ -43,10 +44,6 @@ def _nothing() -> None:
     pass
 
 
-def _ignore(*_args: object) -> None:
-    pass
-
-
 @dataclass
 class SettingsFollowers:
     """
@@ -59,7 +56,7 @@ class SettingsFollowers:
 
     config: Callable[[], None] = _nothing
     profile: Callable[[], None] = _nothing
-    context: Callable[[dict], None] = _ignore
+    context: Callable[[dict], None] = ignore
 
 
 class ValueRequest(BaseModel):

@@ -30,6 +30,7 @@ from jacck_common.webapi.events import EventChannel
 from jacck_common.webapi.server import KEEPALIVE_SECONDS, sse_response
 from pydantic import BaseModel
 
+from app.background import ignore
 from app.live import COMPUTE_TYPE, DEFAULT_MODEL, LiveListeners, LiveListening
 from domain.transcription.engine import TranscriptEvent
 from domain.transcription.live_view import (
@@ -67,10 +68,6 @@ class DeviceRequest(BaseModel):
 
 class SaveRequest(BaseModel):
     path: str
-
-
-def _ignore(*_args: object) -> None:
-    pass
 
 
 def state_data(payload: dict) -> dict:
@@ -230,7 +227,7 @@ def listening_router(
     modelo, los dispositivos elegidos y los canales cerrados; `preferred` da los dispositivos
     recordados, que se usan al iniciar sin dispositivos si siguen conectados.
     """
-    keep = remember or _ignore
+    keep = remember or ignore
 
     def recorded() -> dict[str, str]:
         return preferred() if preferred is not None else {}

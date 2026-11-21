@@ -12,6 +12,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from app.background import ignore
 from domain.agent.agent_profile import (
     EXAMPLE_NAME,
     ProfileError,
@@ -26,10 +27,6 @@ logger = logging.getLogger(__name__)
 NEW_NAME = "nuevo perfil"
 
 
-def _ignore(*_args: object) -> None:
-    pass
-
-
 @dataclass
 class ProfileListeners:
     """
@@ -40,9 +37,9 @@ class ProfileListeners:
     notice(dict)  -> `text` y `level` ("ok" o "error") para la puerta.
     """
 
-    changed: Callable[[], None] = _ignore
-    active: Callable[[str], None] = _ignore
-    notice: Callable[[dict], None] = _ignore
+    changed: Callable[[], None] = ignore
+    active: Callable[[str], None] = ignore
+    notice: Callable[[dict], None] = ignore
 
 
 class ProfileLibrary:

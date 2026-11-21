@@ -14,10 +14,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.background import join, start_task
+from app.background import Post, call_now, ignore, join, start_task
 from app.claude_ask import RequestSequence
 from app.context import ContextLibrary
-from app.live import Post, call_now
 from app.profiles import ProfileLibrary
 from domain.claude.claude_account import AccountStatus, describe
 from domain.claude.claude_model import ClaudeModelConfig, clean_account
@@ -52,10 +51,6 @@ TIMEOUTS_S = (60, 120, 300)
 CLOSE_TIMEOUT_S = 3.0
 
 
-def _ignore(*_args: object) -> None:
-    pass
-
-
 @dataclass
 class SettingsListeners:
     """
@@ -66,8 +61,8 @@ class SettingsListeners:
                                  `login` (la orden para iniciar sesión, o "").
     """
 
-    config: Callable[[ClaudeModelConfig], None] = _ignore
-    account: Callable[[dict], None] = _ignore
+    config: Callable[[ClaudeModelConfig], None] = ignore
+    account: Callable[[dict], None] = ignore
 
 
 class ClaudeOptions:

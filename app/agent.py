@@ -20,8 +20,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.background import Post, call_now, ignore
 from app.claude_ask import AskCallbacks, AskSlot, ClaudeSetup, LiveText, ServiceFactory, claude_cli
-from app.live import Post, call_now
 from domain.agent.agent_ahead import (
     AGENT_MODES,
     AHEAD,
@@ -45,10 +45,6 @@ logger = logging.getLogger(__name__)
 CLOSE_TIMEOUT_S = 5.0
 TICK_S = 0.2
 SPEAKER_NAMES = {"ellos": "Ellos", "tu": "Tú"}
-
-
-def _ignore(*_args: object) -> None:
-    pass
 
 
 @dataclass(slots=True)
@@ -94,11 +90,11 @@ class AgentListeners:
     mode(str)   -> pasó a modo manual o anticipado.
     """
 
-    state: Callable[[dict], None] = _ignore
-    turns: Callable[[], None] = _ignore
-    marks: Callable[[], None] = _ignore
-    budget: Callable[[], None] = _ignore
-    mode: Callable[[str], None] = _ignore
+    state: Callable[[dict], None] = ignore
+    turns: Callable[[], None] = ignore
+    marks: Callable[[], None] = ignore
+    budget: Callable[[], None] = ignore
+    mode: Callable[[str], None] = ignore
 
 
 class AgentAssistant:
