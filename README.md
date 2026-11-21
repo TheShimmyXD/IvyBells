@@ -85,9 +85,11 @@ menú de aplicaciones. La primera vez que transcribe descarga el modelo (1,6 GB)
 El repositorio trae todo lo que necesita: la API local de la ventana y el crate de
 Tauri vienen de `jacck_common`, una librería propia del autor que no se publica, y
 van copiados en `vendor/jacck_common/`. En otra máquina basta con el `git clone` y
-`./install.sh` de arriba; la compilación de la ventana queda en
-`desktop/src-tauri/target/` (1,2 GB y 79 s la primera vez, medidos en un clon
-limpio; fuera de Git).
+`./install.sh` de arriba (135 s en un clon limpio, 75 s de ellos compilando la
+ventana). Allí `install.sh` copia la ventana (12 MB) a `desktop/bin/` y borra la
+compilación (`desktop/src-tauri/target/`, 1,2 GB) y `web/node_modules/` (194 MB):
+la carpeta queda en 2,7 GB, casi todo el `.venv`. Para desarrollar o recompilar,
+`cd web && npm ci`; si hay una compilación nueva, se abre esa y no la copia.
 
 En la máquina del autor, si `../jacck_common` está al lado, `install.sh` usa esa
 copia (editable) y la carpeta de compilación compartida. Tras cambiar algo allí:

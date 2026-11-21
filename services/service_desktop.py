@@ -5,6 +5,10 @@ La ruta no se escribe a mano: el nombre sale del ``Cargo.toml`` de
 ``.cargo/config.toml``: en la máquina del autor, la compartida de ``../jacck_common``;
 sin ese archivo (otra máquina), ``desktop/src-tauri/target``. El archivo es local y lo
 escribe ``install.sh``, que también compila; aquí solo se busca y se abre.
+
+En otra máquina ``install.sh`` copia el binario a ``desktop/bin`` y borra ``target``
+(1,2 GB): la ventana solo necesita el binario. Si después se recompila, manda lo
+compilado, para que un cambio en ``web/`` no abra la copia vieja.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ logger = logging.getLogger(__name__)
 # El binario lee la raíz del proyecto de esta variable (crate jacck_tauri:
 # "<PREFIJO>_ROOT"); sin ella usa la ruta fija al compilar.
 ROOT_ENV = "IVYBELLS_ROOT"
+# Copia del binario fuera de target/, junto a src-tauri (desktop/bin); fuera de Git.
+INSTALLED_DIR = "bin"
 INSTALL_HINT = "Compílala con ./install.sh (o: cd web && npm run tauri build -- --no-bundle)."
 
 ExecFn = Callable[[Path, list[str], Mapping[str, str]], object]
@@ -35,8 +41,8 @@ def binary_name(src_tauri: Path) -> str:
     return _read_toml(src_tauri / "Cargo.toml")["package"]["name"]
 
 
-def release_binary(src_tauri: Path) -> Path:
-    """Ruta del binario de release según ``Cargo.toml`` y ``.cargo/config.toml``."""
+def build_binary(src_tauri: Path) -> Path:
+    """Ruta donde Cargo deja el binario de release según ``.cargo/config.toml``."""
     config = src_tauri / ".cargo" / "config.toml"
     target = src_tauri / "target"
     if config.is_file():
@@ -44,6 +50,24 @@ def release_binary(src_tauri: Path) -> Path:
         if value:
             target = src_tauri / value
     return (target / "release" / binary_name(src_tauri)).resolve()
+
+
+def installed_binary(src_tauri: Path) -> Path:
+    """Ruta de la copia que deja ``install.sh`` en otra máquina (``desktop/bin``)."""
+    return (src_tauri.parent / INSTALLED_DIR / binary_name(src_tauri)).resolve()
+
+
+def release_binary(src_tauri: Path) -> Path:
+    """Binario que abre la ventana: el compilado si existe; si no, la copia instalada.
+
+    Sin ninguno de los dos devuelve la ruta de compilación, que es la que nombra el
+    aviso de ``open_window``.
+    """
+    built = build_binary(src_tauri)
+    if built.is_file():
+        return built
+    installed = installed_binary(src_tauri)
+    return installed if installed.is_file() else built
 
 
 def open_window(

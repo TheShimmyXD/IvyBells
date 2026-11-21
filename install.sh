@@ -26,7 +26,9 @@ fi
 # autor) se usa esa, editable, con la compilacion compartida; si no, la copia de vendor/.
 # Va antes del extra web, que lo pide.
 WINDOW_READY=0
+SHARED_BUILD=0
 if [ -d ../jacck_common ]; then
+    SHARED_BUILD=1
     .venv/bin/python -m pip install -e "../jacck_common[webapi]"
     CARGO_CONFIG=desktop/src-tauri/.cargo/config.toml
     if [ ! -f "$CARGO_CONFIG" ]; then
@@ -48,6 +50,18 @@ fi
 if command -v npm >/dev/null && command -v cargo >/dev/null; then
     if (cd web && npm ci && npm run tauri build -- --no-bundle); then
         WINDOW_READY=1
+        if [ "$SHARED_BUILD" = 0 ]; then
+            # Otra maquina: la ventana solo usa el binario (12 MB). Se copia a desktop/bin
+            # y se borran la compilacion (1,2 GB) y web/node_modules (195 MB).
+            BUILT=$(.venv/bin/python -c 'from paths import DESKTOP_SRC
+from services.service_desktop import build_binary
+print(build_binary(DESKTOP_SRC))')
+            mkdir -p desktop/bin
+            cp "$BUILT" desktop/bin/
+            rm -rf desktop/src-tauri/target web/node_modules
+            echo "Ventana copiada a desktop/bin; se borraron target/ y web/node_modules."
+            echo "Para desarrollar o recompilar: cd web && npm ci"
+        fi
     else
         echo
         echo "Aviso: no se pudo compilar la ventana. Si falta webkit2gtk, instalalo con:"

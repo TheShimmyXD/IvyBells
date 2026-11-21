@@ -31,6 +31,8 @@ bench/resultados/*.log
 # Sin .cargo/ la compilacion queda aqui (otra maquina). En la del autor, install.sh escribe
 # .cargo/config.toml hacia la compartida de ../jacck_common: es local, no va a Git.
 desktop/src-tauri/target/
+# Copia del binario que deja install.sh en otra maquina antes de borrar target/
+desktop/bin/
 desktop/src-tauri/.cargo/
 desktop/src-tauri/gen/
 resources/json/api_session.json

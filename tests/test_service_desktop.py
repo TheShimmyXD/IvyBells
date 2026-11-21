@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from services.service_desktop import ROOT_ENV, binary_name, open_window, release_binary
+from services.service_desktop import (
+    ROOT_ENV,
+    binary_name,
+    build_binary,
+    installed_binary,
+    open_window,
+    release_binary,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_TAURI = ROOT / "desktop" / "src-tauri"
@@ -22,20 +29,48 @@ def _src_tauri(tmp_path: Path, target_dir: str | None) -> Path:
     return src
 
 
-def test_release_binary_follows_the_shared_target_dir(tmp_path):
+def _touch(path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"")
+    return path
+
+
+def test_build_binary_follows_the_shared_target_dir(tmp_path):
     src = _src_tauri(tmp_path, "../../../comun/rust/target")
     expected = tmp_path / "comun" / "rust" / "target" / "release" / "demo-desktop"
+    assert build_binary(src) == expected
     assert release_binary(src) == expected
 
 
-def test_release_binary_without_cargo_config_uses_its_own_target(tmp_path):
+def test_build_binary_without_cargo_config_uses_its_own_target(tmp_path):
     src = _src_tauri(tmp_path, None)
-    assert release_binary(src) == src / "target" / "release" / "demo-desktop"
+    assert build_binary(src) == src / "target" / "release" / "demo-desktop"
+
+
+def test_release_binary_uses_the_installed_copy_when_target_was_removed(tmp_path):
+    # Otra máquina: install.sh copió el binario a desktop/bin y borró target/.
+    src = _src_tauri(tmp_path, None)
+    copy = _touch(installed_binary(src))
+    assert copy == src.parent / "bin" / "demo-desktop"
+    assert release_binary(src) == copy
+
+
+def test_release_binary_prefers_a_fresh_build_over_the_installed_copy(tmp_path):
+    # Recompilar tras cambiar web/ deja target/ de nuevo: manda lo compilado.
+    src = _src_tauri(tmp_path, None)
+    _touch(installed_binary(src))
+    built = _touch(build_binary(src))
+    assert release_binary(src) == built
+
+
+def test_release_binary_without_any_binary_names_the_build_path(tmp_path):
+    src = _src_tauri(tmp_path, None)
+    assert release_binary(src) == build_binary(src)
 
 
 def test_project_binary_follows_the_local_cargo_config():
     # .cargo/config.toml es local: lo escribe install.sh si existe ../jacck_common.
-    binary = release_binary(SRC_TAURI)
+    binary = build_binary(SRC_TAURI)
     assert binary_name(SRC_TAURI) == "ivybells-desktop"
     if (SRC_TAURI / ".cargo" / "config.toml").is_file():
         target = ROOT.parent / "jacck_common" / "rust" / "target"
