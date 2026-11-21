@@ -22,5 +22,9 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // Sin aislar cada archivo, jsdom no se crea una vez por archivo: 1,6 s en vez de
+    // 3,3 s. Las pruebas pasan tambien en orden aleatorio (--sequence.shuffle).
+    // vmThreads era la otra opcion, pero ahi no existe ReadableStream (canal SSE).
+    isolate: false,
   },
 });
