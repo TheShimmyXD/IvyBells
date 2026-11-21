@@ -42,7 +42,7 @@ def open_path(path: Path, launcher: Launcher = _launch, platform: str = sys.plat
     if not path.exists():
         raise FileNotFoundError(f"No existe {path}")
     if platform == "win32":
-        os.startfile(path)  # type: ignore[attr-defined]  # noqa: S606
+        os.startfile(path)  # type: ignore[attr-defined]
     else:
         launcher(open_command(path, platform))
     logger.info("Abierto %s", path)

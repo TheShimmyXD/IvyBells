@@ -10,19 +10,19 @@ import pytest
 
 pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
-from fastapi.testclient import TestClient  # noqa: E402
-from jacck_common.webapi.security import new_token  # noqa: E402
+from fastapi.testclient import TestClient
+from jacck_common.webapi.security import new_token
 
-from app.context import ContextLibrary  # noqa: E402
-from app.live import LiveListening  # noqa: E402
-from app.profiles import ProfileLibrary  # noqa: E402
-from app.settings import ClaudeOptions  # noqa: E402
-from config import AppConfig, load_app_config, save_app_config  # noqa: E402
-from domain.claude.claude_account import AccountStatus  # noqa: E402
-from domain.claude.claude_model import ClaudeModelConfig  # noqa: E402
-from entrypoints.api.run import create_api  # noqa: E402
-from services.service_contexts import ContextStore  # noqa: E402
-from services.service_profiles import ProfileStore  # noqa: E402
+from app.context import ContextLibrary
+from app.live import LiveListening
+from app.profiles import ProfileLibrary
+from app.settings import ClaudeOptions
+from config import AppConfig, load_app_config, save_app_config
+from domain.claude.claude_account import AccountStatus
+from domain.claude.claude_model import ClaudeModelConfig
+from entrypoints.api.run import create_api
+from services.service_contexts import ContextStore
+from services.service_profiles import ProfileStore
 
 
 class _NoEngine:

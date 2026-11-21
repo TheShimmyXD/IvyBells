@@ -19,20 +19,20 @@ import pytest
 
 pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
-from fastapi.testclient import TestClient  # noqa: E402
-from jacck_common.webapi.security import new_token  # noqa: E402
+from fastapi.testclient import TestClient
+from jacck_common.webapi.security import new_token
 
-from app.agent import AgentAssistant  # noqa: E402
-from app.context import ContextLibrary  # noqa: E402
-from app.live import LiveListening  # noqa: E402
-from app.profiles import ProfileLibrary  # noqa: E402
-from app.settings import ClaudeOptions  # noqa: E402
-from domain.agent.agent_state import AgentState  # noqa: E402
-from domain.transcription.engine import TranscriptEvent  # noqa: E402
-from entrypoints.api.run import create_api  # noqa: E402
-from services.service_claude import ScriptedClaude  # noqa: E402
-from services.service_contexts import ContextStore  # noqa: E402
-from services.service_profiles import ProfileStore  # noqa: E402
+from app.agent import AgentAssistant
+from app.context import ContextLibrary
+from app.live import LiveListening
+from app.profiles import ProfileLibrary
+from app.settings import ClaudeOptions
+from domain.agent.agent_state import AgentState
+from domain.transcription.engine import TranscriptEvent
+from entrypoints.api.run import create_api
+from services.service_claude import ScriptedClaude
+from services.service_contexts import ContextStore
+from services.service_profiles import ProfileStore
 
 SAMPLE = json.loads(
     (Path(__file__).parents[1] / "web/src/features/live/fixtures/agent_marks.json").read_text(

@@ -6,11 +6,11 @@ import pytest
 
 pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
-from fastapi.testclient import TestClient  # noqa: E402
-from jacck_common.webapi.security import new_token  # noqa: E402
+from fastapi.testclient import TestClient
+from jacck_common.webapi.security import new_token
 
-from app.live import LiveListening  # noqa: E402
-from entrypoints.api.run import NAMES, app_version, create_api  # noqa: E402
+from app.live import LiveListening
+from entrypoints.api.run import NAMES, app_version, create_api
 
 
 def test_names_are_the_ones_the_window_uses() -> None:

@@ -17,12 +17,12 @@ import pytest
 
 pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
-from fastapi.testclient import TestClient  # noqa: E402
-from jacck_common.webapi.security import new_token  # noqa: E402
+from fastapi.testclient import TestClient
+from jacck_common.webapi.security import new_token
 
-from app.live import LiveListening  # noqa: E402
-from domain.transcription.engine import TranscriptEvent  # noqa: E402
-from entrypoints.api.run import create_api  # noqa: E402
+from app.live import LiveListening
+from domain.transcription.engine import TranscriptEvent
+from entrypoints.api.run import create_api
 
 QT_MARKDOWN = Path(__file__).parent / "fixtures/parity/markdown_qt.md"
 BLOCK = np.zeros(1_600, dtype=np.float32)

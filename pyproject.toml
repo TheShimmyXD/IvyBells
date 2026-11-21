@@ -48,8 +48,9 @@ extend-exclude = ["resources", ".claude", "vendor/jacck_common"]
 
 [tool.ruff.lint]
 # E/F: errores básicos, I: orden de imports, UP: sintaxis moderna,
-# B: errores frecuentes, SIM: simplificaciones, T20: prohíbe print.
-select = ["E", "F", "I", "UP", "B", "SIM", "T20"]
+# B: errores frecuentes, SIM: simplificaciones, T20: prohíbe print,
+# RUF100: avisa de los noqa que ya no silencian nada.
+select = ["E", "F", "I", "UP", "B", "SIM", "T20", "RUF100"]
 # La longitud de línea la resuelve `ruff format`; no se duplica el aviso.
 ignore = ["E501"]
 

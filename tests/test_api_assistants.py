@@ -10,20 +10,20 @@ import pytest
 
 pytest.importorskip("fastapi", reason="extra web: ./install.sh (jacck_common)")
 
-from fastapi.testclient import TestClient  # noqa: E402
-from jacck_common.webapi.security import new_token  # noqa: E402
+from fastapi.testclient import TestClient
+from jacck_common.webapi.security import new_token
 
-from app.agent import AgentAssistant  # noqa: E402
-from app.chat import ChatAssistant  # noqa: E402
-from app.live import LiveListening  # noqa: E402
-from app.settings import CLAUDE_MODELS, EFFORTS  # noqa: E402
-from domain.agent.agent_ahead import TURN_SILENCE_S  # noqa: E402
-from domain.agent.context_budget import build_budget  # noqa: E402
-from domain.claude.claude_model import ClaudeModelConfig  # noqa: E402
-from domain.transcription.engine import TranscriptEvent  # noqa: E402
-from entrypoints.api.agent import budget_data  # noqa: E402
-from entrypoints.api.run import create_api  # noqa: E402
-from services.service_claude import ScriptedClaude  # noqa: E402
+from app.agent import AgentAssistant
+from app.chat import ChatAssistant
+from app.live import LiveListening
+from app.settings import CLAUDE_MODELS, EFFORTS
+from domain.agent.agent_ahead import TURN_SILENCE_S
+from domain.agent.context_budget import build_budget
+from domain.claude.claude_model import ClaudeModelConfig
+from domain.transcription.engine import TranscriptEvent
+from entrypoints.api.agent import budget_data
+from entrypoints.api.run import create_api
+from services.service_claude import ScriptedClaude
 
 BLOCK = np.zeros(1_600, dtype=np.float32)
 DEVICES = {"tu": "mic.sintetico"}
